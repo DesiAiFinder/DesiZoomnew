@@ -18,10 +18,26 @@ export const CITIES = [
 ];
 
 export const RADIO_STATIONS = [
-  { name: 'Bollywood Beats FM', lang: 'Hindi · Local', src: '' },
-  { name: 'Radio Edison Desi', lang: 'Punjabi · Local', src: '' },
-  { name: 'Sur Sangeet National', lang: 'Hindi · National', src: '' },
-  { name: 'Desi Talk Radio', lang: 'Urdu/Hindi · National', src: '' },
+  {
+    name: 'Radio Sangam 104.1',
+    lang: 'Telugu · Dallas, TX',
+    src: 'https://stream.voxx.pro/listen/radio_sangam/radio.mp3',
+  },
+  {
+    name: 'FunAsia 94.5',
+    lang: 'Hindi/Punjabi · Dallas, TX',
+    src: 'https://stream.voxx.pro/listen/funasia/radio.mp3',
+  },
+  {
+    name: 'Bollywood Hits FM',
+    lang: 'Hindi · Online',
+    src: 'https://myradiostream.com/29270/listen.mp3',
+  },
+  {
+    name: 'Desi Junction',
+    lang: 'Hindi/Punjabi · Chicago',
+    src: 'https://stream.zeno.fm/yn65m0rs9tzuv',
+  },
 ];
 
 export const MKT_CATEGORIES = [

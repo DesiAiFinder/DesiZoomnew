@@ -70,17 +70,13 @@ export default function Home() {
         🪔 {festival.name} is in {festival.days} days — get your listing posted before the rush!
       </div>
 
-      {/* Hero */}
+      {/* Hero — text + weather + CTA only, no radio */}
       <div className="hero">
         <div className="hero-glow-a" />
         <div className="hero-glow-b" />
 
-        <div style={{ position: 'relative', flex: '1 1 420px', maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: 8, background: 'rgba(40,50,90,0.6)', border: '1px solid rgba(100,120,200,0.4)', padding: '6px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 600 }}>
-            🔴 <span>Bollywood Beats FM — tap radio to play</span>
-          </div>
-
-          <h1 style={{ fontWeight: 700, fontSize: 'clamp(28px,4vw,42px)', lineHeight: 1.1 }}>
+        <div style={{ position: 'relative', flex: '1 1 340px', maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <h1 style={{ fontWeight: 700, fontSize: 'clamp(28px,4vw,44px)', lineHeight: 1.1, margin: 0 }}>
             Everything Desi.<br />
             <span style={{ color: 'var(--accent)' }}>Deals, rooms, events</span> — one zoom.
           </h1>
@@ -91,17 +87,18 @@ export default function Home() {
 
           <WeatherWidget />
 
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <Link to="/search" className="btn-primary" style={{ textDecoration: 'none', fontSize: 14, padding: '10px 20px' }}>
               🔍 Find Businesses
             </Link>
             <button className="btn-ghost" onClick={() => user ? setPostOpen(true) : onAuthOpen()} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontSize: 14 }}>
               + Post
             </button>
+            <Link to="/radio" className="btn-ghost" style={{ textDecoration: 'none', background: 'rgba(224,120,32,0.15)', color: '#f5a85a', border: '1px solid rgba(224,120,32,0.3)', fontSize: 14, padding: '10px 16px' }}>
+              📻 Radio
+            </Link>
           </div>
         </div>
-
-        <RadioWidget />
       </div>
 
       {/* Category tiles — 3-column grid */}
@@ -122,15 +119,29 @@ export default function Home() {
         ))}
       </div>
 
-      {/* City chips — horizontally scrollable */}
+      {/* City chips */}
       <div style={{ display: 'flex', gap: 8, padding: '16px 32px 0', overflowX: 'auto', flexWrap: 'nowrap', scrollbarWidth: 'none' }}>
         {CITIES.map((c) => (
           <span key={c} className={`chip ${c === city ? 'active' : ''}`} onClick={() => setCity(c)} style={{ flexShrink: 0 }}>{c}</span>
         ))}
       </div>
 
+      {/* Desi Radio strip */}
+      <div style={{ margin: '20px 32px 0', borderRadius: 16, background: 'linear-gradient(120deg,#1c1000,#2a1800)', padding: '20px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#e07820', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📻 Desi Radio</div>
+            <div style={{ fontSize: 12, color: 'rgba(220,200,160,0.7)', marginTop: 2 }}>Live South Asian radio stations</div>
+          </div>
+          <Link to="/radio" style={{ fontSize: 12.5, fontWeight: 600, color: '#f5a85a', textDecoration: 'none' }}>See all →</Link>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+          <RadioWidget />
+        </div>
+      </div>
+
       {/* Main 3-col layout */}
-      <div style={{ display: 'flex', gap: 24, padding: '16px 32px 48px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 24, padding: '20px 32px 48px', flexWrap: 'wrap' }}>
         {/* Left: categories */}
         <div style={{ flex: '0 0 210px' }}>
           <h3 style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)', marginBottom: 10 }}>Categories</h3>
