@@ -1,8 +1,11 @@
 import type { Business, BusinessCategory, Location } from '../types';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+declare const google: any;
+
 declare global {
   interface Window {
-    google: typeof google;
+    google: any;
     initGoogleMaps: () => void;
   }
 }
@@ -49,13 +52,13 @@ export async function searchNearbyPlaces(
   return new Promise((resolve) => {
     service.textSearch(
       { query, location: latLng, radius },
-      (results, status) => {
+      (results: any[], status: any) => {
         if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
           resolve([]);
           return;
         }
 
-        const businesses: Business[] = results.slice(0, 20).map((r) => {
+        const businesses: Business[] = results.slice(0, 20).map((r: any) => {
           const dist = r.geometry?.location
             ? google.maps.geometry
               ? metersToMiles(
@@ -74,7 +77,7 @@ export async function searchNearbyPlaces(
             address: r.formatted_address ?? '',
             rating: r.rating,
             priceLevel: r.price_level,
-            photos: r.photos?.slice(0, 1).map((p) => p.getUrl({ maxWidth: 400 })),
+            photos: r.photos?.slice(0, 1).map((p: any) => p.getUrl({ maxWidth: 400 })),
             types: r.types ?? [],
             distance: dist,
             businessStatus: r.business_status,
