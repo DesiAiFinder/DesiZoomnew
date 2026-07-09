@@ -11,7 +11,7 @@ interface Props {
 
 export default function Navigation({ onAuthOpen, onSearch }: Props) {
   const { user, signOut } = useAuth();
-  const { city, setCity } = useLocation();
+  const { city, setCity, detectedCity } = useLocation();
   const routerLoc = useRouterLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [cityOpen, setCityOpen] = useState(false);
@@ -28,6 +28,14 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
   ];
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Account';
+
+  // Build city list: preset cities + detected city if not already in list
+  const cityList = detectedCity && !CITIES.includes(detectedCity)
+    ? [detectedCity, ...CITIES]
+    : CITIES;
+
+  // Label shown in the button
+  const cityLabel = city;
 
   return (
     <header style={{
@@ -81,15 +89,38 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
               padding: '6px 12px', background: 'white', cursor: 'pointer',
             }}
           >
-            📍 {city} ▾
+            📍 {cityLabel} ▾
           </button>
           {cityOpen && (
             <div style={{
               position: 'absolute', top: '110%', right: 0,
               background: 'white', border: '1px solid var(--border)',
               borderRadius: 12, padding: 8, zIndex: 50,
-              boxShadow: '0 8px 24px rgba(28,35,64,0.12)', minWidth: 180,
+              boxShadow: '0 8px 24px rgba(28,35,64,0.12)', minWidth: 200,
             }}>
+              {detectedCity && (
+                <>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', padding: '4px 12px 6px' }}>
+                    Your Location
+                  </div>
+                  <div
+                    onClick={() => { setCity(detectedCity); setCityOpen(false); }}
+                    style={{
+                      padding: '8px 12px', fontSize: 13, borderRadius: 8,
+                      cursor: 'pointer', fontWeight: city === detectedCity ? 700 : 500,
+                      color: city === detectedCity ? 'var(--accent-text)' : 'var(--text)',
+                      background: city === detectedCity ? 'var(--accent-soft)' : '#f8fff8',
+                      marginBottom: 4,
+                    }}
+                  >
+                    📍 {detectedCity}
+                  </div>
+                  <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0 6px' }} />
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', padding: '0 12px 6px' }}>
+                    All Cities
+                  </div>
+                </>
+              )}
               {CITIES.map((c) => (
                 <div
                   key={c}
