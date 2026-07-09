@@ -18,25 +18,64 @@ export const CITIES = [
 ];
 
 export const RADIO_STATIONS = [
+  // ── DFW ──────────────────────────────────────────────────────────────────
   {
     name: 'Radio Sangam 104.1',
     lang: 'Telugu · Dallas, TX',
+    freq: '104.1 FM',
+    group: 'DFW',
     src: 'https://stream.voxx.pro/listen/radio_sangam/radio.mp3',
   },
   {
     name: 'FunAsia 94.5',
     lang: 'Hindi/Punjabi · Dallas, TX',
+    freq: '94.5 FM',
+    group: 'DFW',
     src: 'https://stream.voxx.pro/listen/funasia/radio.mp3',
   },
   {
+    name: 'Big 106.2',
+    lang: 'Bollywood · Dallas, TX',
+    freq: '106.2 FM',
+    group: 'DFW',
+    src: 'https://stream.voxx.pro/listen/big1062/radio.mp3',
+  },
+  {
+    name: 'Beat 97.8',
+    lang: 'Hindi/Desi · DFW',
+    freq: '97.8 FM',
+    group: 'DFW',
+    src: 'https://stream.voxx.pro/listen/beat978/radio.mp3',
+  },
+
+  // ── National / Online ────────────────────────────────────────────────────
+  {
     name: 'Bollywood Hits FM',
     lang: 'Hindi · Online',
+    freq: 'Online',
+    group: 'National',
     src: 'https://myradiostream.com/29270/listen.mp3',
   },
   {
     name: 'Desi Junction',
     lang: 'Hindi/Punjabi · Chicago',
+    freq: 'Online',
+    group: 'National',
     src: 'https://stream.zeno.fm/yn65m0rs9tzuv',
+  },
+  {
+    name: 'Radio Zindagi',
+    lang: 'Hindi/Gujarati · Bay Area',
+    freq: 'Online',
+    group: 'National',
+    src: 'https://stream.zeno.fm/f3wvbbqmdg8uv',
+  },
+  {
+    name: 'Masala Radio',
+    lang: 'Desi Mix · Nationwide',
+    freq: 'Online',
+    group: 'National',
+    src: 'https://stream.zeno.fm/masalaradio',
   },
 ];
 
