@@ -91,3 +91,27 @@ export async function searchNearbyPlaces(
     );
   });
 }
+
+// Fetch phone + website for a single place (called lazily on card expand)
+export async function getPlaceDetails(placeId: string): Promise<{ phone?: string; website?: string; mapsUrl?: string }> {
+  const service = new google.maps.places.PlacesService(document.createElement('div'));
+  return new Promise((resolve) => {
+    service.getDetails(
+      {
+        placeId,
+        fields: ['formatted_phone_number', 'website', 'url'],
+      },
+      (result: any, status: any) => {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !result) {
+          resolve({});
+          return;
+        }
+        resolve({
+          phone: result.formatted_phone_number,
+          website: result.website,
+          mapsUrl: result.url,
+        });
+      }
+    );
+  });
+}
