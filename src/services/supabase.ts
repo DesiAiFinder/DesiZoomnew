@@ -78,8 +78,8 @@ export async function addComment(postId: string, userId: string, body: string) {
 export async function fetchLocalInfo(city: string) {
   const { data } = await supabase
     .from('local_info')
-    .eq('city', city)
     .select('*')
+    .eq('city', city)
     .eq('is_active', true)
     .order('type');
   return data ?? [];
