@@ -4,25 +4,28 @@ import { fetchLocalInfo } from '../services/supabase';
 import type { LocalInfo } from '../types';
 
 const TYPE_META: Record<string, { icon: string; label: string; color: string }> = {
-  utility:         { icon: '⚡', label: 'Utilities',        color: '#fff8e6' },
-  emergency:       { icon: '🚨', label: 'Emergency',        color: '#fff0ee' },
-  government:      { icon: '🏛️', label: 'Government',      color: '#eef4ff' },
+  utility:         { icon: '⚡', label: 'Utilities',          color: '#fff8e6' },
+  emergency:       { icon: '🚨', label: 'Emergency',          color: '#fff0ee' },
+  government:      { icon: '🏛️', label: 'Government',        color: '#eef4ff' },
   trash_recycling: { icon: '♻️', label: 'Trash & Recycling', color: '#efffee' },
-  city_info:       { icon: '🏙️', label: 'City Info',       color: '#f5f0ff' },
+  city_info:       { icon: '🏙️', label: 'City Info',         color: '#f5f0ff' },
 };
 
-export default function LocalInfo() {
+export default function LocalInfoPage() {
   const { city } = useLocation();
   const [info, setInfo] = useState<LocalInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeType, setActiveType] = useState<string>('all');
 
+  // Re-fetch whenever city changes
   useEffect(() => {
-    fetchLocalInfo()
+    setLoading(true);
+    setInfo([]);
+    fetchLocalInfo(city)
       .then((d) => setInfo(d as LocalInfo[]))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [city]);
 
   const types = ['all', ...Object.keys(TYPE_META)];
   const filtered = activeType === 'all' ? info : info.filter((i) => i.type === activeType);
@@ -57,10 +60,13 @@ export default function LocalInfo() {
               </div>
             ))
           : Object.entries(grouped).length === 0
-            ? <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
+            ? (
+              <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>🏛️</div>
-                <p>No local info entries yet. Add them via the Admin dashboard.</p>
+                <p>No local info entries yet for <strong>{city}</strong>.</p>
+                <p style={{ fontSize: 13 }}>Add them via the Admin dashboard.</p>
               </div>
+            )
             : Object.entries(grouped).map(([type, items]) => {
                 const meta = TYPE_META[type] || { icon: '📌', label: type, color: '#f5f5f5' };
                 return (

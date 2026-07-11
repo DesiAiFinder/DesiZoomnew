@@ -8,12 +8,16 @@ interface Props { onClose: () => void; defaultType?: string; }
 
 export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
   const { user } = useAuth();
-  const { city } = useLocation();
+  const { city, detectedCity } = useLocation();
+
+  // Default to GPS city if available, otherwise fall back to selected city
+  const defaultCity = detectedCity || city;
+
   const [type, setType] = useState(defaultType);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [price, setPrice] = useState('');
-  const [postCity, setPostCity] = useState(city);
+  const [postCity, setPostCity] = useState(defaultCity);
   const [category, setCategory] = useState('For sale');
   const [storeName, setStoreName] = useState('');
   const [expiry, setExpiry] = useState('');
@@ -21,6 +25,11 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
   const [rent, setRent] = useState('');
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Build city list: GPS city pinned at top if not already in list
+  const cityOptions = detectedCity && !CITIES.includes(detectedCity)
+    ? [detectedCity, ...CITIES]
+    : CITIES;
 
   const submit = async () => {
     if (!title.trim()) return setMsg({ text: 'Title is required.', ok: false });
@@ -104,8 +113,25 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
         <div className="field">
           <label>City</label>
           <select value={postCity} onChange={(e) => setPostCity(e.target.value)}>
-            {CITIES.map((c) => <option key={c}>{c}</option>)}
+            {/* GPS city shown first with label if not in preset list */}
+            {detectedCity && !CITIES.includes(detectedCity) && (
+              <option value={detectedCity}>📍 {detectedCity} (your location)</option>
+            )}
+            {cityOptions
+              .filter((c) => c !== detectedCity || CITIES.includes(detectedCity))
+              .map((c) => (
+                <option key={c} value={c}>
+                  {c === detectedCity ? `📍 ${c} (your location)` : c}
+                </option>
+              ))
+            }
           </select>
+          {detectedCity && postCity === detectedCity && (
+            <div style={{ fontSize: 11, color: '#166534', marginTop: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+              Auto-detected from your GPS
+            </div>
+          )}
         </div>
 
         <button className="btn-primary" onClick={submit} disabled={loading}>

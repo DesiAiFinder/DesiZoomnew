@@ -75,9 +75,10 @@ export async function addComment(postId: string, userId: string, body: string) {
 }
 
 // ── Local Info ────────────────────────────────────────────────────────────────
-export async function fetchLocalInfo() {
+export async function fetchLocalInfo(city: string) {
   const { data } = await supabase
     .from('local_info')
+    .eq('city', city)
     .select('*')
     .eq('is_active', true)
     .order('type');
