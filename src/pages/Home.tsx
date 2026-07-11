@@ -39,13 +39,9 @@ export default function Home() {
     () => new Set(JSON.parse(localStorage.getItem('dz_votes') || '[]'))
   );
   const [playing, setPlaying] = useState<number | null>(null);
-  const [radioFilter, setRadioFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const audioRef = useRef<HTMLAudioElement>(null);
   const festival = getNextFestival();
-
-  const dfwStations = RADIO_STATIONS.filter(s => s.group === 'DFW');
-  const nationalStations = RADIO_STATIONS.filter(s => s.group === 'National');
 
   const load = async () => {
     setLoading(true);
@@ -73,11 +69,7 @@ export default function Home() {
 
   const toggleStation = (i: number) => {
     const audio = audioRef.current!;
-    if (playing === i) {
-      audio.pause();
-      setPlaying(null);
-      return;
-    }
+    if (playing === i) { audio.pause(); setPlaying(null); return; }
     const station = RADIO_STATIONS[i];
     if (!station.src) return;
     audio.src = station.src;
@@ -89,16 +81,41 @@ export default function Home() {
 
   return (
     <>
+      <style>{`
+        /* ── Mobile overrides ─────────────────────────────── */
+        @media (max-width: 768px) {
+          .home-hero          { flex-direction: column !important; min-height: unset !important; }
+          .hero-left          { padding: 20px 18px !important; }
+          .hero-radio-sidebar { display: none !important; }
+          .category-grid      { grid-template-columns: repeat(3,1fr) !important; padding: 14px 16px 8px !important; gap: 8px !important; }
+          .city-chips         { padding: 10px 16px 0 !important; }
+          .home-main          { flex-direction: column !important; padding: 16px 16px 32px !important; gap: 16px !important; }
+          .home-categories-col{ display: none !important; }
+          .home-events-col    { display: none !important; }
+          .home-feed-col      { flex: unset !important; width: 100% !important; }
+          .home-marketplace   { padding: 8px 16px 32px !important; }
+          .mkt-grid           { grid-template-columns: repeat(2,1fr) !important; }
+          .festival           { font-size: 12px !important; padding: 8px 14px !important; }
+          .hero-description   { display: none !important; }
+          .hero-quicklinks    { display: none !important; }
+          .hero-search-row    { flex-wrap: wrap !important; }
+          .hero-search-row .search-btn { flex: 1 !important; min-width: 0 !important; }
+        }
+        @media (max-width: 480px) {
+          .category-grid { grid-template-columns: repeat(2,1fr) !important; }
+        }
+      `}</style>
+
       {/* Festival strip */}
       <div className="festival">
         🪔 {festival.name} is in {festival.days} days — get your listing posted before the rush!
       </div>
 
-      {/* Hero — Option C: text left, radio sidebar right */}
-      <div style={{ display: 'flex', background: 'linear-gradient(135deg,#0d1526 60%,#1c1000)', minHeight: 280 }}>
+      {/* Hero */}
+      <div className="home-hero" style={{ display: 'flex', background: 'linear-gradient(135deg,#0d1526 60%,#1c1000)', minHeight: 280 }}>
 
-        {/* Left: headline + search + links */}
-        <div style={{ flex: 1, padding: '32px 36px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Left */}
+        <div className="hero-left" style={{ flex: 1, padding: '32px 36px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Badge */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(224,120,32,0.15)', border: '1px solid rgba(224,120,32,0.3)', borderRadius: 20, padding: '5px 14px', width: 'fit-content' }}>
             <span style={{ width: 7, height: 7, background: '#e07820', borderRadius: '50%', display: 'inline-block' }} />
@@ -114,14 +131,14 @@ export default function Home() {
             </div>
           </div>
 
-          <div style={{ fontSize: 14, color: 'rgba(210,220,240,0.7)', lineHeight: 1.65, maxWidth: 480 }}>
+          <div className="hero-description" style={{ fontSize: 14, color: 'rgba(210,220,240,0.7)', lineHeight: 1.65, maxWidth: 480 }}>
             Browse desi restaurant deals, find a roommate, score event tickets, discover Indian businesses nearby, and tune into live desi radio — from your city or any city across the US.
           </div>
 
           <WeatherWidget />
 
           {/* Search bar */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="hero-search-row" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 10, padding: '0 16px', height: 44 }}>
               <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)' }}>🔍</span>
               <input
@@ -129,25 +146,26 @@ export default function Home() {
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && searchQuery) window.location.href = `/search?q=${searchQuery}`; }}
                 placeholder="Search deals, businesses, roommates…"
-                style={{ background: 'transparent', border: 'none', outline: 'none', color: 'white', fontSize: 13, flex: 1 }}
+                style={{ background: 'transparent', border: 'none', outline: 'none', color: 'white', fontSize: 13, flex: 1, minWidth: 0 }}
               />
             </div>
             <Link
               to={searchQuery ? `/search?q=${searchQuery}` : '/search'}
-              style={{ background: '#e07820', color: 'white', fontSize: 13, fontWeight: 700, padding: '0 20px', height: 44, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', whiteSpace: 'nowrap' }}
+              className="search-btn"
+              style={{ background: '#e07820', color: 'white', fontSize: 13, fontWeight: 700, padding: '0 20px', height: 44, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', whiteSpace: 'nowrap' }}
             >
               🔍 Search
             </Link>
             <button
               onClick={() => user ? setPostOpen(true) : onAuthOpen()}
-              style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 600, padding: '0 16px', height: 44, borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', whiteSpace: 'nowrap', cursor: 'pointer' }}
+              style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 600, padding: '0 16px', height: 44, borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0 }}
             >
               + Post
             </button>
           </div>
 
           {/* Quick links */}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div className="hero-quicklinks" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {[
               { to: '/search', label: '🔍 Businesses' },
               { to: '/deals', label: '🏷️ Deals' },
@@ -163,8 +181,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right: Radio sidebar */}
-        <div style={{ flex: '0 0 220px', background: 'rgba(0,0,0,0.35)', borderLeft: '1px solid rgba(255,255,255,0.07)', padding: '20px 16px', display: 'flex', flexDirection: 'column' }}>
+        {/* Right: Radio sidebar — hidden on mobile */}
+        <div className="hero-radio-sidebar" style={{ flex: '0 0 220px', background: 'rgba(0,0,0,0.35)', borderLeft: '1px solid rgba(255,255,255,0.07)', padding: '20px 16px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#e07820', textTransform: 'uppercase', letterSpacing: '0.06em' }}>📻 Desi Radio</div>
             <Link to="/radio" style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>All →</Link>
@@ -197,8 +215,25 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Now-playing bar (shows below hero when a station is active) */}
+      {nowPlaying && (
+        <div style={{ background: '#0d1526', borderBottom: '1px solid rgba(224,120,32,0.25)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: STATION_COLORS[playing! % STATION_COLORS.length], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>📻</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nowPlaying.name} — Now Playing</div>
+            <div style={{ fontSize: 11, color: 'rgba(200,200,200,0.5)' }}>{nowPlaying.lang} · Live 24/7</div>
+          </div>
+          <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 14, marginRight: 8 }}>
+            {[6, 14, 9, 12].map((h, b) => <div key={b} style={{ width: 3, borderRadius: 2, background: '#e07820', height: h }} />)}
+          </div>
+          <div onClick={() => { audioRef.current?.pause(); setPlaying(null); }} style={{ width: 32, height: 32, borderRadius: '50%', background: '#e07820', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13, flexShrink: 0 }}>⏸</div>
+        </div>
+      )}
+
+      <audio ref={audioRef} preload="none" />
+
       {/* Category tiles */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, padding: '20px 32px 12px' }}>
+      <div className="category-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 12, padding: '20px 32px 12px' }}>
         {[
           { to: '/search',      icon: '🔍', label: 'Businesses', bg: 'var(--accent-soft)', textColor: 'var(--accent-text)' },
           { to: '/deals',       icon: '🏷️', label: 'Deals',      bg: '#fff3e0',           textColor: '#b84d00' },
@@ -215,125 +250,23 @@ export default function Home() {
       </div>
 
       {/* City chips */}
-      <div style={{ display: 'flex', gap: 8, padding: '12px 32px 0', overflowX: 'auto', flexWrap: 'nowrap', scrollbarWidth: 'none' }}>
+      <div className="city-chips" style={{ display: 'flex', gap: 8, padding: '12px 32px 0', overflowX: 'auto', flexWrap: 'nowrap', scrollbarWidth: 'none' }}>
         {CITIES.map(c => (
           <span key={c} className={`chip ${c === city ? 'active' : ''}`} onClick={() => setCity(c)} style={{ flexShrink: 0 }}>{c}</span>
         ))}
       </div>
 
-      {/* Radio section - full card grid */}
-      <div style={{ margin: '16px 32px 0', borderRadius: 14, background: '#0d1526', overflow: 'hidden' }}>
-        {/* Header + filters */}
-        <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#e07820', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📻 Desi Radio — Live Stations</div>
-            <div style={{ fontSize: 11, color: 'rgba(210,220,240,0.45)', marginTop: 2 }}>Streaming 24/7 South Asian radio</div>
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {['All', 'DFW', 'Hindi', 'Telugu', 'Online'].map(f => (
-              <span
-                key={f}
-                onClick={() => setRadioFilter(f)}
-                style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, cursor: 'pointer', border: `1px solid ${radioFilter === f ? '#e07820' : 'rgba(255,255,255,0.12)'}`, background: radioFilter === f ? 'rgba(224,120,32,0.2)' : 'transparent', color: radioFilter === f ? '#f5a85a' : 'rgba(255,255,255,0.5)' }}
-              >{f}</span>
-            ))}
-          </div>
-        </div>
-
-        {/* DFW Stations */}
-        {(radioFilter === 'All' || radioFilter === 'DFW' || radioFilter === 'Telugu' || radioFilter === 'Hindi') && dfwStations.length > 0 && (
-          <div style={{ padding: '14px 20px 0' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Dallas – Fort Worth</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10, marginBottom: 16 }}>
-              {dfwStations.map((s, idx) => {
-                const globalIdx = RADIO_STATIONS.indexOf(s);
-                const isPlaying = playing === globalIdx;
-                return (
-                  <div key={idx} style={{ borderRadius: 10, overflow: 'hidden', cursor: 'pointer', border: `1px solid ${isPlaying ? 'rgba(224,120,32,0.5)' : 'rgba(255,255,255,0.07)'}`, background: isPlaying ? 'rgba(224,120,32,0.06)' : 'rgba(255,255,255,0.03)' }} onClick={() => toggleStation(globalIdx)}>
-                    <div style={{ height: 64, background: STATION_COLORS[globalIdx % STATION_COLORS.length], display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                      <span style={{ fontSize: 28, opacity: 0.3 }}>📻</span>
-                      <div style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.45)', borderRadius: 10, padding: '2px 7px', fontSize: 9, color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>{s.freq}</div>
-                      {isPlaying && (
-                        <div style={{ position: 'absolute', bottom: 6, left: 8, display: 'flex', gap: 2, alignItems: 'flex-end', height: 12 }}>
-                          {[5, 12, 8].map((h, b) => <div key={b} style={{ width: 3, borderRadius: 2, background: '#e07820', height: h }} />)}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ padding: '8px 10px' }}>
-                      <div style={{ fontSize: 12, fontWeight: 500, color: isPlaying ? '#fff' : 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>{s.name}</div>
-                      <div style={{ fontSize: 10, color: 'rgba(200,200,200,0.45)', marginBottom: 8 }}>{s.lang}</div>
-                      <div style={{ height: 26, borderRadius: 6, background: isPlaying ? '#e07820' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, color: 'white', fontWeight: 600 }}>
-                        {isPlaying ? '⏸ Playing' : '▶ Play'}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* National Stations */}
-        {(radioFilter === 'All' || radioFilter === 'Online' || radioFilter === 'Hindi') && nationalStations.length > 0 && (
-          <div style={{ padding: '0 20px 16px' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>National / Online</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
-              {nationalStations.map((s, idx) => {
-                const globalIdx = RADIO_STATIONS.indexOf(s);
-                const isPlaying = playing === globalIdx;
-                return (
-                  <div key={idx} style={{ borderRadius: 10, overflow: 'hidden', cursor: 'pointer', border: `1px solid ${isPlaying ? 'rgba(224,120,32,0.5)' : 'rgba(255,255,255,0.07)'}`, background: isPlaying ? 'rgba(224,120,32,0.06)' : 'rgba(255,255,255,0.03)' }} onClick={() => toggleStation(globalIdx)}>
-                    <div style={{ height: 64, background: STATION_COLORS[globalIdx % STATION_COLORS.length], display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                      <span style={{ fontSize: 28, opacity: 0.3 }}>📻</span>
-                      <div style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.45)', borderRadius: 10, padding: '2px 7px', fontSize: 9, color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>{s.freq}</div>
-                      {isPlaying && (
-                        <div style={{ position: 'absolute', bottom: 6, left: 8, display: 'flex', gap: 2, alignItems: 'flex-end', height: 12 }}>
-                          {[5, 12, 8].map((h, b) => <div key={b} style={{ width: 3, borderRadius: 2, background: '#e07820', height: h }} />)}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ padding: '8px 10px' }}>
-                      <div style={{ fontSize: 12, fontWeight: 500, color: isPlaying ? '#fff' : 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>{s.name}</div>
-                      <div style={{ fontSize: 10, color: 'rgba(200,200,200,0.45)', marginBottom: 8 }}>{s.lang}</div>
-                      <div style={{ height: 26, borderRadius: 6, background: isPlaying ? '#e07820' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, color: 'white', fontWeight: 600 }}>
-                        {isPlaying ? '⏸ Playing' : '▶ Play'}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Now playing bar */}
-        {nowPlaying && (
-          <div style={{ background: 'rgba(0,0,0,0.4)', borderTop: '1px solid rgba(224,120,32,0.25)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: STATION_COLORS[playing! % STATION_COLORS.length], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16 }}>📻</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{nowPlaying.name} — Now Playing</div>
-              <div style={{ fontSize: 11, color: 'rgba(200,200,200,0.5)' }}>{nowPlaying.lang} · Live 24/7</div>
-            </div>
-            <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 16, marginRight: 8 }}>
-              {[7, 16, 10, 14].map((h, b) => <div key={b} style={{ width: 3, borderRadius: 2, background: '#e07820', height: h }} />)}
-            </div>
-            <div onClick={() => { audioRef.current?.pause(); setPlaying(null); }} style={{ width: 36, height: 36, borderRadius: '50%', background: '#e07820', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14 }}>⏸</div>
-          </div>
-        )}
-      </div>
-
-      <audio ref={audioRef} preload="none" />
-
       {/* Main 3-col layout */}
-      <div style={{ display: 'flex', gap: 24, padding: '20px 32px 48px', flexWrap: 'wrap' }}>
-        {/* Left: categories */}
-        <div style={{ flex: '0 0 210px' }}>
+      <div className="home-main" style={{ display: 'flex', gap: 24, padding: '20px 32px 48px', flexWrap: 'wrap' }}>
+
+        {/* Left: category filter — hidden on mobile */}
+        <div className="home-categories-col" style={{ flex: '0 0 210px' }}>
           <h3 style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)', marginBottom: 10 }}>Categories</h3>
           {[
-            { label: '🛍️ All Posts', type: '' },
-            { label: '🏷️ Deals', type: 'deal' },
-            { label: '🛍️ Marketplace', type: 'marketplace' },
-            { label: '🏠 Roommates', type: 'roommate' },
+            { label: '🛍️ All Posts',    type: '' },
+            { label: '🏷️ Deals',        type: 'deal' },
+            { label: '🛍️ Marketplace',  type: 'marketplace' },
+            { label: '🏠 Roommates',    type: 'roommate' },
           ].map(c => (
             <div
               key={c.type}
@@ -346,7 +279,7 @@ export default function Home() {
         </div>
 
         {/* Middle: feed */}
-        <div style={{ flex: '2 1 460px', minWidth: 0 }}>
+        <div className="home-feed-col" style={{ flex: '2 1 460px', minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <h2 style={{ fontSize: 19 }}>Trending in {city}</h2>
             <button className="btn-primary" onClick={() => user ? setPostOpen(true) : onAuthOpen()}>+ Post</button>
@@ -367,8 +300,8 @@ export default function Home() {
           }
         </div>
 
-        {/* Right: events */}
-        <div style={{ flex: '0 0 250px' }}>
+        {/* Right: events — hidden on mobile */}
+        <div className="home-events-col" style={{ flex: '0 0 250px' }}>
           <h3 style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)', marginBottom: 10 }}>Upcoming Events</h3>
           {events.length === 0
             ? <div style={{ color: 'var(--muted)', fontSize: 12 }}>No events yet.</div>
@@ -393,7 +326,7 @@ export default function Home() {
       </div>
 
       {/* Marketplace preview */}
-      <div style={{ padding: '8px 32px 40px', borderTop: '1px solid var(--border)' }}>
+      <div className="home-marketplace" style={{ padding: '8px 32px 40px', borderTop: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 16, marginBottom: 16 }}>
           <h2 style={{ fontSize: 19 }}>Marketplace</h2>
           <Link to="/marketplace" style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-text)' }}>View all →</Link>
@@ -405,7 +338,7 @@ export default function Home() {
             <Link to="/marketplace" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>+ List something</Link>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 16 }}>
+          <div className="mkt-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 16 }}>
             {market.slice(0, 6).map(m => (
               <div key={m.id} className="mkt-card">
                 <div className="mkt-thumb" style={{ background: 'var(--pink-soft)' }}>🛍️<span className="badge-cat">{m.category || 'Item'}</span></div>
