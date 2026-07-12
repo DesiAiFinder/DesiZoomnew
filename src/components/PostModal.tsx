@@ -36,6 +36,12 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
     setLoading(true);
     try {
       const looksLikeDiscount = /%|off/i.test(price);
+      // Convert price to cents for marketplace listings (enables Stripe checkout)
+      const priceNum = parseFloat(price.replace(/[^0-9.]/g, ''));
+      const priceCents = type === 'marketplace' && !isNaN(priceNum) && priceNum > 0
+        ? Math.round(priceNum * 100)
+        : null;
+
       await createPost({
         user_id: user!.id,
         type,
@@ -43,6 +49,7 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
         description: desc.trim() || null,
         city: postCity,
         price: looksLikeDiscount ? null : price || null,
+        price_cents: priceCents,
         discount: looksLikeDiscount ? price : null,
         category: type === 'marketplace' ? category : null,
         event_date: type === 'event' && eventDate ? eventDate : null,

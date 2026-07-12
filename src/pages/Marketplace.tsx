@@ -4,6 +4,8 @@ import { useLocation } from '../contexts/LocationContext';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchMarketplace } from '../services/supabase';
 import PostModal from '../components/PostModal';
+import BuyButton from '../components/BuyButton';
+import SellerOnboard from '../components/SellerOnboard';
 import type { Post } from '../types';
 import { MKT_CATEGORIES } from '../config/env';
 
@@ -22,6 +24,11 @@ export default function Marketplace() {
   const [loading, setLoading] = useState(true);
   const [activeCat, setActiveCat] = useState('All');
   const [postOpen, setPostOpen] = useState(false);
+  const [showOnboard, setShowOnboard] = useState(false);
+
+  // Show success/cancelled payment banner
+  const params = new URLSearchParams(window.location.search);
+  const paymentStatus = params.get('payment');
 
   const load = async () => {
     setLoading(true);
@@ -41,6 +48,36 @@ export default function Marketplace() {
       </div>
 
       <div style={{ padding: '20px 32px 48px' }}>
+
+        {/* Payment status banners */}
+        {paymentStatus === 'success' && (
+          <div style={{ padding: '12px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, marginBottom: 16, fontWeight: 600, color: '#166534' }}>
+            ✅ Payment successful! The seller will be in touch with you.
+          </div>
+        )}
+        {paymentStatus === 'cancelled' && (
+          <div style={{ padding: '12px 16px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, marginBottom: 16, color: '#9a3412' }}>
+            Payment cancelled. Your card was not charged.
+          </div>
+        )}
+
+        {/* Seller onboard toggle */}
+        {user && (
+          <div style={{ marginBottom: 16 }}>
+            <button
+              onClick={() => setShowOnboard((v) => !v)}
+              style={{ fontSize: 12, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              {showOnboard ? 'Hide' : '💳 Want to sell? Connect your bank account'}
+            </button>
+            {showOnboard && (
+              <div style={{ marginTop: 10 }}>
+                <SellerOnboard />
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Category chips */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
           {MKT_CATEGORIES.map((c) => (
@@ -74,15 +111,33 @@ export default function Marketplace() {
               </div>
             : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 16 }}>
                 {items.map((m) => (
-                  <div key={m.id} className="mkt-card">
+                  <div key={m.id} className="mkt-card" style={{ position: 'relative', opacity: m.is_sold ? 0.7 : 1 }}>
                     <div className="mkt-thumb" style={{ background: 'var(--pink-soft)' }}>
                       {CAT_ICONS[m.category || ''] || '📦'}
                       <span className="badge-cat">{m.category || 'Item'}</span>
+                      {m.is_sold && (
+                        <span style={{
+                          position: 'absolute', top: 8, right: 8,
+                          background: '#dc2626', color: 'white',
+                          fontSize: 10, fontWeight: 800, padding: '2px 7px',
+                          borderRadius: 20, letterSpacing: '0.05em'
+                        }}>SOLD</span>
+                      )}
                     </div>
-                    <div style={{ padding: 11, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14.5 }}>{m.price || '—'}</div>
+                    <div style={{ padding: 11, display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <div style={{ fontSize: 12.5, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
                       <div style={{ fontSize: 11, color: 'var(--muted)' }}>📍 {m.city}</div>
+                      {/* Show Buy button if item has a price and is not sold */}
+                      {m.price_cents ? (
+                        <BuyButton
+                          postId={m.id}
+                          priceCents={m.price_cents}
+                          isSold={m.is_sold}
+                          sellerId={m.user_id}
+                        />
+                      ) : (
+                        <div style={{ fontWeight: 700, fontSize: 14 }}>{m.price || '—'}</div>
+                      )}
                     </div>
                   </div>
                 ))}

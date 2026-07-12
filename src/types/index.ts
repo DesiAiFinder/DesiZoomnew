@@ -18,12 +18,15 @@ export interface Post {
   description?: string;
   city: string;
   price?: string;
+  price_cents?: number;       // marketplace: item price in cents for Stripe
   discount?: string;
   category?: string;
   votes_count: number;
   details?: Record<string, unknown>;
   event_date?: string;
   is_active: boolean;
+  is_sold?: boolean;          // marketplace: true after buyer completes payment
+  stripe_account_id?: string; // seller's connected Stripe account
   created_at: string;
   updated_at: string;
 }
