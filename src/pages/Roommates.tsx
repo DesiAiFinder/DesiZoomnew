@@ -9,6 +9,15 @@ import type { Post } from '../types';
 
 interface OutletCtx { onAuthOpen: () => void; }
 
+export const ACCOM_CATEGORIES = [
+  { key: 'All',            icon: '🏘️' },
+  { key: 'Roommate',       icon: '🧑‍🤝‍🧑' },
+  { key: 'Room for rent',  icon: '🛏️' },
+  { key: 'Apartment',      icon: '🏢' },
+  { key: 'Home for rent',  icon: '🏡' },
+  { key: 'Sublease',       icon: '🔑' },
+];
+
 export default function Roommates() {
   const { onAuthOpen } = useOutletContext<OutletCtx>();
   const { city } = useLocation();
@@ -16,6 +25,7 @@ export default function Roommates() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [postOpen, setPostOpen] = useState(false);
+  const [activeCat, setActiveCat] = useState('All');
   const [votedIds, setVotedIds] = useState<Set<string>>(
     () => new Set(JSON.parse(localStorage.getItem('dz_votes') || '[]'))
   );
@@ -29,6 +39,10 @@ export default function Roommates() {
 
   useEffect(() => { load(); }, [city]);
 
+  const filtered = activeCat === 'All'
+    ? posts
+    : posts.filter((p) => (p.category || 'Roommate') === activeCat);
+
   const handleVote = (id: string) => {
     setVotedIds((prev) => {
       const next = new Set(prev);
@@ -41,19 +55,32 @@ export default function Roommates() {
   return (
     <>
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#0f1f3a,#081428)' }}>
-        <div className="eyebrow">🏠 Roommates</div>
-        <h1>Find or List a Room</h1>
-        <p>No broker fees. Connect directly with roommates from the desi community in your city.</p>
+        <div className="eyebrow">🏘️ Accommodations</div>
+        <h1>Rooms, Roommates & Rentals</h1>
+        <p>No broker fees. Rooms, apartments, homes & sublets — direct from the desi community in your city.</p>
       </div>
 
       <div style={{ padding: '24px 32px 48px' }}>
+        {/* Category chips */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+          {ACCOM_CATEGORIES.map((c) => (
+            <span
+              key={c.key}
+              className={`chip ${activeCat === c.key ? 'active' : ''}`}
+              onClick={() => setActiveCat(c.key)}
+            >
+              {c.icon} {c.key}
+            </span>
+          ))}
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
-            <h2 style={{ fontSize: 18 }}>Roommate listings in {city}</h2>
-            <p style={{ fontSize: 13, color: 'var(--muted)', margin: '4px 0 0' }}>{posts.length} listing{posts.length !== 1 ? 's' : ''} available</p>
+            <h2 style={{ fontSize: 18 }}>{activeCat === 'All' ? 'Accommodations' : activeCat} in {city}</h2>
+            <p style={{ fontSize: 13, color: 'var(--muted)', margin: '4px 0 0' }}>{filtered.length} listing{filtered.length !== 1 ? 's' : ''} available</p>
           </div>
           <button className="btn-primary" onClick={() => user ? setPostOpen(true) : onAuthOpen()}>
-            + Post a Room
+            + Post Accommodation
           </button>
         </div>
 
@@ -73,15 +100,15 @@ export default function Roommates() {
                 </div>
               </div>
             ))
-          : posts.length === 0
+          : filtered.length === 0
             ? <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>🏠</div>
-                <p>No roommate listings yet in {city}.</p>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🏘️</div>
+                <p>No {activeCat === 'All' ? 'accommodation' : activeCat.toLowerCase()} listings yet in {city}.</p>
                 <button className="btn-primary" onClick={() => user ? setPostOpen(true) : onAuthOpen()}>
                   + Be the first to post
                 </button>
               </div>
-            : posts.map((p) => (
+            : filtered.map((p) => (
                 <DealCard key={p.id} post={p} voted={votedIds.has(p.id)} onVoteToggle={handleVote} onAuthNeeded={onAuthOpen} />
               ))
         }

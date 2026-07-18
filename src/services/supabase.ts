@@ -255,6 +255,21 @@ export async function adminResolveReport(reportId: string, status: 'resolved' | 
   if (error) throw error;
 }
 
+// ── Admin: live streams ───────────────────────────────────────────────────────
+export async function adminFetchStreams() {
+  const { data } = await supabase
+    .from('live_streams')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50);
+  return data ?? [];
+}
+
+export async function adminSetStreamStatus(streamId: string, status: 'approved' | 'rejected' | 'ended') {
+  const { error } = await supabase.from('live_streams').update({ status }).eq('id', streamId);
+  if (error) throw error;
+}
+
 // ── Admin: revenue ────────────────────────────────────────────────────────────
 export async function adminFetchPayments() {
   const { data } = await supabase

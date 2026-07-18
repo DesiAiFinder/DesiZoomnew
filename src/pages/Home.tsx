@@ -82,6 +82,7 @@ export default function Home() {
   return (
     <>
       <style>{`
+        @keyframes livePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
         /* ── Mobile overrides ─────────────────────────────── */
         @media (max-width: 768px) {
           .home-hero          { flex-direction: column !important; min-height: unset !important; }
@@ -162,6 +163,13 @@ export default function Home() {
             >
               + Post
             </button>
+            <Link
+              to="/live"
+              style={{ background: 'rgba(220,38,38,0.85)', color: 'white', fontSize: 13, fontWeight: 700, padding: '0 16px', height: 44, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-block', animation: 'livePulse 1.5s infinite' }} />
+              Live
+            </Link>
           </div>
 
           {/* Quick links */}

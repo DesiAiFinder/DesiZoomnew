@@ -26,6 +26,7 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
   const [expiry, setExpiry] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [rent, setRent] = useState('');
+  const [accomType, setAccomType] = useState('Roommate');
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -100,7 +101,7 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
         price: looksLikeDiscount ? null : price || null,
         price_cents: priceCents,
         discount: looksLikeDiscount ? price : null,
-        category: type === 'marketplace' ? category : null,
+        category: type === 'marketplace' ? category : type === 'roommate' ? accomType : null,
         event_date: type === 'event' && eventDate ? eventDate : null,
         image_urls: imageUrls,
         details: {
@@ -129,7 +130,7 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
           <select value={type} onChange={(e) => setType(e.target.value)}>
             <option value="deal">Deal</option>
             <option value="marketplace">Marketplace listing</option>
-            <option value="roommate">Roommate</option>
+            <option value="roommate">Accommodation (room / apartment / home)</option>
             <option value="event">Event</option>
           </select>
         </div>
@@ -190,7 +191,17 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
         )}
 
         {type === 'roommate' && (
-          <div className="field"><label>Monthly rent</label><input value={rent} onChange={(e) => setRent(e.target.value)} placeholder="e.g. $800/mo" /></div>
+          <>
+            <div className="field">
+              <label>Accommodation type</label>
+              <select value={accomType} onChange={(e) => setAccomType(e.target.value)}>
+                {['Roommate','Room for rent','Apartment','Home for rent','Sublease'].map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field"><label>Monthly rent</label><input value={rent} onChange={(e) => setRent(e.target.value)} placeholder="e.g. $800/mo" /></div>
+          </>
         )}
 
         {type === 'event' && (

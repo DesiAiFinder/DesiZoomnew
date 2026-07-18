@@ -12,6 +12,8 @@ import Events from './pages/Events';
 import Radio from './pages/Radio';
 import Messages from './pages/Messages';
 import Listing from './pages/Listing';
+import Connections from './pages/Connections';
+import Live from './pages/Live';
 import LocalInfo from './pages/LocalInfo';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
@@ -37,6 +39,8 @@ export default function App() {
             <Route path="radio" element={<Radio />} />
             <Route path="messages" element={<Messages />} />
             <Route path="listing/:id" element={<Listing />} />
+            <Route path="connections" element={<Connections />} />
+            <Route path="live" element={<Live />} />
             <Route path="local-info" element={<LocalInfo />} />
             <Route
               path="admin"

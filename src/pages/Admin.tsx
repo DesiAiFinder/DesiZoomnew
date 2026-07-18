@@ -4,10 +4,22 @@ import {
   adminFetchAllPosts, adminSetPostActive, adminDeletePost, adminSetSponsored,
   adminFetchReports, adminResolveReport,
   adminFetchPayments,
+  adminFetchStreams, adminSetStreamStatus,
 } from '../services/supabase';
 import type { AdminStats, Post } from '../types';
 
-type Tab = 'overview' | 'posts' | 'reports' | 'users';
+type Tab = 'overview' | 'posts' | 'reports' | 'streams' | 'users';
+
+interface StreamRow {
+  id: string;
+  title: string;
+  description?: string;
+  city: string;
+  platform: string;
+  stream_url: string;
+  status: string;
+  created_at: string;
+}
 
 interface ReportRow {
   id: string;
@@ -36,6 +48,7 @@ export default function Admin() {
   const [users, setUsers] = useState<Record<string, unknown>[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [reports, setReports] = useState<ReportRow[]>([]);
+  const [streams, setStreams] = useState<StreamRow[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -49,13 +62,15 @@ export default function Admin() {
       adminFetchAllPosts(),
       adminFetchReports('open'),
       adminFetchPayments(),
+      adminFetchStreams(),
     ])
-      .then(([s, u, p, r, pay]) => {
+      .then(([s, u, p, r, pay, st]) => {
         setStats(s);
         setUsers(u as Record<string, unknown>[]);
         setPosts(p as Post[]);
         setReports(r as ReportRow[]);
         setPayments(pay as PaymentRow[]);
+        setStreams(st as StreamRow[]);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -113,12 +128,19 @@ export default function Admin() {
         p.type.includes(postFilter.toLowerCase()))
     : posts;
 
+  const pendingStreams = streams.filter((s) => s.status === 'pending');
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: '📊 Overview' },
     { id: 'posts',    label: `📝 Posts (${posts.length})` },
     { id: 'reports',  label: `🚩 Reports${reports.length ? ` (${reports.length})` : ''}` },
+    { id: 'streams',  label: `🔴 Streams${pendingStreams.length ? ` (${pendingStreams.length})` : ''}` },
     { id: 'users',    label: `👥 Users (${users.length})` },
   ];
+
+  const handleStream = async (s: StreamRow, status: 'approved' | 'rejected' | 'ended') => {
+    await adminSetStreamStatus(s.id, status).catch(() => {});
+    setStreams((prev) => prev.map((x) => x.id === s.id ? { ...x, status } : x));
+  };
 
   return (
     <>
@@ -316,6 +338,64 @@ export default function Admin() {
                       >
                         Dismiss
                       </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+
+        /* ── STREAMS ──────────────────────────────────────────── */
+        ) : activeTab === 'streams' ? (
+          streams.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>📹</div>
+              <p>No stream submissions yet.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {streams.map((s) => (
+                <div key={s.id} style={{
+                  padding: 16, borderRadius: 12, border: '1px solid var(--border)',
+                  background: s.status === 'pending' ? '#fffbeb' : 'white',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 700, fontSize: 14.5 }}>{s.title}</span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5,
+                          background: s.status === 'approved' ? '#e8f9ee' : s.status === 'pending' ? '#fff8e6' : '#fee2e2',
+                          color: s.status === 'approved' ? '#128c4b' : s.status === 'pending' ? '#92700c' : '#dc2626',
+                        }}>{s.status}</span>
+                      </div>
+                      {s.description && <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>{s.description}</div>}
+                      <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                        📍 {s.city} · {s.platform} · {new Date(s.created_at).toLocaleString()}
+                      </div>
+                      <a href={s.stream_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--accent-text)', fontWeight: 600 }}>
+                        🔗 Preview stream link →
+                      </a>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                      {s.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => handleStream(s, 'approved')}
+                            style={{ fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 8, border: 'none', background: '#16a34a', color: 'white', cursor: 'pointer' }}
+                          >✓ Approve</button>
+                          <button
+                            onClick={() => handleStream(s, 'rejected')}
+                            style={{ fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 8, border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer' }}
+                          >✕ Reject</button>
+                        </>
+                      )}
+                      {s.status === 'approved' && (
+                        <button
+                          onClick={() => handleStream(s, 'ended')}
+                          style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'white', cursor: 'pointer' }}
+                        >⏹ End stream</button>
+                      )}
                     </div>
                   </div>
                 </div>
