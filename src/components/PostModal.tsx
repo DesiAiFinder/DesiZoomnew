@@ -27,6 +27,7 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
   const [eventDate, setEventDate] = useState('');
   const [rent, setRent] = useState('');
   const [accomType, setAccomType] = useState('Roommate');
+  const [topic, setTopic] = useState('General');
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -101,7 +102,7 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
         price: looksLikeDiscount ? null : price || null,
         price_cents: priceCents,
         discount: looksLikeDiscount ? price : null,
-        category: type === 'marketplace' ? category : type === 'roommate' ? accomType : null,
+        category: type === 'marketplace' ? category : type === 'roommate' ? accomType : type === 'question' ? topic : null,
         event_date: type === 'event' && eventDate ? eventDate : null,
         image_urls: imageUrls,
         details: {
@@ -132,6 +133,7 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
             <option value="marketplace">Marketplace listing</option>
             <option value="roommate">Accommodation (room / apartment / home)</option>
             <option value="event">Event</option>
+            <option value="question">☕ Adda question (ask the community)</option>
           </select>
         </div>
 
@@ -206,6 +208,17 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
 
         {type === 'event' && (
           <div className="field"><label>Event date & time</label><input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} /></div>
+        )}
+
+        {type === 'question' && (
+          <div className="field">
+            <label>Topic</label>
+            <select value={topic} onChange={(e) => setTopic(e.target.value)}>
+              {['General','Immigration','Moving & Housing','Food & Restaurants','Kids & Schools','Jobs & Career','Cars & Insurance'].map((t) => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
+          </div>
         )}
 
         <div className="field">

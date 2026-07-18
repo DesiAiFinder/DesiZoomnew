@@ -4,21 +4,23 @@
 @tailwind utilities;
 
 :root {
-  --bg: #f4f5f9;
+  /* Festival Warm theme — marigold, maroon & cream */
+  --bg: #fbf6ec;
   --surface: #ffffff;
-  --border: #e2e4ee;
-  --text: #1e2030;
-  --muted: #7a7e90;
-  --accent: #e07820;
-  --accent-soft: #fdf0e0;
-  --accent-text: #a05010;
-  --pink-soft: #fde8f0;
-  --pink-text: #9a1545;
+  --border: #ecdfc9;
+  --text: #2c1a10;
+  --muted: #8a7563;
+  --accent: #ef9f27;
+  --accent-soft: #faeeda;
+  --accent-text: #854f0b;
+  --orange: #e07820;
+  --pink-soft: #fbeaf0;
+  --pink-text: #993556;
   --blue-soft: #e8eef8;
   --blue-text: #2a4a8a;
   --green: #2d7a52;
-  --navy: #1c2340;
-  --navy-dark: #141928;
+  --navy: #4a1b0c;
+  --navy-dark: #3d1509;
 }
 
 * { box-sizing: border-box; }
@@ -53,7 +55,7 @@ input, textarea, select { font-family: inherit; }
 /* Buttons */
 .btn-primary {
   background: var(--accent);
-  color: white;
+  color: #412402;
   font-weight: 700;
   font-size: 13px;
   padding: 9px 16px;

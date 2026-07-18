@@ -122,13 +122,13 @@ export default function Home() {
       </div>
 
       {/* Hero */}
-      <div className="home-hero" style={{ display: 'flex', background: 'linear-gradient(135deg,#0d1526 60%,#1c1000)', minHeight: 280 }}>
+      <div className="home-hero" style={{ display: 'flex', background: 'linear-gradient(135deg,#3d1509 55%,#5c2410)', minHeight: 280 }}>
 
         {/* Left */}
         <div className="hero-left" style={{ flex: 1, padding: '32px 36px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Badge */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(224,120,32,0.15)', border: '1px solid rgba(224,120,32,0.3)', borderRadius: 20, padding: '5px 14px', width: 'fit-content' }}>
-            <span style={{ width: 7, height: 7, background: '#e07820', borderRadius: '50%', display: 'inline-block' }} />
+            <span style={{ width: 7, height: 7, background: '#ef9f27', borderRadius: '50%', display: 'inline-block' }} />
             <span style={{ fontSize: 12, color: '#f5a85a', fontWeight: 600 }}>Your city. Your community.</span>
           </div>
 
@@ -136,7 +136,7 @@ export default function Home() {
           <div>
             <div style={{ fontSize: 'clamp(22px,3vw,32px)', fontWeight: 700, color: '#fff', lineHeight: 1.15 }}>Everything Desi.</div>
             <div style={{ fontSize: 'clamp(22px,3vw,32px)', fontWeight: 700, lineHeight: 1.15 }}>
-              <span style={{ color: '#e07820' }}>Deals, rooms, events</span>
+              <span style={{ color: '#fac775' }}>Deals, rooms, events</span>
               <span style={{ color: '#fff' }}> — one zoom.</span>
             </div>
           </div>
@@ -162,7 +162,7 @@ export default function Home() {
             <Link
               to={searchQuery ? `/search?q=${searchQuery}` : '/search'}
               className="search-btn"
-              style={{ background: '#e07820', color: 'white', fontSize: 13, fontWeight: 700, padding: '0 20px', height: 44, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', whiteSpace: 'nowrap' }}
+              style={{ background: '#ef9f27', color: '#412402', fontSize: 13, fontWeight: 700, padding: '0 20px', height: 44, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', whiteSpace: 'nowrap' }}
             >
               🔍 Search
             </Link>
@@ -201,7 +201,7 @@ export default function Home() {
         {/* Right: Radio sidebar — hidden on mobile */}
         <div className="hero-radio-sidebar" style={{ flex: '0 0 220px', background: 'rgba(0,0,0,0.35)', borderLeft: '1px solid rgba(255,255,255,0.07)', padding: '20px 16px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#e07820', textTransform: 'uppercase', letterSpacing: '0.06em' }}>📻 Desi Radio</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#fac775', textTransform: 'uppercase', letterSpacing: '0.06em' }}>📻 Desi Radio</div>
             <Link to="/radio" style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>All →</Link>
           </div>
 
@@ -211,7 +211,7 @@ export default function Home() {
               onClick={() => toggleStation(i)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 9, marginBottom: 5, background: playing === i ? 'rgba(224,120,32,0.18)' : 'rgba(255,255,255,0.04)', border: `1px solid ${playing === i ? 'rgba(224,120,32,0.4)' : 'transparent'}`, cursor: 'pointer' }}
             >
-              <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: playing === i ? '#e07820' : STATION_COLORS[i % STATION_COLORS.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'white' }}>
+              <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: playing === i ? '#ef9f27' : STATION_COLORS[i % STATION_COLORS.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'white' }}>
                 {playing === i ? '⏸' : '▶'}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -220,7 +220,7 @@ export default function Home() {
               </div>
               {playing === i && (
                 <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 14, flexShrink: 0 }}>
-                  {[6, 14, 9].map((h, b) => <div key={b} style={{ width: 3, borderRadius: 2, background: '#e07820', height: h }} />)}
+                  {[6, 14, 9].map((h, b) => <div key={b} style={{ width: 3, borderRadius: 2, background: '#ef9f27', height: h }} />)}
                 </div>
               )}
             </div>
@@ -234,16 +234,16 @@ export default function Home() {
 
       {/* Now-playing bar (shows below hero when a station is active) */}
       {nowPlaying && (
-        <div style={{ background: '#0d1526', borderBottom: '1px solid rgba(224,120,32,0.25)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ background: '#3d1509', borderBottom: '1px solid rgba(239,159,39,0.3)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 32, height: 32, borderRadius: '50%', background: STATION_COLORS[playing! % STATION_COLORS.length], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>📻</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nowPlaying.name} — Now Playing</div>
             <div style={{ fontSize: 11, color: 'rgba(200,200,200,0.5)' }}>{nowPlaying.lang} · Live 24/7</div>
           </div>
           <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 14, marginRight: 8 }}>
-            {[6, 14, 9, 12].map((h, b) => <div key={b} style={{ width: 3, borderRadius: 2, background: '#e07820', height: h }} />)}
+            {[6, 14, 9, 12].map((h, b) => <div key={b} style={{ width: 3, borderRadius: 2, background: '#ef9f27', height: h }} />)}
           </div>
-          <div onClick={() => { audioRef.current?.pause(); setPlaying(null); }} style={{ width: 32, height: 32, borderRadius: '50%', background: '#e07820', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13, flexShrink: 0 }}>⏸</div>
+          <div onClick={() => { audioRef.current?.pause(); setPlaying(null); }} style={{ width: 32, height: 32, borderRadius: '50%', background: '#ef9f27', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13, flexShrink: 0 }}>⏸</div>
         </div>
       )}
 

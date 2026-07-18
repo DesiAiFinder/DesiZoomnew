@@ -8,7 +8,7 @@ export interface User {
 }
 
 // ── Posts (community UGC) ─────────────────────────────────────────────────────
-export type PostType = 'deal' | 'marketplace' | 'roommate' | 'event';
+export type PostType = 'deal' | 'marketplace' | 'roommate' | 'event' | 'question';
 
 export interface Post {
   id: string;

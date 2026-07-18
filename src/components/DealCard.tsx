@@ -9,10 +9,10 @@ import SellerInfo from './SellerInfo';
 import type { Comment } from '../types';
 
 const CATEGORY_ICONS: Record<string, string> = {
-  deal: '🏷️', marketplace: '🛍️', roommate: '🏠', event: '🎉',
+  deal: '🏷️', marketplace: '🛍️', roommate: '🏠', event: '🎉', question: '☕',
 };
 const CATEGORY_COLORS: Record<string, string> = {
-  deal: '#fdf0e0', marketplace: '#fde8f0', roommate: '#e8eef8', event: '#f0ffe8',
+  deal: '#fdf0e0', marketplace: '#fde8f0', roommate: '#e8eef8', event: '#f0ffe8', question: '#f5eee2',
 };
 
 interface Props {
@@ -77,7 +77,7 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
   };
 
   const typeLabel: Record<string, string> = {
-    deal: 'Deal', marketplace: 'Marketplace', roommate: 'Roommate', event: 'Event',
+    deal: 'Deal', marketplace: 'Marketplace', roommate: 'Roommate', event: 'Event', question: 'Adda',
   };
 
   return (
