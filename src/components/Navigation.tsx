@@ -24,6 +24,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
     { to: '/roommates',   label: 'Accommodations' },
     { to: '/events',      label: 'Events' },
     { to: '/local-info',  label: 'Local Info' },
+    { to: '/services',    label: '🛠️ Services' },
     { to: '/adda',        label: '☕ Adda' },
     { to: '/connections', label: '🤝 Connections' },
     { to: '/live',        label: '🔴 Live' },

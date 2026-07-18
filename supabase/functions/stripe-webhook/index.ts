@@ -27,7 +27,43 @@ Deno.serve(async (req) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
-    const { post_id, buyer_id, seller_id, kind } = session.metadata ?? {};
+    const { post_id, buyer_id, seller_id, kind, request_id, provider_id, booking_id } = session.metadata ?? {};
+
+    // Service booking paid → confirm and record revenue
+    if (session.payment_status === 'paid' && kind === 'booking' && booking_id) {
+      await supabase
+        .from('service_bookings')
+        .update({ status: 'paid' })
+        .eq('id', booking_id);
+
+      const { data: b } = await supabase
+        .from('service_bookings')
+        .select('customer_id, provider_user_id, amount_cents, commission_cents')
+        .eq('id', booking_id)
+        .single();
+      if (b) {
+        await supabase.from('payments').insert({
+          buyer_id: b.customer_id,
+          seller_id: b.provider_user_id,
+          amount_cents: b.amount_cents,
+          commission_cents: b.commission_cents,
+          stripe_session_id: session.id,
+          status: 'completed',
+        });
+      }
+      console.log(`📅 Booking paid: ${booking_id}`);
+    }
+
+    // Service lead unlock
+    if (session.payment_status === 'paid' && kind === 'lead' && request_id && provider_id) {
+      await supabase.from('lead_unlocks').insert({
+        request_id,
+        provider_id,
+        amount_cents: session.amount_total ?? 1000,
+        stripe_session_id: session.id,
+      });
+      console.log(`🔓 Lead unlocked: request=${request_id} provider=${provider_id}`);
+    }
 
     if (session.payment_status === 'paid' && post_id) {
       if (kind === 'boost') {
