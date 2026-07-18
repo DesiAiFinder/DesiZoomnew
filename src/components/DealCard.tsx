@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Post } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { toggleVote, fetchComments, addComment, reportPost } from '../services/supabase';
@@ -102,7 +103,17 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
         {/* Content */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 700, fontSize: 15 }}>{post.title}</span>
+            <Link
+              to={`/listing/${post.id}`}
+              onClick={(e) => e.stopPropagation()}
+              style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)', textDecoration: 'none' }}
+            >{post.title}</Link>
+            {post.is_sponsored && (
+              <span style={{ fontSize: 10, fontWeight: 800, background: '#fdf0e0', color: '#b84d00', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.04em' }}>SPONSORED</span>
+            )}
+            {post.boosted_until && new Date(post.boosted_until) > new Date() && (
+              <span style={{ fontSize: 12 }} title="Boosted listing">🚀</span>
+            )}
             {post.discount && <span className="tag">{post.discount}</span>}
             {post.price && (
               <span className="tag" style={{ background: 'var(--pink-soft)', color: 'var(--pink-text)' }}>{post.price}</span>
@@ -210,7 +221,7 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <MessageButton postId={post.id} sellerId={post.user_id} onAuthNeeded={onAuthNeeded} />
             <a
-              href={`https://wa.me/?text=${encodeURIComponent(`Check out "${post.title}" in ${post.city} on DesiZoom: ${window.location.origin}`)}`}
+              href={`https://wa.me/?text=${encodeURIComponent(`Check out "${post.title}" in ${post.city} on DesiZoom: ${window.location.origin}/listing/${post.id}`)}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{

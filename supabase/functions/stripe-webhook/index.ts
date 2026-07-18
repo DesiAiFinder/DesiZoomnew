@@ -27,22 +27,31 @@ Deno.serve(async (req) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
-    const { post_id, buyer_id, seller_id } = session.metadata ?? {};
+    const { post_id, buyer_id, seller_id, kind } = session.metadata ?? {};
 
     if (session.payment_status === 'paid' && post_id) {
-      // Mark post as sold
-      await supabase
-        .from('posts')
-        .update({ is_sold: true })
-        .eq('id', post_id);
+      if (kind === 'boost') {
+        // Boost purchase: pin listing for 7 days
+        const boostedUntil = new Date(Date.now() + 7 * 86400000).toISOString();
+        await supabase
+          .from('posts')
+          .update({ boosted_until: boostedUntil })
+          .eq('id', post_id);
+        console.log(`🚀 Boost activated: post=${post_id} until=${boostedUntil}`);
+      } else {
+        // Marketplace sale
+        await supabase
+          .from('posts')
+          .update({ is_sold: true })
+          .eq('id', post_id);
 
-      // Update payment record to completed
-      await supabase
-        .from('payments')
-        .update({ status: 'completed' })
-        .eq('stripe_session_id', session.id);
+        await supabase
+          .from('payments')
+          .update({ status: 'completed' })
+          .eq('stripe_session_id', session.id);
 
-      console.log(`✅ Sale completed: post=${post_id} buyer=${buyer_id} seller=${seller_id}`);
+        console.log(`✅ Sale completed: post=${post_id} buyer=${buyer_id} seller=${seller_id}`);
+      }
     }
   }
 

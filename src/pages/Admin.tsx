@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   fetchAdminStats, fetchAllUsers,
-  adminFetchAllPosts, adminSetPostActive, adminDeletePost,
+  adminFetchAllPosts, adminSetPostActive, adminDeletePost, adminSetSponsored,
   adminFetchReports, adminResolveReport,
   adminFetchPayments,
 } from '../services/supabase';
@@ -75,6 +75,11 @@ export default function Admin() {
   const togglePost = async (p: Post) => {
     await adminSetPostActive(p.id, !p.is_active).catch(() => {});
     setPosts((prev) => prev.map((x) => x.id === p.id ? { ...x, is_active: !p.is_active } : x));
+  };
+
+  const toggleSponsor = async (p: Post) => {
+    await adminSetSponsored(p.id, !p.is_sponsored).catch(() => {});
+    setPosts((prev) => prev.map((x) => x.id === p.id ? { ...x, is_sponsored: !p.is_sponsored } : x));
   };
 
   const removePost = async (p: Post) => {
@@ -257,6 +262,12 @@ export default function Admin() {
                           style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'white', cursor: 'pointer', marginRight: 6 }}
                         >
                           {p.is_active ? '🙈 Hide' : '👁️ Show'}
+                        </button>
+                        <button
+                          onClick={() => toggleSponsor(p)}
+                          style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, border: '1px solid #f0d090', background: p.is_sponsored ? '#fdf0e0' : 'white', color: '#b84d00', cursor: 'pointer', marginRight: 6, fontWeight: p.is_sponsored ? 700 : 400 }}
+                        >
+                          {p.is_sponsored ? '⭐ Sponsored' : '☆ Sponsor'}
                         </button>
                         <button
                           onClick={() => removePost(p)}

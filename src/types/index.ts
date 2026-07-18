@@ -28,6 +28,8 @@ export interface Post {
   is_active: boolean;
   is_sold?: boolean;          // marketplace: true after buyer completes payment
   stripe_account_id?: string; // seller's connected Stripe account
+  is_sponsored?: boolean;     // admin-set: pinned sponsored post
+  boosted_until?: string;     // paid boost active until this timestamp
   created_at: string;
   updated_at: string;
 }

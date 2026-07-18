@@ -6,6 +6,15 @@ const SUPABASE_KEY = env.supabaseAnonKey || 'placeholder-anon-key';
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── Posts ─────────────────────────────────────────────────────────────────────
+// Sort: sponsored first, then active boosts, then by votes/recency
+function promotedSort<T extends { is_sponsored?: boolean; boosted_until?: string }>(rows: T[]): T[] {
+  const now = Date.now();
+  const rank = (p: T) =>
+    (p.is_sponsored ? 2 : 0) +
+    (p.boosted_until && new Date(p.boosted_until).getTime() > now ? 1 : 0);
+  return [...rows].sort((a, b) => rank(b) - rank(a));
+}
+
 export async function fetchPosts(city: string, type?: string, search?: string) {
   let q = supabase
     .from('posts')
@@ -16,7 +25,17 @@ export async function fetchPosts(city: string, type?: string, search?: string) {
   if (type) q = q.eq('type', type);
   if (search) q = q.ilike('title', `%${search}%`);
   const { data } = await q;
-  return data ?? [];
+  return promotedSort(data ?? []);
+}
+
+export async function fetchPostById(id: string) {
+  const { data } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('id', id)
+    .eq('is_active', true)
+    .maybeSingle();
+  return data;
 }
 
 export async function fetchEvents(city: string) {
@@ -41,7 +60,7 @@ export async function fetchMarketplace(city: string, category?: string) {
     .order('created_at', { ascending: false });
   if (category) q = q.eq('category', category);
   const { data } = await q;
-  return data ?? [];
+  return promotedSort(data ?? []);
 }
 
 export async function createPost(payload: Record<string, unknown>) {
@@ -201,6 +220,11 @@ export async function adminFetchAllPosts() {
 
 export async function adminSetPostActive(postId: string, active: boolean) {
   const { error } = await supabase.from('posts').update({ is_active: active }).eq('id', postId);
+  if (error) throw error;
+}
+
+export async function adminSetSponsored(postId: string, sponsored: boolean) {
+  const { error } = await supabase.from('posts').update({ is_sponsored: sponsored }).eq('id', postId);
   if (error) throw error;
 }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, Link } from 'react-router-dom';
 import { useLocation } from '../contexts/LocationContext';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchMarketplace } from '../services/supabase';
@@ -112,24 +112,34 @@ export default function Marketplace() {
             : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 16 }}>
                 {items.map((m) => (
                   <div key={m.id} className="mkt-card" style={{ position: 'relative', opacity: m.is_sold ? 0.7 : 1 }}>
-                    <div className="mkt-thumb" style={{ background: 'var(--pink-soft)', overflow: 'hidden' }}>
-                      {m.image_urls?.[0] ? (
-                        <img src={m.image_urls[0]} alt={m.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        CAT_ICONS[m.category || ''] || '📦'
-                      )}
-                      <span className="badge-cat">{m.category || 'Item'}</span>
-                      {m.is_sold && (
-                        <span style={{
-                          position: 'absolute', top: 8, right: 8,
-                          background: '#dc2626', color: 'white',
-                          fontSize: 10, fontWeight: 800, padding: '2px 7px',
-                          borderRadius: 20, letterSpacing: '0.05em'
-                        }}>SOLD</span>
-                      )}
-                    </div>
+                    <Link to={`/listing/${m.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                      <div className="mkt-thumb" style={{ background: 'var(--pink-soft)', overflow: 'hidden' }}>
+                        {m.image_urls?.[0] ? (
+                          <img src={m.image_urls[0]} alt={m.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          CAT_ICONS[m.category || ''] || '📦'
+                        )}
+                        <span className="badge-cat">{m.category || 'Item'}</span>
+                        {(m.is_sponsored || (m.boosted_until && new Date(m.boosted_until) > new Date())) && !m.is_sold && (
+                          <span style={{
+                            position: 'absolute', top: 8, right: 8,
+                            background: '#e07820', color: 'white',
+                            fontSize: 10, fontWeight: 800, padding: '2px 7px',
+                            borderRadius: 20, letterSpacing: '0.05em'
+                          }}>{m.is_sponsored ? 'SPONSORED' : '🚀 BOOSTED'}</span>
+                        )}
+                        {m.is_sold && (
+                          <span style={{
+                            position: 'absolute', top: 8, right: 8,
+                            background: '#dc2626', color: 'white',
+                            fontSize: 10, fontWeight: 800, padding: '2px 7px',
+                            borderRadius: 20, letterSpacing: '0.05em'
+                          }}>SOLD</span>
+                        )}
+                      </div>
+                    </Link>
                     <div style={{ padding: 11, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <div style={{ fontSize: 12.5, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
+                      <Link to={`/listing/${m.id}`} style={{ fontSize: 12.5, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>{m.title}</Link>
                       <div style={{ fontSize: 11, color: 'var(--muted)' }}>📍 {m.city}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         {/* Show Buy button if item has a price and is not sold */}
@@ -144,7 +154,7 @@ export default function Marketplace() {
                           <div style={{ fontWeight: 700, fontSize: 14 }}>{m.price || '—'}</div>
                         )}
                         <a
-                          href={`https://wa.me/?text=${encodeURIComponent(`Check out "${m.title}" on DesiZoom: ${window.location.origin}/marketplace`)}`}
+                          href={`https://wa.me/?text=${encodeURIComponent(`Check out "${m.title}" on DesiZoom: ${window.location.origin}/listing/${m.id}`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Share on WhatsApp"
