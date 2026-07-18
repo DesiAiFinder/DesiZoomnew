@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Post } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { toggleVote, fetchComments, addComment } from '../services/supabase';
+import { toggleVote, fetchComments, addComment, reportPost } from '../services/supabase';
 import BuyButton from './BuyButton';
 import MessageButton from './MessageButton';
 import SellerInfo from './SellerInfo';
@@ -39,8 +39,17 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [reported, setReported] = useState(false);
 
   const details = post.details as Record<string, string> | undefined;
+
+  const handleReport = async () => {
+    if (!user) return onAuthNeeded();
+    const reason = window.prompt('Why are you reporting this post? (spam, scam, inappropriate, other)');
+    if (!reason?.trim()) return;
+    await reportPost(post.id, user.id, reason.trim()).catch(() => {});
+    setReported(true);
+  };
 
   const handleVote = async () => {
     if (!user) return onAuthNeeded();
@@ -197,7 +206,7 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
             </div>
           )}
 
-          {/* Actions: message + share */}
+          {/* Actions: message + share + report */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <MessageButton postId={post.id} sellerId={post.user_id} onAuthNeeded={onAuthNeeded} />
             <a
@@ -213,6 +222,17 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
             >
               📲 Share on WhatsApp
             </a>
+            {user && user.id !== post.user_id && !reported && (
+              <button
+                onClick={handleReport}
+                style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                🚩 Report
+              </button>
+            )}
+            {reported && (
+              <span style={{ marginLeft: 'auto', fontSize: 11, color: '#166534' }}>✓ Reported — thanks</span>
+            )}
           </div>
         </div>
       )}

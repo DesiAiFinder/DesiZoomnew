@@ -188,3 +188,55 @@ export async function fetchAllUsers() {
     .order('created_at', { ascending: false });
   return data ?? [];
 }
+
+// ── Admin: post moderation ────────────────────────────────────────────────────
+export async function adminFetchAllPosts() {
+  const { data } = await supabase
+    .from('posts')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  return data ?? [];
+}
+
+export async function adminSetPostActive(postId: string, active: boolean) {
+  const { error } = await supabase.from('posts').update({ is_active: active }).eq('id', postId);
+  if (error) throw error;
+}
+
+export async function adminDeletePost(postId: string) {
+  const { error } = await supabase.from('posts').delete().eq('id', postId);
+  if (error) throw error;
+}
+
+// ── Admin: reports ────────────────────────────────────────────────────────────
+export async function reportPost(postId: string, reporterId: string, reason: string, details?: string) {
+  const { error } = await supabase
+    .from('reports')
+    .insert({ post_id: postId, reporter_id: reporterId, reason, details: details || null });
+  if (error) throw error;
+}
+
+export async function adminFetchReports(status = 'open') {
+  const { data } = await supabase
+    .from('reports')
+    .select('*, post:posts(id, title, type, city, is_active, user_id)')
+    .eq('status', status)
+    .order('created_at', { ascending: false });
+  return data ?? [];
+}
+
+export async function adminResolveReport(reportId: string, status: 'resolved' | 'dismissed') {
+  const { error } = await supabase.from('reports').update({ status }).eq('id', reportId);
+  if (error) throw error;
+}
+
+// ── Admin: revenue ────────────────────────────────────────────────────────────
+export async function adminFetchPayments() {
+  const { data } = await supabase
+    .from('payments')
+    .select('*, post:posts(title)')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  return data ?? [];
+}
