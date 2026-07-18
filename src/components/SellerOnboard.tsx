@@ -50,9 +50,16 @@ export default function SellerOnboard() {
 
   if (status === 'connected') {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, flexWrap: 'wrap' }}>
         <span style={{ width: 8, height: 8, background: '#22c55e', borderRadius: '50%', display: 'inline-block' }} />
         <span style={{ fontSize: 13, fontWeight: 600, color: '#166534' }}>Bank account connected — you can receive payments</span>
+        <button
+          onClick={handleConnect}
+          disabled={working}
+          style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 8, border: '1px solid #bbf7d0', background: 'white', color: '#166534', cursor: 'pointer' }}
+        >
+          {working ? 'Opening…' : '✏️ Edit bank details'}
+        </button>
       </div>
     );
   }

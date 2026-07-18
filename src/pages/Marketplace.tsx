@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import { useLocation } from '../contexts/LocationContext';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchMarketplace } from '../services/supabase';
+import { fetchMarketplace, supabase } from '../services/supabase';
 import PostModal from '../components/PostModal';
 import BuyButton from '../components/BuyButton';
 import SellerOnboard from '../components/SellerOnboard';
@@ -25,6 +25,17 @@ export default function Marketplace() {
   const [activeCat, setActiveCat] = useState('All');
   const [postOpen, setPostOpen] = useState(false);
   const [showOnboard, setShowOnboard] = useState(false);
+  const [bankConnected, setBankConnected] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!user) { setBankConnected(null); return; }
+    supabase
+      .from('profiles')
+      .select('stripe_account_id')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setBankConnected(!!data?.stripe_account_id));
+  }, [user]);
 
   // Show success/cancelled payment banner
   const params = new URLSearchParams(window.location.search);
@@ -61,15 +72,24 @@ export default function Marketplace() {
           </div>
         )}
 
-        {/* Seller onboard toggle */}
+        {/* Seller onboard toggle — hidden once connected, replaced by a small manage link */}
         {user && (
           <div style={{ marginBottom: 16 }}>
-            <button
-              onClick={() => setShowOnboard((v) => !v)}
-              style={{ fontSize: 12, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
-            >
-              {showOnboard ? 'Hide' : '💳 Want to sell? Connect your bank account'}
-            </button>
+            {bankConnected ? (
+              <button
+                onClick={() => setShowOnboard((v) => !v)}
+                style={{ fontSize: 12, color: '#166534', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                ✅ Bank connected {showOnboard ? '· hide' : '· manage'}
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowOnboard((v) => !v)}
+                style={{ fontSize: 12, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                {showOnboard ? 'Hide' : '💳 Want to sell? Connect your bank account'}
+              </button>
+            )}
             {showOnboard && (
               <div style={{ marginTop: 10 }}>
                 <SellerOnboard />
