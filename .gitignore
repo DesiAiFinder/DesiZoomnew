@@ -4,3 +4,6 @@ dist/
 .env.*.local
 sessions/
 *.log
+# Local notes with secrets — never commit
+DesiZoom.txt
+supabase/.temp/

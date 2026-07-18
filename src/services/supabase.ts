@@ -74,6 +74,87 @@ export async function addComment(postId: string, userId: string, body: string) {
   if (error) throw error;
 }
 
+// ── Messaging ─────────────────────────────────────────────────────────────────
+// Start (or reuse) a conversation about a post
+export async function startConversation(postId: string, buyerId: string, sellerId: string) {
+  const { data: existing } = await supabase
+    .from('conversations')
+    .select('*')
+    .eq('post_id', postId)
+    .eq('buyer_id', buyerId)
+    .maybeSingle();
+  if (existing) return existing;
+
+  const { data, error } = await supabase
+    .from('conversations')
+    .insert({ post_id: postId, buyer_id: buyerId, seller_id: sellerId })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchConversations(userId: string) {
+  const { data } = await supabase
+    .from('conversations')
+    .select('*, post:posts(title, image_urls)')
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    .order('created_at', { ascending: false });
+  return data ?? [];
+}
+
+export async function fetchMessages(conversationId: string) {
+  const { data } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true });
+  return data ?? [];
+}
+
+export async function sendMessage(conversationId: string, senderId: string, body: string) {
+  const { error } = await supabase
+    .from('messages')
+    .insert({ conversation_id: conversationId, sender_id: senderId, body });
+  if (error) throw error;
+}
+
+export async function markMessagesRead(conversationId: string, userId: string) {
+  await supabase
+    .from('messages')
+    .update({ read: true })
+    .eq('conversation_id', conversationId)
+    .neq('sender_id', userId);
+}
+
+export async function countUnreadMessages(userId: string): Promise<number> {
+  const { data: convs } = await supabase
+    .from('conversations')
+    .select('id')
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`);
+  if (!convs?.length) return 0;
+  const { count } = await supabase
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .in('conversation_id', convs.map((c) => c.id))
+    .eq('read', false)
+    .neq('sender_id', userId);
+  return count ?? 0;
+}
+
+// ── Seller stats (trust signals) ──────────────────────────────────────────────
+export async function fetchSellerStats(sellerId: string) {
+  const [{ data: profile }, { data: stats }] = await Promise.all([
+    supabase.from('profiles').select('display_name, created_at').eq('id', sellerId).maybeSingle(),
+    supabase.from('seller_stats').select('completed_sales').eq('seller_id', sellerId).maybeSingle(),
+  ]);
+  return {
+    name: profile?.display_name || 'DesiZoom member',
+    memberSince: profile?.created_at,
+    completedSales: stats?.completed_sales ?? 0,
+  };
+}
+
 // ── Local Info ────────────────────────────────────────────────────────────────
 export async function fetchLocalInfo(city: string) {
   const { data } = await supabase

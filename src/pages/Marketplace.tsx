@@ -112,8 +112,12 @@ export default function Marketplace() {
             : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 16 }}>
                 {items.map((m) => (
                   <div key={m.id} className="mkt-card" style={{ position: 'relative', opacity: m.is_sold ? 0.7 : 1 }}>
-                    <div className="mkt-thumb" style={{ background: 'var(--pink-soft)' }}>
-                      {CAT_ICONS[m.category || ''] || '📦'}
+                    <div className="mkt-thumb" style={{ background: 'var(--pink-soft)', overflow: 'hidden' }}>
+                      {m.image_urls?.[0] ? (
+                        <img src={m.image_urls[0]} alt={m.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        CAT_ICONS[m.category || ''] || '📦'
+                      )}
                       <span className="badge-cat">{m.category || 'Item'}</span>
                       {m.is_sold && (
                         <span style={{
@@ -127,17 +131,26 @@ export default function Marketplace() {
                     <div style={{ padding: 11, display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <div style={{ fontSize: 12.5, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
                       <div style={{ fontSize: 11, color: 'var(--muted)' }}>📍 {m.city}</div>
-                      {/* Show Buy button if item has a price and is not sold */}
-                      {m.price_cents ? (
-                        <BuyButton
-                          postId={m.id}
-                          priceCents={m.price_cents}
-                          isSold={m.is_sold}
-                          sellerId={m.user_id}
-                        />
-                      ) : (
-                        <div style={{ fontWeight: 700, fontSize: 14 }}>{m.price || '—'}</div>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        {/* Show Buy button if item has a price and is not sold */}
+                        {m.price_cents ? (
+                          <BuyButton
+                            postId={m.id}
+                            priceCents={m.price_cents}
+                            isSold={m.is_sold}
+                            sellerId={m.user_id}
+                          />
+                        ) : (
+                          <div style={{ fontWeight: 700, fontSize: 14 }}>{m.price || '—'}</div>
+                        )}
+                        <a
+                          href={`https://wa.me/?text=${encodeURIComponent(`Check out "${m.title}" on DesiZoom: ${window.location.origin}/marketplace`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Share on WhatsApp"
+                          style={{ fontSize: 16, textDecoration: 'none', marginLeft: 'auto' }}
+                        >💬</a>
+                      </div>
                     </div>
                   </div>
                 ))}

@@ -10,6 +10,7 @@ import Marketplace from './pages/Marketplace';
 import Roommates from './pages/Roommates';
 import Events from './pages/Events';
 import Radio from './pages/Radio';
+import Messages from './pages/Messages';
 import LocalInfo from './pages/LocalInfo';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
@@ -33,6 +34,7 @@ export default function App() {
             <Route path="roommates" element={<Roommates />} />
             <Route path="events" element={<Events />} />
             <Route path="radio" element={<Radio />} />
+            <Route path="messages" element={<Messages />} />
             <Route path="local-info" element={<LocalInfo />} />
             <Route
               path="admin"

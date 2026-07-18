@@ -19,6 +19,7 @@ export interface Post {
   city: string;
   price?: string;
   price_cents?: number;       // marketplace: item price in cents for Stripe
+  image_urls?: string[];      // uploaded photos (Supabase Storage public URLs)
   discount?: string;
   category?: string;
   votes_count: number;
@@ -36,6 +37,26 @@ export interface Comment {
   post_id: string;
   user_id: string;
   body: string;
+  created_at: string;
+}
+
+// ── Messaging ─────────────────────────────────────────────────────────────────
+export interface Conversation {
+  id: string;
+  post_id?: string;
+  buyer_id: string;
+  seller_id: string;
+  created_at: string;
+  post?: Pick<Post, 'title' | 'image_urls'>;
+  last_message?: Message;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  body: string;
+  read: boolean;
   created_at: string;
 }
 

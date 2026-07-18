@@ -4,6 +4,7 @@ import { useLocation } from '../contexts/LocationContext';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchEvents } from '../services/supabase';
 import PostModal from '../components/PostModal';
+import AutoEvents from '../components/AutoEvents';
 import type { Post } from '../types';
 
 interface OutletCtx { onAuthOpen: () => void; }
@@ -42,6 +43,9 @@ export default function Events() {
       </div>
 
       <div style={{ padding: '24px 32px 48px' }}>
+        {/* Auto-populated nearby events (Ticketmaster) */}
+        <AutoEvents />
+
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <h2 style={{ fontSize: 18 }}>Events in {city}</h2>
           <button className="btn-primary" onClick={() => user ? setPostOpen(true) : onAuthOpen()}>+ Add Event</button>

@@ -25,6 +25,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
     { to: '/events',      label: 'Events' },
     { to: '/local-info',  label: 'Local Info' },
     { to: '/radio',       label: '📻 Radio' },
+    { to: '/messages',    label: '💬 Messages' },
   ];
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Account';

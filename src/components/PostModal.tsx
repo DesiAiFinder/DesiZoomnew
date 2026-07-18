@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
-import { createPost } from '../services/supabase';
+import { createPost, supabase } from '../services/supabase';
 import { CITIES } from '../config/env';
 
 interface Props { onClose: () => void; defaultType?: string; }
+
+const MAX_PHOTOS = 4;
+const MAX_SIZE_MB = 5;
 
 export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
   const { user } = useAuth();
@@ -26,15 +29,61 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Photos
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Build city list: GPS city pinned at top if not already in list
   const cityOptions = detectedCity && !CITIES.includes(detectedCity)
     ? [detectedCity, ...CITIES]
     : CITIES;
 
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const valid = files.filter((f) => {
+      if (!f.type.startsWith('image/')) return false;
+      if (f.size > MAX_SIZE_MB * 1024 * 1024) {
+        setMsg({ text: `"${f.name}" is over ${MAX_SIZE_MB}MB — skipped.`, ok: false });
+        return false;
+      }
+      return true;
+    });
+    const next = [...photos, ...valid].slice(0, MAX_PHOTOS);
+    setPhotos(next);
+    setPhotoPreviews(next.map((f) => URL.createObjectURL(f)));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removePhoto = (idx: number) => {
+    const next = photos.filter((_, i) => i !== idx);
+    setPhotos(next);
+    setPhotoPreviews(next.map((f) => URL.createObjectURL(f)));
+  };
+
+  const uploadPhotos = async (): Promise<string[]> => {
+    const urls: string[] = [];
+    for (const file of photos) {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `${user!.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage.from('post-images').upload(path, file, {
+        cacheControl: '31536000',
+        contentType: file.type,
+      });
+      if (error) throw new Error(`Photo upload failed: ${error.message}`);
+      const { data } = supabase.storage.from('post-images').getPublicUrl(path);
+      urls.push(data.publicUrl);
+    }
+    return urls;
+  };
+
   const submit = async () => {
     if (!title.trim()) return setMsg({ text: 'Title is required.', ok: false });
     setLoading(true);
     try {
+      // Upload photos first
+      const imageUrls = photos.length > 0 ? await uploadPhotos() : [];
+
       const looksLikeDiscount = /%|off/i.test(price);
       // Convert price to cents for marketplace listings (enables Stripe checkout)
       const priceNum = parseFloat(price.replace(/[^0-9.]/g, ''));
@@ -53,6 +102,7 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
         discount: looksLikeDiscount ? price : null,
         category: type === 'marketplace' ? category : null,
         event_date: type === 'event' && eventDate ? eventDate : null,
+        image_urls: imageUrls,
         details: {
           ...(type === 'deal' && storeName ? { store_name: storeName } : {}),
           ...(type === 'deal' && expiry ? { expiry } : {}),
@@ -86,6 +136,36 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
 
         <div className="field"><label>Title *</label><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What are you posting?" /></div>
         <div className="field"><label>Description</label><textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Add details…" /></div>
+
+        {/* Photo upload */}
+        <div className="field">
+          <label>Photos (up to {MAX_PHOTOS})</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {photoPreviews.map((src, i) => (
+              <div key={i} style={{ position: 'relative', width: 64, height: 64 }}>
+                <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
+                <button
+                  onClick={() => removePhoto(i)}
+                  style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#dc2626', color: 'white', border: 'none', fontSize: 11, cursor: 'pointer', lineHeight: 1 }}
+                >✕</button>
+              </div>
+            ))}
+            {photos.length < MAX_PHOTOS && (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                style={{ width: 64, height: 64, borderRadius: 8, border: '2px dashed var(--border)', background: 'none', cursor: 'pointer', fontSize: 22, color: 'var(--muted)' }}
+              >+</button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handlePhotoSelect}
+              style={{ display: 'none' }}
+            />
+          </div>
+        </div>
 
         {type === 'deal' && (
           <>
@@ -142,7 +222,7 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
         </div>
 
         <button className="btn-primary" onClick={submit} disabled={loading}>
-          {loading ? 'Posting…' : 'Post'}
+          {loading ? (photos.length ? 'Uploading photos…' : 'Posting…') : 'Post'}
         </button>
         {msg && <div className={msg.ok ? 'ok' : 'err'}>{msg.text}</div>}
       </div>

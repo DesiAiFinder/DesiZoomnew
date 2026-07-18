@@ -3,6 +3,8 @@ import type { Post } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { toggleVote, fetchComments, addComment } from '../services/supabase';
 import BuyButton from './BuyButton';
+import MessageButton from './MessageButton';
+import SellerInfo from './SellerInfo';
 import type { Comment } from '../types';
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -77,9 +79,15 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
         onClick={() => setExpanded((v) => !v)}
       >
         {/* Thumb */}
-        <div className="deal-thumb" style={{ background: CATEGORY_COLORS[post.type] || '#f5f5f5', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
-          <span style={{ fontSize: 28 }}>{CATEGORY_ICONS[post.type] || '📌'}</span>
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{typeLabel[post.type]}</span>
+        <div className="deal-thumb" style={{ background: CATEGORY_COLORS[post.type] || '#f5f5f5', flexDirection: 'column', gap: 4, flexShrink: 0, overflow: 'hidden' }}>
+          {post.image_urls?.[0] ? (
+            <img src={post.image_urls[0]} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <>
+              <span style={{ fontSize: 28 }}>{CATEGORY_ICONS[post.type] || '📌'}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{typeLabel[post.type]}</span>
+            </>
+          )}
         </div>
 
         {/* Content */}
@@ -126,6 +134,20 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
       {/* Expanded detail panel */}
       {expanded && (
         <div style={{ borderTop: '1px solid var(--border)', padding: '14px 16px', background: '#fafafa', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+          {/* Photo gallery */}
+          {post.image_urls && post.image_urls.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {post.image_urls.map((url, i) => (
+                <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                  <img src={url} alt="" style={{ width: 110, height: 110, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--border)' }} />
+                </a>
+              ))}
+            </div>
+          )}
+
+          {/* Seller trust signals */}
+          <SellerInfo sellerId={post.user_id} />
 
           {/* Type-specific details */}
           {post.type === 'deal' && (
@@ -175,22 +197,23 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
             </div>
           )}
 
-          {/* Contact button */}
-          {post.type !== 'marketplace' && (
-            <div>
-              <a
-                href={`mailto:?subject=Re: ${encodeURIComponent(post.title)}&body=Hi, I saw your post on DesiZoom about "${encodeURIComponent(post.title)}" in ${post.city}.`}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  fontSize: 13, fontWeight: 700, padding: '7px 16px',
-                  background: '#e07820', color: 'white', borderRadius: 20,
-                  textDecoration: 'none',
-                }}
-              >
-                ✉️ Contact Poster
-              </a>
-            </div>
-          )}
+          {/* Actions: message + share */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <MessageButton postId={post.id} sellerId={post.user_id} onAuthNeeded={onAuthNeeded} />
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`Check out "${post.title}" in ${post.city} on DesiZoom: ${window.location.origin}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                fontSize: 12, fontWeight: 700, padding: '5px 14px',
+                background: '#e8f9ee', color: '#128c4b', borderRadius: 20,
+                textDecoration: 'none',
+              }}
+            >
+              📲 Share on WhatsApp
+            </a>
+          </div>
         </div>
       )}
 

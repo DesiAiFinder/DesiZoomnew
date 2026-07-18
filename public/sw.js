@@ -1,5 +1,33 @@
-// DesiZoom Service Worker — v1
-const CACHE = 'desizoom-v1';
+// DesiZoom Service Worker — v2 (adds push notifications)
+const CACHE = 'desizoom-v2';
+
+// ── Push notifications ─────────────────────────────────────────────────────
+self.addEventListener('push', (e) => {
+  let data = { title: 'DesiZoom', body: 'You have a new notification', url: '/' };
+  try { data = { ...data, ...e.data.json() }; } catch { /* plain text fallback */ }
+
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: data.url },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = e.notification.data?.url || '/';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if ('focus' in client) { client.navigate(url); return client.focus(); }
+      }
+      return clients.openWindow(url);
+    })
+  );
+});
 
 // Assets to pre-cache on install
 const PRECACHE = [

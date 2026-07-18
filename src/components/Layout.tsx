@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import Navigation from './Navigation';
 import Footer from './Footer';
 import AuthModal from './AuthModal';
+import NotificationPrompt from './NotificationPrompt';
 
 export default function Layout() {
   const [authOpen, setAuthOpen] = useState(false);
@@ -15,6 +16,7 @@ export default function Layout() {
   return (
     <div className="shell">
       <Navigation onAuthOpen={() => setAuthOpen(true)} onSearch={handleSearch} />
+      <NotificationPrompt />
       <main>
         <Outlet context={{ onAuthOpen: () => setAuthOpen(true) }} />
       </main>
