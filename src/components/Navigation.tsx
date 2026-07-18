@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default function Navigation({ onAuthOpen, onSearch }: Props) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const { city, setCity, detectedCity } = useLocation();
   const routerLoc = useRouterLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,6 +26,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
     { to: '/local-info',  label: 'Local Info' },
     { to: '/radio',       label: '📻 Radio' },
     { to: '/messages',    label: '💬 Messages' },
+    ...(isAdmin ? [{ to: '/admin', label: '🔐 Admin' }] : []),
   ];
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Account';
