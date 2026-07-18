@@ -155,7 +155,7 @@ export default function Home() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && searchQuery) window.location.href = `/search?q=${searchQuery}`; }}
-                placeholder="Search deals, businesses, roommates…"
+                placeholder="Search deals, businesses, rooms…"
                 style={{ background: 'transparent', border: 'none', outline: 'none', color: 'white', fontSize: 13, flex: 1, minWidth: 0 }}
               />
             </div>
@@ -250,14 +250,16 @@ export default function Home() {
       <audio ref={audioRef} preload="none" />
 
       {/* Category tiles */}
-      <div className="category-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 12, padding: '20px 32px 12px' }}>
+      <div className="category-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, padding: '20px 32px 12px' }}>
         {[
-          { to: '/search',      icon: '🔍', label: 'Businesses', bg: 'var(--accent-soft)', textColor: 'var(--accent-text)' },
-          { to: '/deals',       icon: '🏷️', label: 'Deals',      bg: '#fff3e0',           textColor: '#b84d00' },
-          { to: '/marketplace', icon: '🛍️', label: 'Marketplace',bg: 'var(--pink-soft)',  textColor: 'var(--pink-text)' },
-          { to: '/events',      icon: '🎉', label: 'Events',     bg: 'var(--blue-soft)',  textColor: 'var(--blue-text)' },
-          { to: '/roommates',   icon: '🏠', label: 'Roommates',  bg: 'var(--navy)',       textColor: 'white' },
-          { to: '/local-info',  icon: '🏛️', label: 'Local Info', bg: '#edfaf1',           textColor: '#1a6e3c' },
+          { to: '/search',      icon: '🔍', label: 'Businesses',     bg: 'var(--accent-soft)', textColor: 'var(--accent-text)' },
+          { to: '/deals',       icon: '🏷️', label: 'Deals',          bg: '#fff3e0',           textColor: '#b84d00' },
+          { to: '/marketplace', icon: '🛍️', label: 'Marketplace',    bg: 'var(--pink-soft)',  textColor: 'var(--pink-text)' },
+          { to: '/roommates',   icon: '🏘️', label: 'Accommodations', bg: 'var(--navy)',       textColor: 'white' },
+          { to: '/events',      icon: '🎉', label: 'Events',         bg: 'var(--blue-soft)',  textColor: 'var(--blue-text)' },
+          { to: '/adda',        icon: '☕', label: 'Adda',           bg: '#f5eee2',           textColor: '#6b4a2a' },
+          { to: '/live',        icon: '🔴', label: 'Live',           bg: '#fceaea',           textColor: '#a32d2d' },
+          { to: '/local-info',  icon: '🏛️', label: 'Local Info',     bg: '#edfaf1',           textColor: '#1a6e3c' },
         ].map(t => (
           <Link key={t.to} to={t.to} className="tile" style={{ background: t.bg, textDecoration: 'none', padding: '16px 12px', textAlign: 'center' }}>
             <div style={{ fontSize: 24 }}>{t.icon}</div>

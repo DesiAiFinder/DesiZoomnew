@@ -102,7 +102,7 @@ export default function LocalInfoPage() {
     const key = activeService.query;
     if (autoResults[key]) return; // cached
     setAutoLoading(true);
-    searchNearbyPlaces(loc, key, 24000)
+    searchNearbyPlaces(loc, key, 12000)
       .then((results) => setAutoResults((prev) => ({ ...prev, [key]: results.slice(0, 4) })))
       .catch(() => {})
       .finally(() => setAutoLoading(false));
