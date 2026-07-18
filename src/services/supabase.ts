@@ -266,7 +266,9 @@ export async function adminFetchStreams() {
 }
 
 export async function adminSetStreamStatus(streamId: string, status: 'approved' | 'rejected' | 'ended') {
-  const { error } = await supabase.from('live_streams').update({ status }).eq('id', streamId);
+  const patch: Record<string, unknown> = { status };
+  if (status === 'ended') patch.ended_at = new Date().toISOString();
+  const { error } = await supabase.from('live_streams').update(patch).eq('id', streamId);
   if (error) throw error;
 }
 

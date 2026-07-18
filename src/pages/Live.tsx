@@ -50,6 +50,7 @@ export default function Live() {
   const { user } = useAuth();
   const { city } = useLocation();
   const [streams, setStreams] = useState<LiveStream[]>([]);
+  const [vods, setVods] = useState<LiveStream[]>([]);
   const [myStreams, setMyStreams] = useState<LiveStream[]>([]);
   const [loading, setLoading] = useState(true);
   const [goLiveOpen, setGoLiveOpen] = useState(false);
@@ -63,6 +64,15 @@ export default function Live() {
       .order('created_at', { ascending: false })
       .limit(20);
     setStreams((data as LiveStream[]) ?? []);
+
+    // VODs: ended streams kept as recordings
+    const { data: ended } = await supabase
+      .from('live_streams')
+      .select('*')
+      .eq('status', 'ended')
+      .order('created_at', { ascending: false })
+      .limit(24);
+    setVods((ended as LiveStream[]) ?? []);
 
     if (user) {
       const { data: mine } = await supabase
@@ -154,6 +164,48 @@ export default function Live() {
               </div>
         }
       </div>
+
+      {/* ── VOD library: past streams ── */}
+      {vods.length > 0 && (
+        <div style={{ padding: '0 32px 48px' }}>
+          <h2 style={{ fontSize: 18, marginBottom: 6 }}>📼 Past Streams</h2>
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '0 0 16px' }}>
+            Recordings of previous community streams — watch anytime.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16 }}>
+            {vods.map((s) => {
+              const embed = toEmbedUrl(s.stream_url);
+              return (
+                <div key={s.id} style={{ border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', background: 'white' }}>
+                  <div style={{ aspectRatio: '16/9', background: '#000' }}>
+                    {embed
+                      ? <iframe
+                          src={embed}
+                          title={s.title}
+                          style={{ width: '100%', height: '100%', border: 'none' }}
+                          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      : <a href={s.stream_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'white', textDecoration: 'none', fontSize: 14 }}>
+                          ▶️ Watch recording
+                        </a>
+                    }
+                  </div>
+                  <div style={{ padding: '10px 13px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, background: '#f3f4f6', color: '#4b5563', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.05em' }}>VOD</span>
+                      <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 5 }}>
+                      📍 {s.city} · streamed {new Date(s.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {goLiveOpen && <GoLiveModal onClose={() => { setGoLiveOpen(false); load(); }} />}
       <style>{`@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }`}</style>
