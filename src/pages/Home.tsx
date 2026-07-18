@@ -87,7 +87,16 @@ export default function Home() {
         @media (max-width: 768px) {
           .home-hero          { flex-direction: column !important; min-height: unset !important; }
           .hero-left          { padding: 20px 18px !important; }
-          .hero-radio-sidebar { display: none !important; }
+          /* Radio: full-width scrollable strip below hero content on mobile */
+          .hero-radio-sidebar {
+            flex: unset !important;
+            width: 100% !important;
+            border-left: none !important;
+            border-top: 1px solid rgba(255,255,255,0.07) !important;
+            max-height: 240px !important;
+            overflow-y: auto !important;
+            padding: 14px 16px !important;
+          }
           .category-grid      { grid-template-columns: repeat(3,1fr) !important; padding: 14px 16px 8px !important; gap: 8px !important; }
           .city-chips         { padding: 10px 16px 0 !important; }
           .home-main          { flex-direction: column !important; padding: 16px 16px 32px !important; gap: 16px !important; }
