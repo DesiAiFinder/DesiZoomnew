@@ -208,6 +208,70 @@ export async function fetchAllUsers() {
   return data ?? [];
 }
 
+// ── User's own content (profile page) ─────────────────────────────────────────
+export async function fetchMyPosts(userId: string) {
+  const { data } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  return data ?? [];
+}
+
+export async function updateMyPost(postId: string, patch: Record<string, unknown>) {
+  const { error } = await supabase.from('posts').update(patch).eq('id', postId);
+  if (error) throw error;
+}
+
+export async function deleteMyPost(postId: string) {
+  const { error } = await supabase.from('posts').update({ is_active: false }).eq('id', postId);
+  if (error) throw error;
+}
+
+export async function fetchMyPurchases(userId: string) {
+  const { data } = await supabase
+    .from('payments')
+    .select('*, post:posts(title, image_urls)')
+    .eq('buyer_id', userId)
+    .order('created_at', { ascending: false });
+  return data ?? [];
+}
+
+export async function fetchMySales(userId: string) {
+  const { data } = await supabase
+    .from('payments')
+    .select('*, post:posts(title)')
+    .eq('seller_id', userId)
+    .order('created_at', { ascending: false });
+  return data ?? [];
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+export async function submitReview(payload: {
+  booking_id: string; offering_id?: string; provider_user_id: string;
+  reviewer_id: string; rating: number; comment?: string;
+}) {
+  const { error } = await supabase.from('reviews').insert(payload);
+  if (error) throw error;
+}
+
+export async function fetchProviderRating(providerUserId: string) {
+  const { data } = await supabase
+    .from('provider_ratings')
+    .select('avg_rating, review_count')
+    .eq('provider_user_id', providerUserId)
+    .maybeSingle();
+  return data as { avg_rating: number; review_count: number } | null;
+}
+
+export async function fetchReviewedBookingIds(reviewerId: string) {
+  const { data } = await supabase
+    .from('reviews')
+    .select('booking_id')
+    .eq('reviewer_id', reviewerId);
+  return new Set((data ?? []).map((r) => r.booking_id));
+}
+
 // ── Admin: post moderation ────────────────────────────────────────────────────
 export async function adminFetchAllPosts() {
   const { data } = await supabase

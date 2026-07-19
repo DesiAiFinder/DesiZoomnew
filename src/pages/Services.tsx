@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import { supabase } from '../services/supabase';
 import SellerOnboard from '../components/SellerOnboard';
+import StarRating from '../components/StarRating';
 import { CITIES } from '../config/env';
 
 interface OutletCtx { onAuthOpen: () => void; }
@@ -58,6 +59,7 @@ export default function Services() {
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+  const [ratings, setRatings] = useState<Record<string, { avg: number; count: number }>>({});
 
   // Booking modal
   const [bookingFor, setBookingFor] = useState<Offering | null>(null);
@@ -106,6 +108,18 @@ export default function Services() {
       .limit(60);
     const rows = ((offs as Offering[]) ?? []).filter((o) => o.provider?.city === city || o.provider?.city?.endsWith(city.split(',')[1]?.trim() ?? ''));
     setOfferings(rows);
+
+    // Provider ratings
+    const providerIds = [...new Set(rows.map((o) => o.provider?.user_id).filter(Boolean))];
+    if (providerIds.length) {
+      const { data: rat } = await supabase
+        .from('provider_ratings')
+        .select('provider_user_id, avg_rating, review_count')
+        .in('provider_user_id', providerIds as string[]);
+      const map: Record<string, { avg: number; count: number }> = {};
+      (rat ?? []).forEach((r) => { map[r.provider_user_id] = { avg: r.avg_rating, count: r.review_count }; });
+      setRatings(map);
+    }
 
     const { data: reqs } = await supabase
       .from('service_requests')
@@ -178,13 +192,17 @@ export default function Services() {
   const submitRequest = async () => {
     if (!fTitle.trim()) return setFMsg('Title is required.');
     if (!fPhone.trim()) return setFMsg('Phone number is required.');
-    const { error } = await supabase.from('service_requests').insert({
+    const { data: inserted, error } = await supabase.from('service_requests').insert({
       user_id: user!.id, city: fCity, category: catName(fCat),
       title: fTitle.trim(), description: fDesc.trim() || null,
       budget: fBudget.trim() || null, contact_phone: fPhone.trim(),
-    });
+    }).select('id').single();
     if (error) { setFMsg(error.message); return; }
-    setFMsg('✅ Posted!');
+    // Notify matching providers (fire-and-forget)
+    if (inserted?.id) {
+      supabase.functions.invoke('notify-providers', { body: { request_id: inserted.id } }).catch(() => {});
+    }
+    setFMsg('✅ Posted! Matching providers have been notified.');
     setFTitle(''); setFDesc(''); setFBudget(''); setFPhone('');
     setTimeout(() => { setShowReqForm(false); setFMsg(''); load(); }, 1000);
   };
@@ -232,6 +250,11 @@ export default function Services() {
 
   const toggleOffering = async (o: Offering) => {
     await supabase.from('service_offerings').update({ is_active: !o.is_active }).eq('id', o.id);
+    load();
+  };
+
+  const setBookingStatus = async (b: Booking, status: string) => {
+    await supabase.from('service_bookings').update({ status }).eq('id', b.id);
     load();
   };
 
@@ -296,8 +319,11 @@ export default function Services() {
                           <div style={{ fontWeight: 700, fontSize: 15 }}>{o.title}</div>
                           <div style={{ fontWeight: 800, fontSize: 17, color: '#166534', whiteSpace: 'nowrap' }}>${(o.price_cents / 100).toFixed(0)}</div>
                         </div>
-                        <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                          {o.provider?.business_name} · 📍 {o.provider?.city}{o.duration_label ? ` · ⏱ ${o.duration_label}` : ''}
+                        <div style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span>{o.provider?.business_name} · 📍 {o.provider?.city}{o.duration_label ? ` · ⏱ ${o.duration_label}` : ''}</span>
+                          {o.provider?.user_id && ratings[o.provider.user_id] && (
+                            <StarRating value={ratings[o.provider.user_id].avg} count={ratings[o.provider.user_id].count} size={13} />
+                          )}
                         </div>
                         {o.description && <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5 }}>{o.description}</div>}
                         {(o.provider?.available_days?.length ?? 0) > 0 && (
@@ -482,6 +508,12 @@ export default function Services() {
                             📞 Customer: <a href={`tel:${b.customer_phone}`} style={{ fontWeight: 700, color: '#166534' }}>{b.customer_phone}</a>
                             {b.note && <span style={{ color: 'var(--muted)' }}> · "{b.note}"</span>}
                           </div>
+                        )}
+                        {b.status === 'paid' && (
+                          <button
+                            onClick={() => setBookingStatus(b, 'completed')}
+                            style={{ marginTop: 8, fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 7, border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#166534', cursor: 'pointer' }}
+                          >✓ Mark completed</button>
                         )}
                       </div>
                     ))

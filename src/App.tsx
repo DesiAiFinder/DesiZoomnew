@@ -16,6 +16,7 @@ import Connections from './pages/Connections';
 import Live from './pages/Live';
 import Adda from './pages/Adda';
 import Services from './pages/Services';
+import Profile from './pages/Profile';
 import LocalInfo from './pages/LocalInfo';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="live" element={<Live />} />
             <Route path="adda" element={<Adda />} />
             <Route path="services" element={<Services />} />
+            <Route path="profile" element={<Profile />} />
             <Route path="local-info" element={<LocalInfo />} />
             <Route
               path="admin"

@@ -30,6 +30,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
     { to: '/live',        label: '🔴 Live' },
     { to: '/radio',       label: '📻 Radio' },
     { to: '/messages',    label: '💬 Messages' },
+    ...(user ? [{ to: '/profile', label: '👤 My Profile' }] : []),
     ...(isAdmin ? [{ to: '/admin', label: '🔐 Admin' }] : []),
   ];
 
@@ -155,7 +156,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
           {/* Auth */}
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span className="hidden-mobile" style={{ fontSize: 13, fontWeight: 600 }}>👋 {displayName}</span>
+              <Link to="/profile" className="hidden-mobile" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', textDecoration: 'none' }}>👋 {displayName}</Link>
               <button className="btn-ghost" onClick={signOut} style={{ border: '1px solid var(--border)', fontSize: 12 }}>Sign out</button>
             </div>
           ) : (
