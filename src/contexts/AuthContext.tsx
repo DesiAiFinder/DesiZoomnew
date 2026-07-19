@@ -17,13 +17,14 @@ const AuthContext = createContext<AuthState>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(true);
   const [profileAdmin, setProfileAdmin] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      setLoading(false);
+      setSessionLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
@@ -31,21 +32,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Also read role from profiles table (reliable, no token refresh needed)
+  // Read role from profiles table (reliable, no token refresh needed)
   useEffect(() => {
     const uid = session?.user?.id;
-    if (!uid) { setProfileAdmin(false); return; }
+    if (!uid) { setProfileAdmin(false); setRoleLoading(false); return; }
+    setRoleLoading(true);
     supabase
       .from('profiles')
       .select('role')
       .eq('id', uid)
       .maybeSingle()
-      .then(({ data }) => setProfileAdmin(data?.role === 'admin'));
+      .then(({ data }) => {
+        setProfileAdmin(data?.role === 'admin');
+        setRoleLoading(false);
+      });
   }, [session?.user?.id]);
 
   const signOut = async () => { await supabase.auth.signOut(); };
 
-  const isAdmin = session?.user?.app_metadata?.role === 'admin' || profileAdmin;
+  const tokenAdmin = session?.user?.app_metadata?.role === 'admin';
+  const isAdmin = tokenAdmin || profileAdmin;
+  // Stay in "loading" until both the session AND (if signed in) the role check resolve,
+  // so admin-guarded routes don't redirect before the role is known.
+  const loading = sessionLoading || (!!session?.user && roleLoading);
 
   return (
     <AuthContext.Provider value={{ user: session?.user ?? null, session, loading, isAdmin, signOut }}>
