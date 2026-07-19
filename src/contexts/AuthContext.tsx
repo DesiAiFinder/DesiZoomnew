@@ -18,6 +18,7 @@ const AuthContext = createContext<AuthState>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileAdmin, setProfileAdmin] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -30,9 +31,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Also read role from profiles table (reliable, no token refresh needed)
+  useEffect(() => {
+    const uid = session?.user?.id;
+    if (!uid) { setProfileAdmin(false); return; }
+    supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', uid)
+      .maybeSingle()
+      .then(({ data }) => setProfileAdmin(data?.role === 'admin'));
+  }, [session?.user?.id]);
+
   const signOut = async () => { await supabase.auth.signOut(); };
 
-  const isAdmin = session?.user?.app_metadata?.role === 'admin';
+  const isAdmin = session?.user?.app_metadata?.role === 'admin' || profileAdmin;
 
   return (
     <AuthContext.Provider value={{ user: session?.user ?? null, session, loading, isAdmin, signOut }}>
