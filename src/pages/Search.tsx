@@ -21,8 +21,12 @@ const CITY_COORDS: Record<string, Location> = {
 export default function Search() {
   const [params] = useSearchParams();
   const { geoLocation, city } = useLocation();
-  const [query, setQuery] = useState(params.get('q') || '');
-  const [activeCategory, setActiveCategory] = useState(BUSINESS_CATEGORIES[0]);
+  const urlQuery = params.get('q') || '';
+  const [query, setQuery] = useState(urlQuery);
+  // If the user arrived with a search query, no category is pre-selected
+  const [activeCategory, setActiveCategory] = useState<typeof BUSINESS_CATEGORIES[0] | null>(
+    urlQuery ? null : BUSINESS_CATEGORIES[0]
+  );
   const [results, setResults] = useState<Business[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,7 +49,7 @@ export default function Search() {
     setLoading(true);
     setError('');
     try {
-      const q = categoryQuery || query || activeCategory.query;
+      const q = categoryQuery || query || activeCategory?.query || BUSINESS_CATEGORIES[0].query;
       const data = await searchNearbyPlaces(loc, q);
       setResults(data);
       if (data.length === 0) setError(`No results found near ${city}. Try expanding your search.`);
@@ -56,7 +60,11 @@ export default function Search() {
   };
 
   useEffect(() => {
-    if (mapsReady) doSearch(activeCategory.query);
+    if (!mapsReady) return;
+    // Typed/URL query wins; otherwise use the selected category
+    if (activeCategory) doSearch(activeCategory.query);
+    else if (query) doSearch(query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapsReady, geoLocation, activeCategory, city]);
 
   return (
@@ -72,11 +80,11 @@ export default function Search() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && doSearch()}
-            placeholder='Search "biryani near me", "patel brothers"…'
+            onKeyDown={(e) => { if (e.key === 'Enter') { setActiveCategory(null); doSearch(query); } }}
+            placeholder='Search "biryani near me", "travel agent", "patel brothers"…'
             style={{ flex: 1, minWidth: 200, height: 44, border: '1px solid var(--border)', borderRadius: 10, padding: '0 16px', fontSize: 14 }}
           />
-          <button className="btn-primary" style={{ padding: '0 24px', height: 44, fontSize: 14 }} onClick={() => doSearch()}>
+          <button className="btn-primary" style={{ padding: '0 24px', height: 44, fontSize: 14 }} onClick={() => { setActiveCategory(null); doSearch(query); }}>
             Search
           </button>
         </div>
@@ -85,8 +93,8 @@ export default function Search() {
           {BUSINESS_CATEGORIES.map((c) => (
             <span
               key={c.key}
-              className={`chip ${activeCategory.key === c.key ? 'active' : ''}`}
-              onClick={() => setActiveCategory(c)}
+              className={`chip ${activeCategory?.key === c.key ? 'active' : ''}`}
+              onClick={() => { setQuery(''); setActiveCategory(c); }}
             >
               {c.label}
             </span>
