@@ -17,7 +17,13 @@ export interface LiveStream {
   stream_url: string;
   status: string;
   category?: string;
+  source?: string;
   created_at: string;
+}
+
+// Is this an uploaded video file rather than an embed link?
+export function isUploadedVideo(s: { source?: string; stream_url: string }): boolean {
+  return s.source === 'upload' || /\.(mp4|mov|webm|m4v)(\?|$)/i.test(s.stream_url);
 }
 
 export const STREAM_CATEGORIES: Record<string, { icon: string; label: string }> = {
@@ -146,10 +152,13 @@ export default function Live() {
             : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(340px,1fr))', gap: 18 }}>
                 {streams.map((s) => {
                   const embed = toEmbedUrl(s.stream_url);
+                  const uploaded = isUploadedVideo(s);
                   return (
                     <div key={s.id} style={{ border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', background: 'white' }}>
                       <div style={{ aspectRatio: '16/9', background: '#000' }}>
-                        {embed
+                        {uploaded
+                          ? <video src={s.stream_url} controls style={{ width: '100%', height: '100%' }} />
+                          : embed
                           ? <iframe
                               src={embed}
                               title={s.title}
@@ -213,10 +222,13 @@ export default function Live() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16 }}>
                   {items.map((s) => {
                     const embed = toEmbedUrl(s.stream_url);
+                    const uploaded = isUploadedVideo(s);
                     return (
                       <div key={s.id} style={{ border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', background: 'white' }}>
                         <div style={{ aspectRatio: '16/9', background: '#000' }}>
-                          {embed
+                          {uploaded
+                            ? <video src={s.stream_url} controls style={{ width: '100%', height: '100%' }} />
+                            : embed
                             ? <iframe src={embed} title={s.title} style={{ width: '100%', height: '100%', border: 'none' }} allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
                             : <a href={s.stream_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'white', textDecoration: 'none', fontSize: 14 }}>▶️ Watch recording</a>
                           }
