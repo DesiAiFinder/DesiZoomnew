@@ -28,6 +28,9 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
   const [rent, setRent] = useState('');
   const [accomType, setAccomType] = useState('Roommate');
   const [topic, setTopic] = useState('General');
+  const [venue, setVenue] = useState('');
+  const [ticketPrice, setTicketPrice] = useState('');
+  const [ticketsTotal, setTicketsTotal] = useState('');
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -104,6 +107,9 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
         discount: looksLikeDiscount ? price : null,
         category: type === 'marketplace' ? category : type === 'roommate' ? accomType : type === 'question' ? topic : null,
         event_date: type === 'event' && eventDate ? eventDate : null,
+        venue: type === 'event' && venue.trim() ? venue.trim() : null,
+        ticket_price_cents: type === 'event' && parseFloat(ticketPrice) > 0 ? Math.round(parseFloat(ticketPrice) * 100) : null,
+        tickets_total: type === 'event' && parseInt(ticketsTotal) > 0 ? parseInt(ticketsTotal) : null,
         image_urls: imageUrls,
         details: {
           ...(type === 'deal' && storeName ? { store_name: storeName } : {}),
@@ -207,7 +213,19 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
         )}
 
         {type === 'event' && (
-          <div className="field"><label>Event date & time</label><input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} /></div>
+          <>
+            <div className="field"><label>Event date & time</label><input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} /></div>
+            <div className="field"><label>Venue</label><input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="e.g. Frisco Community Center" /></div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <div className="field" style={{ flex: 1, minWidth: 130 }}><label>Ticket price ($) <span style={{ fontWeight: 400, color: 'var(--muted)' }}>— blank = free</span></label><input value={ticketPrice} onChange={(e) => setTicketPrice(e.target.value)} placeholder="e.g. 20" /></div>
+              <div className="field" style={{ flex: 1, minWidth: 130 }}><label>Tickets available</label><input value={ticketsTotal} onChange={(e) => setTicketsTotal(e.target.value)} placeholder="e.g. 200" /></div>
+            </div>
+            {parseFloat(ticketPrice) > 0 && (
+              <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: -6, marginBottom: 8 }}>
+                💳 Paid tickets require a connected bank (Marketplace → connect). DesiZoom keeps 5% per ticket.
+              </div>
+            )}
+          </>
         )}
 
         {type === 'question' && (

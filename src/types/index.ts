@@ -30,6 +30,10 @@ export interface Post {
   stripe_account_id?: string; // seller's connected Stripe account
   is_sponsored?: boolean;     // admin-set: pinned sponsored post
   boosted_until?: string;     // paid boost active until this timestamp
+  ticket_price_cents?: number; // event: paid ticket price (null = free)
+  tickets_total?: number;
+  tickets_sold?: number;
+  venue?: string;
   created_at: string;
   updated_at: string;
 }

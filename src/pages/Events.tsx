@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { fetchEvents } from '../services/supabase';
 import PostModal from '../components/PostModal';
 import AutoEvents from '../components/AutoEvents';
+import BuyTicketButton from '../components/BuyTicketButton';
 import type { Post } from '../types';
 
 interface OutletCtx { onAuthOpen: () => void; }
@@ -43,6 +44,11 @@ export default function Events() {
       </div>
 
       <div style={{ padding: '24px 32px 48px' }}>
+        {new URLSearchParams(window.location.search).get('ticket') === 'success' && (
+          <div style={{ padding: '12px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, marginBottom: 16, fontWeight: 600, color: '#166534' }}>
+            🎟️ Tickets purchased! Check your email and your profile for details.
+          </div>
+        )}
         {/* Auto-populated nearby events (Ticketmaster) */}
         <AutoEvents />
 
@@ -94,12 +100,19 @@ export default function Events() {
                       <div style={{ width: 60, height: 60, borderRadius: 10, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>🎉</div>
                     )}
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{e.title}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                        <span style={{ fontWeight: 700, fontSize: 15 }}>{e.title}</span>
+                        {e.ticket_price_cents
+                          ? <span style={{ fontSize: 11, fontWeight: 800, background: '#e8f9ee', color: '#128c4b', padding: '2px 8px', borderRadius: 20 }}>${(e.ticket_price_cents / 100).toFixed(0)} ticket</span>
+                          : <span style={{ fontSize: 11, fontWeight: 700, background: 'var(--blue-soft)', color: 'var(--blue-text)', padding: '2px 8px', borderRadius: 20 }}>Free</span>
+                        }
+                      </div>
                       {e.description && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>{e.description}</div>}
-                      <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--muted)', flexWrap: 'wrap' }}>
-                        <span>📍 {e.city}</span>
+                      <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--muted)', flexWrap: 'wrap', marginBottom: e.ticket_price_cents ? 10 : 0 }}>
+                        <span>📍 {e.venue || e.city}</span>
                         {d && <span>🕐 {formatDate(e.event_date!)} at {formatTime(e.event_date!)}</span>}
                       </div>
+                      <BuyTicketButton event={e} />
                     </div>
                   </div>
                 );

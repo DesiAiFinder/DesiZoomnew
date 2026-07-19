@@ -28,6 +28,20 @@ export async function fetchPosts(city: string, type?: string, search?: string) {
   return promotedSort(data ?? []);
 }
 
+// Unified "For You" feed — all active posts for a city, promoted first, newest next
+export async function fetchForYou(city: string, type?: string) {
+  let q = supabase
+    .from('posts')
+    .select('*')
+    .eq('city', city)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(40);
+  if (type) q = q.eq('type', type);
+  const { data } = await q;
+  return promotedSort(data ?? []);
+}
+
 export async function fetchPostById(id: string) {
   const { data } = await supabase
     .from('posts')

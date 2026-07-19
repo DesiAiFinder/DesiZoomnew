@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { useLocation } from '../contexts/LocationContext';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchPosts, fetchEvents, fetchMarketplace } from '../services/supabase';
+import { fetchForYou, fetchEvents, fetchMarketplace } from '../services/supabase';
 import DealCard from '../components/DealCard';
 import WeatherWidget from '../components/WeatherWidget';
 import PostModal from '../components/PostModal';
@@ -40,13 +40,14 @@ export default function Home() {
   );
   const [playing, setPlaying] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [feedFilter, setFeedFilter] = useState('all');
   const audioRef = useRef<HTMLAudioElement>(null);
   const festival = getNextFestival();
 
   const load = async () => {
     setLoading(true);
     const [f, e, m] = await Promise.all([
-      fetchPosts(city).catch(() => []),
+      fetchForYou(city).catch(() => []),
       fetchEvents(city).catch(() => []),
       fetchMarketplace(city).catch(() => []),
     ]);
@@ -278,30 +279,43 @@ export default function Home() {
       {/* Main 3-col layout */}
       <div className="home-main" style={{ display: 'flex', gap: 24, padding: '20px 32px 48px', flexWrap: 'wrap' }}>
 
-        {/* Left: category filter — hidden on mobile */}
+        {/* Left: quick links — hidden on mobile */}
         <div className="home-categories-col" style={{ flex: '0 0 210px' }}>
-          <h3 style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)', marginBottom: 10 }}>Categories</h3>
+          <h3 style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)', marginBottom: 10 }}>Explore</h3>
           {[
-            { label: '🛍️ All Posts',    type: '' },
-            { label: '🏷️ Deals',        type: 'deal' },
-            { label: '🛍️ Marketplace',  type: 'marketplace' },
-            { label: '🏠 Roommates',    type: 'roommate' },
+            { to: '/services',    label: '🛠️ Book a service' },
+            { to: '/adda',        label: '☕ Ask the community' },
+            { to: '/connections', label: '🤝 Organizations' },
+            { to: '/live',        label: '🔴 Live streams' },
+            { to: '/local-info',  label: '🏛️ Local info' },
           ].map(c => (
-            <div
-              key={c.type}
-              onClick={() => fetchPosts(city, c.type || undefined).then(d => setFeed(d as Post[]))}
-              style={{ display: 'flex', padding: '8px 10px', fontSize: 13.5, borderRadius: 8, cursor: 'pointer', marginBottom: 2 }}
+            <Link
+              key={c.to} to={c.to}
+              style={{ display: 'block', padding: '9px 10px', fontSize: 13.5, borderRadius: 8, marginBottom: 2, color: 'var(--text)', textDecoration: 'none' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-soft)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-            >{c.label}</div>
+            >{c.label}</Link>
           ))}
         </div>
 
-        {/* Middle: feed */}
+        {/* Middle: For You feed */}
         <div className="home-feed-col" style={{ flex: '2 1 460px', minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <h2 style={{ fontSize: 19 }}>Trending in {city}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+            <h2 style={{ fontSize: 19 }}>For you in {city}</h2>
             <button className="btn-primary" onClick={() => user ? setPostOpen(true) : onAuthOpen()}>+ Post</button>
+          </div>
+          {/* Filter chips */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+            {[
+              { key: 'all', label: '✨ All' },
+              { key: 'deal', label: '🏷️ Deals' },
+              { key: 'marketplace', label: '🛍️ For sale' },
+              { key: 'roommate', label: '🏘️ Rooms' },
+              { key: 'event', label: '🎉 Events' },
+              { key: 'question', label: '☕ Adda' },
+            ].map((f) => (
+              <span key={f.key} className={`chip ${feedFilter === f.key ? 'active' : ''}`} style={{ fontSize: 12 }} onClick={() => setFeedFilter(f.key)}>{f.label}</span>
+            ))}
           </div>
           {loading
             ? Array.from({ length: 3 }).map((_, i) => (
@@ -313,9 +327,12 @@ export default function Home() {
                   </div>
                 </div>
               ))
-            : feed.length === 0
-              ? <div style={{ color: 'var(--muted)', fontSize: 13, padding: '20px 0' }}>No posts yet in {city}. Be the first to post!</div>
-              : feed.map(p => <DealCard key={p.id} post={p} voted={votedIds.has(p.id)} onVoteToggle={handleVote} onAuthNeeded={onAuthOpen} />)
+            : (() => {
+                const shown = feedFilter === 'all' ? feed : feed.filter((p) => p.type === feedFilter);
+                return shown.length === 0
+                  ? <div style={{ color: 'var(--muted)', fontSize: 13, padding: '20px 0' }}>Nothing here yet in {city}. Be the first to post!</div>
+                  : shown.map(p => <DealCard key={p.id} post={p} voted={votedIds.has(p.id)} onVoteToggle={handleVote} onAuthNeeded={onAuthOpen} />);
+              })()
           }
         </div>
 

@@ -15,21 +15,33 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
   const routerLoc = useRouterLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [cityOpen, setCityOpen] = useState(false);
+  const [commOpen, setCommOpen] = useState(false);
   const [search, setSearch] = useState('');
 
-  const navLinks = [
+  // Primary links shown top-level on desktop
+  const primaryLinks = [
     { to: '/search',      label: 'Businesses' },
     { to: '/deals',       label: 'Deals' },
     { to: '/marketplace', label: 'Marketplace' },
-    { to: '/roommates',   label: 'Accommodations' },
-    { to: '/events',      label: 'Events' },
-    { to: '/local-info',  label: 'Local Info' },
-    { to: '/services',    label: '🛠️ Services' },
+    { to: '/services',    label: 'Services' },
+    { to: '/live',        label: '🔴 Live' },
+    { to: '/messages',    label: '💬 Messages' },
+  ];
+
+  // Secondary links grouped under the "Community" dropdown
+  const communityLinks = [
+    { to: '/roommates',   label: '🏘️ Accommodations' },
+    { to: '/events',      label: '🎉 Events' },
     { to: '/adda',        label: '☕ Adda' },
     { to: '/connections', label: '🤝 Connections' },
-    { to: '/live',        label: '🔴 Live' },
+    { to: '/local-info',  label: '🏛️ Local Info' },
     { to: '/radio',       label: '📻 Radio' },
-    { to: '/messages',    label: '💬 Messages' },
+  ];
+
+  // Flat list for the mobile menu (everything)
+  const navLinks = [
+    ...primaryLinks,
+    ...communityLinks,
     ...(user ? [{ to: '/profile', label: '👤 My Profile' }] : []),
     ...(isAdmin ? [{ to: '/admin', label: '🔐 Admin' }] : []),
   ];
@@ -85,8 +97,8 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden-mobile" style={{ display: 'flex', gap: 16, fontSize: 13, fontWeight: 500, flexWrap: 'wrap' }}>
-          {navLinks.map((l) => (
+        <nav className="hidden-mobile" style={{ display: 'flex', gap: 16, fontSize: 13, fontWeight: 500, alignItems: 'center' }}>
+          {primaryLinks.map((l) => (
             <Link
               key={l.to} to={l.to}
               style={{
@@ -97,6 +109,42 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
               {l.label}
             </Link>
           ))}
+
+          {/* Community dropdown */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setCommOpen((o) => !o)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                fontSize: 13, fontWeight: communityLinks.some((l) => l.to === routerLoc.pathname) ? 700 : 500,
+                color: communityLinks.some((l) => l.to === routerLoc.pathname) ? 'var(--accent)' : 'var(--text)',
+                display: 'flex', alignItems: 'center', gap: 3,
+              }}
+            >
+              Community ▾
+            </button>
+            {commOpen && (
+              <>
+                <div onClick={() => setCommOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 29 }} />
+                <div style={{ position: 'absolute', top: 'calc(100% + 10px)', left: 0, background: 'white', border: '1px solid var(--border)', borderRadius: 12, padding: 6, zIndex: 50, boxShadow: '0 8px 24px rgba(60,40,20,0.14)', minWidth: 190 }}>
+                  {communityLinks.map((l) => (
+                    <Link
+                      key={l.to} to={l.to}
+                      onClick={() => setCommOpen(false)}
+                      style={{
+                        display: 'block', padding: '9px 12px', fontSize: 13, borderRadius: 8, textDecoration: 'none',
+                        color: routerLoc.pathname === l.to ? 'var(--accent-text)' : 'var(--text)',
+                        background: routerLoc.pathname === l.to ? 'var(--accent-soft)' : 'transparent',
+                        fontWeight: routerLoc.pathname === l.to ? 700 : 500,
+                      }}
+                    >
+                      {l.label}
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </nav>
 
         {/* Right controls */}
