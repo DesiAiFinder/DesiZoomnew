@@ -16,8 +16,19 @@ export interface LiveStream {
   platform: string;
   stream_url: string;
   status: string;
+  category?: string;
   created_at: string;
 }
+
+export const STREAM_CATEGORIES: Record<string, { icon: string; label: string }> = {
+  news:      { icon: '📰', label: 'News' },
+  event:     { icon: '🎉', label: 'Events' },
+  cultural:  { icon: '🎭', label: 'Cultural' },
+  religious: { icon: '🕉️', label: 'Religious' },
+  community: { icon: '💬', label: 'Community' },
+  sports:    { icon: '🏏', label: 'Sports' },
+  other:     { icon: '📌', label: 'Other' },
+};
 
 // Convert common live URLs into embeddable iframe URLs
 export function toEmbedUrl(url: string): string | null {
@@ -54,6 +65,7 @@ export default function Live() {
   const [myStreams, setMyStreams] = useState<LiveStream[]>([]);
   const [loading, setLoading] = useState(true);
   const [goLiveOpen, setGoLiveOpen] = useState(false);
+  const [vodCat, setVodCat] = useState('all');
 
   const load = async () => {
     setLoading(true);
@@ -151,8 +163,11 @@ export default function Live() {
                         }
                       </div>
                       <div style={{ padding: '12px 14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <span style={{ fontSize: 10, fontWeight: 800, background: '#fee2e2', color: '#dc2626', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.05em' }}>LIVE</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, background: '#f3f0ea', color: '#6b4a2a', padding: '2px 8px', borderRadius: 20 }}>
+                            {(STREAM_CATEGORIES[s.category || 'community'] || STREAM_CATEGORIES.other).icon} {(STREAM_CATEGORIES[s.category || 'community'] || STREAM_CATEGORIES.other).label}
+                          </span>
                           <span style={{ fontWeight: 700, fontSize: 14.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
                         </div>
                         {s.description && <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 4 }}>{s.description}</div>}
@@ -165,45 +180,63 @@ export default function Live() {
         }
       </div>
 
-      {/* ── VOD library: past streams ── */}
+      {/* ── VOD library: past streams, grouped by category ── */}
       {vods.length > 0 && (
         <div style={{ padding: '0 32px 48px' }}>
           <h2 style={{ fontSize: 18, marginBottom: 6 }}>📼 Past Streams</h2>
-          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '0 0 16px' }}>
-            Recordings of previous community streams — watch anytime.
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '0 0 14px' }}>
+            Recordings of previous community streams — browse by category.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16 }}>
-            {vods.map((s) => {
-              const embed = toEmbedUrl(s.stream_url);
-              return (
-                <div key={s.id} style={{ border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', background: 'white' }}>
-                  <div style={{ aspectRatio: '16/9', background: '#000' }}>
-                    {embed
-                      ? <iframe
-                          src={embed}
-                          title={s.title}
-                          style={{ width: '100%', height: '100%', border: 'none' }}
-                          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      : <a href={s.stream_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'white', textDecoration: 'none', fontSize: 14 }}>
-                          ▶️ Watch recording
-                        </a>
-                    }
-                  </div>
-                  <div style={{ padding: '10px 13px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, background: '#f3f4f6', color: '#4b5563', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.05em' }}>VOD</span>
-                      <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
-                    </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 5 }}>
-                      📍 {s.city} · streamed {new Date(s.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+
+          {/* Category filter */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
+            <span className={`chip ${vodCat === 'all' ? 'active' : ''}`} style={{ fontSize: 12 }} onClick={() => setVodCat('all')}>✨ All</span>
+            {Object.entries(STREAM_CATEGORIES)
+              .filter(([key]) => vods.some((v) => (v.category || 'community') === key))
+              .map(([key, meta]) => (
+                <span key={key} className={`chip ${vodCat === key ? 'active' : ''}`} style={{ fontSize: 12 }} onClick={() => setVodCat(key)}>
+                  {meta.icon} {meta.label}
+                </span>
+              ))}
           </div>
+
+          {(vodCat === 'all'
+            ? Object.keys(STREAM_CATEGORIES).filter((k) => vods.some((v) => (v.category || 'community') === k))
+            : [vodCat]
+          ).map((cat) => {
+            const items = vods.filter((v) => (v.category || 'community') === cat);
+            if (items.length === 0) return null;
+            const meta = STREAM_CATEGORIES[cat] || STREAM_CATEGORIES.other;
+            return (
+              <div key={cat} style={{ marginBottom: 28 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>{meta.icon} {meta.label}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16 }}>
+                  {items.map((s) => {
+                    const embed = toEmbedUrl(s.stream_url);
+                    return (
+                      <div key={s.id} style={{ border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', background: 'white' }}>
+                        <div style={{ aspectRatio: '16/9', background: '#000' }}>
+                          {embed
+                            ? <iframe src={embed} title={s.title} style={{ width: '100%', height: '100%', border: 'none' }} allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                            : <a href={s.stream_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'white', textDecoration: 'none', fontSize: 14 }}>▶️ Watch recording</a>
+                          }
+                        </div>
+                        <div style={{ padding: '10px 13px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 10, fontWeight: 800, background: '#f3f4f6', color: '#4b5563', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.05em' }}>VOD</span>
+                            <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
+                          </div>
+                          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 5 }}>
+                            📍 {s.city} · streamed {new Date(s.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
