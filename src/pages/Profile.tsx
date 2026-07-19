@@ -1,15 +1,26 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import QRCode from 'qrcode';
+import { useLocation } from '../contexts/LocationContext';
 import {
   fetchMyPosts, updateMyPost, deleteMyPost,
-  fetchMyPurchases, fetchMySales, submitReview, fetchReviewedBookingIds, supabase,
+  fetchMyPurchases, fetchMySales, submitReview, fetchReviewedBookingIds,
+  fetchMyTickets, fetchFavoritePosts, fetchMyAlerts, createAlert, deleteAlert, supabase,
 } from '../services/supabase';
 import SellerOnboard from '../components/SellerOnboard';
 import StarRating from '../components/StarRating';
 import type { Post } from '../types';
 
-type Tab = 'listings' | 'bookings' | 'money';
+type Tab = 'listings' | 'bookings' | 'tickets' | 'saved' | 'alerts' | 'money';
+
+interface TicketRow {
+  id: string; quantity: number; amount_cents: number; created_at: string;
+  event?: { title?: string; event_date?: string; venue?: string; city?: string };
+}
+interface AlertRow {
+  id: string; city: string; keyword?: string; post_type?: string;
+}
 
 const TYPE_ICON: Record<string, string> = {
   deal: '🏷️', marketplace: '🛍️', roommate: '🏘️', event: '🎉', question: '☕',
@@ -47,6 +58,15 @@ export default function Profile() {
   const [rStars, setRStars] = useState(5);
   const [rComment, setRComment] = useState('');
 
+  // Tickets / saved / alerts
+  const { city } = useLocation();
+  const [tickets, setTickets] = useState<TicketRow[]>([]);
+  const [qrCodes, setQrCodes] = useState<Record<string, string>>({});
+  const [savedPosts, setSavedPosts] = useState<Post[]>([]);
+  const [alerts, setAlerts] = useState<AlertRow[]>([]);
+  const [aKeyword, setAKeyword] = useState('');
+  const [aType, setAType] = useState('');
+
   const load = async () => {
     if (!user) return;
     setLoading(true);
@@ -65,7 +85,40 @@ export default function Profile() {
     setSales(sal as PayRow[]);
     setBookings((books as BookingRow[]) ?? []);
     setReviewedIds(await fetchReviewedBookingIds(user.id));
+
+    const [tix, favs, als] = await Promise.all([
+      fetchMyTickets(user.id).catch(() => []),
+      fetchFavoritePosts(user.id).catch(() => []),
+      fetchMyAlerts(user.id).catch(() => []),
+    ]);
+    setTickets(tix as TicketRow[]);
+    setSavedPosts(favs as unknown as Post[]);
+    setAlerts(als as AlertRow[]);
+
+    // Generate QR codes for tickets
+    const codes: Record<string, string> = {};
+    for (const t of tix as TicketRow[]) {
+      codes[t.id] = await QRCode.toDataURL(
+        `DESIZOOM-TICKET:${t.id}`,
+        { width: 180, margin: 1, color: { dark: '#2c1a10', light: '#ffffff' } }
+      ).catch(() => '');
+    }
+    setQrCodes(codes);
+
     setLoading(false);
+  };
+
+  const addAlert = async () => {
+    if (!user) return;
+    if (!aKeyword.trim() && !aType) return;
+    await createAlert(user.id, city, aKeyword.trim() || null, aType || null).catch(() => {});
+    setAKeyword(''); setAType('');
+    load();
+  };
+
+  const removeAlert = async (id: string) => {
+    await deleteAlert(id).catch(() => {});
+    load();
   };
 
   const submitTheReview = async () => {
@@ -135,9 +188,12 @@ export default function Profile() {
   });
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'listings', label: `📝 My listings (${activePosts.length})` },
+    { id: 'listings', label: `📝 Listings (${activePosts.length})` },
     { id: 'bookings', label: `📅 Bookings (${bookings.length})` },
-    { id: 'money', label: '💰 Purchases & sales' },
+    { id: 'tickets', label: `🎟️ Tickets (${tickets.length})` },
+    { id: 'saved', label: `❤️ Saved (${savedPosts.length})` },
+    { id: 'alerts', label: `🔔 Alerts (${alerts.length})` },
+    { id: 'money', label: '💰 Money' },
   ];
 
   return (
@@ -247,6 +303,91 @@ export default function Profile() {
               </div>
             ))
           )
+
+        /* ── TICKETS ── */
+        ) : tab === 'tickets' ? (
+          tickets.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>🎟️</div>
+              <p>No tickets yet.</p>
+              <Link to="/events" className="btn-primary" style={{ display: 'inline-block', marginTop: 10, textDecoration: 'none' }}>Browse events</Link>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 14 }}>
+              {tickets.map((t) => (
+                <div key={t.id} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 14, padding: 16, textAlign: 'center' }}>
+                  <div style={{ fontWeight: 800, fontSize: 15 }}>{t.event?.title || 'Event'}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 10px' }}>
+                    {t.event?.event_date ? new Date(t.event.event_date).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}
+                    {t.event?.venue ? ` · ${t.event.venue}` : ''} · {t.event?.city}
+                  </div>
+                  {qrCodes[t.id] && <img src={qrCodes[t.id]} alt="Ticket QR" style={{ width: 150, height: 150, margin: '0 auto' }} />}
+                  <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 8 }}>
+                    {t.quantity} ticket{t.quantity > 1 ? 's' : ''} · ${(t.amount_cents / 100).toFixed(2)}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 4 }}>Show this QR at the door</div>
+                </div>
+              ))}
+            </div>
+          )
+
+        /* ── SAVED ── */
+        ) : tab === 'saved' ? (
+          savedPosts.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>❤️</div>
+              <p>Nothing saved yet. Tap the ❤️ on any post to save it here.</p>
+            </div>
+          ) : (
+            savedPosts.map((p) => (
+              <div key={p.id} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px', marginBottom: 10, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 20 }}>{TYPE_ICON[p.type] || '📌'}</span>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <Link to={`/listing/${p.id}`} style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', textDecoration: 'none' }}>{p.title}</Link>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                    {p.type} · {p.city}
+                    {p.price_cents ? ` · $${(p.price_cents / 100).toFixed(2)}` : p.price ? ` · ${p.price}` : ''}
+                  </div>
+                </div>
+                <Link to={`/listing/${p.id}`} style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-text)', textDecoration: 'none' }}>View →</Link>
+              </div>
+            ))
+          )
+
+        /* ── ALERTS ── */
+        ) : tab === 'alerts' ? (
+          <div style={{ maxWidth: 560 }}>
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 14, padding: 16, marginBottom: 18 }}>
+              <h3 style={{ fontSize: 14.5, marginBottom: 4 }}>🔔 Get notified for new posts in {city}</h3>
+              <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 12px' }}>
+                e.g. keyword "sofa" + For sale, or keyword "2 bedroom" + Accommodations. Requires notifications enabled.
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <input value={aKeyword} onChange={(e) => setAKeyword(e.target.value)} placeholder="Keyword (optional)" style={{ flex: 1, minWidth: 140 }} />
+                <select value={aType} onChange={(e) => setAType(e.target.value)} style={{ minWidth: 130 }}>
+                  <option value="">Any type</option>
+                  <option value="deal">Deals</option>
+                  <option value="marketplace">For sale</option>
+                  <option value="roommate">Accommodations</option>
+                  <option value="event">Events</option>
+                  <option value="question">Adda</option>
+                </select>
+                <button className="btn-primary" onClick={addAlert}>+ Add alert</button>
+              </div>
+            </div>
+            {alerts.length === 0
+              ? <div style={{ fontSize: 13, color: 'var(--muted)' }}>No alerts yet.</div>
+              : alerts.map((a) => (
+                  <div key={a.id} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', marginBottom: 8, display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <span style={{ fontSize: 13.5, flex: 1 }}>
+                      🔔 {a.keyword ? <strong>"{a.keyword}"</strong> : 'Any post'}
+                      {a.post_type ? ` in ${a.post_type}` : ''} · {a.city}
+                    </span>
+                    <button onClick={() => removeAlert(a.id)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 7, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer' }}>Remove</button>
+                  </div>
+                ))
+            }
+          </div>
 
         /* ── MONEY ── */
         ) : (

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Post } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { toggleVote, fetchComments, addComment, reportPost } from '../services/supabase';
+import { toggleVote, fetchComments, addComment, reportPost, toggleFavorite } from '../services/supabase';
 import BuyButton from './BuyButton';
 import MessageButton from './MessageButton';
 import SellerInfo from './SellerInfo';
@@ -41,6 +41,19 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
   const [commentText, setCommentText] = useState('');
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [reported, setReported] = useState(false);
+  const [saved, setSaved] = useState<boolean>(
+    () => JSON.parse(localStorage.getItem('dz_favs') || '[]').includes(post.id)
+  );
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return onAuthNeeded();
+    const next = !saved;
+    setSaved(next);
+    const favs: string[] = JSON.parse(localStorage.getItem('dz_favs') || '[]');
+    localStorage.setItem('dz_favs', JSON.stringify(next ? [...favs, post.id] : favs.filter((f) => f !== post.id)));
+    await toggleFavorite(user.id, post.id, !next).catch(() => {});
+  };
 
   const details = post.details as Record<string, string> | undefined;
 
@@ -141,13 +154,18 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
           </div>
         </div>
 
-        {/* Vote */}
+        {/* Vote + save */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flexShrink: 0 }}>
           <button
             className={`vote-btn ${voted ? 'voted' : ''}`}
             onClick={(e) => { e.stopPropagation(); handleVote(); }}
           >▲</button>
           <span style={{ fontWeight: 700, fontSize: 13 }}>{post.votes_count}</span>
+          <button
+            onClick={handleSave}
+            title={saved ? 'Remove from saved' : 'Save'}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '2px 0', filter: saved ? 'none' : 'grayscale(1) opacity(0.45)' }}
+          >❤️</button>
         </div>
       </div>
 

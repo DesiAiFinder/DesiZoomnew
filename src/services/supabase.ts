@@ -260,6 +260,59 @@ export async function fetchMySales(userId: string) {
   return data ?? [];
 }
 
+// ── Tickets ───────────────────────────────────────────────────────────────────
+export async function fetchMyTickets(userId: string) {
+  const { data } = await supabase
+    .from('tickets')
+    .select('*, event:posts(title, event_date, venue, city)')
+    .eq('buyer_id', userId)
+    .eq('status', 'paid')
+    .order('created_at', { ascending: false });
+  return data ?? [];
+}
+
+// ── Favorites ─────────────────────────────────────────────────────────────────
+export async function toggleFavorite(userId: string, postId: string, saved: boolean) {
+  if (saved) {
+    await supabase.from('favorites').delete().eq('user_id', userId).eq('post_id', postId);
+  } else {
+    await supabase.from('favorites').insert({ user_id: userId, post_id: postId });
+  }
+}
+
+export async function fetchFavoriteIds(userId: string): Promise<Set<string>> {
+  const { data } = await supabase.from('favorites').select('post_id').eq('user_id', userId);
+  return new Set((data ?? []).map((f) => f.post_id));
+}
+
+export async function fetchFavoritePosts(userId: string) {
+  const { data } = await supabase
+    .from('favorites')
+    .select('post:posts(*)')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  return (data ?? []).map((f) => f.post).filter(Boolean);
+}
+
+// ── Alerts ────────────────────────────────────────────────────────────────────
+export async function fetchMyAlerts(userId: string) {
+  const { data } = await supabase
+    .from('alerts')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  return data ?? [];
+}
+
+export async function createAlert(userId: string, city: string, keyword: string | null, postType: string | null) {
+  const { error } = await supabase.from('alerts').insert({ user_id: userId, city, keyword, post_type: postType });
+  if (error) throw error;
+}
+
+export async function deleteAlert(alertId: string) {
+  await supabase.from('alerts').delete().eq('id', alertId);
+}
+
 // ── Reviews ───────────────────────────────────────────────────────────────────
 export async function submitReview(payload: {
   booking_id: string; offering_id?: string; provider_user_id: string;

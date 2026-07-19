@@ -96,7 +96,7 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
         ? Math.round(priceNum * 100)
         : null;
 
-      await createPost({
+      const created = await createPost({
         user_id: user!.id,
         type,
         title: title.trim(),
@@ -120,6 +120,10 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
       });
       setMsg({ text: '✅ Posted successfully!', ok: true });
       setTimeout(onClose, 800);
+      // Notify users with matching alerts (fire-and-forget)
+      if (created?.id) {
+        supabase.functions.invoke('notify-alerts', { body: { post_id: created.id } }).catch(() => {});
+      }
     } catch (e: unknown) {
       setMsg({ text: e instanceof Error ? e.message : 'Error posting', ok: false });
     }
