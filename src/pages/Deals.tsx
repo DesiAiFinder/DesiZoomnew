@@ -34,7 +34,7 @@ const NEARBY_QUERIES = [
 
 export default function Deals() {
   const { onAuthOpen } = useOutletContext<OutletCtx>();
-  const { city, geoLocation } = useLocation();
+  const { city, setCity, detectedCity, geoLocation } = useLocation();
   const { user } = useAuth();
 
   const [posts, setPosts] = useState<Post[]>([]);
@@ -85,9 +85,19 @@ export default function Deals() {
     setNearbyLoading(false);
   };
 
-  const filtered = activeCat === 'All'
+  // Hide deals that expired more than a day ago; mark today-expired ones
+  const isExpired = (p: Post): boolean => {
+    const expiry = (p.details as Record<string, string> | undefined)?.expiry;
+    if (!expiry) return false;
+    const exp = new Date(expiry);
+    exp.setHours(23, 59, 59);
+    return exp.getTime() < Date.now() - 86400000;
+  };
+
+  const filtered = (activeCat === 'All'
     ? posts
-    : posts.filter((p) => p.category?.toLowerCase() === activeCat.toLowerCase());
+    : posts.filter((p) => p.category?.toLowerCase() === activeCat.toLowerCase())
+  ).filter((p) => !isExpired(p));
 
   const handleVote = (id: string) => {
     setVotedIds((prev) => {
@@ -112,8 +122,10 @@ export default function Deals() {
         <div style={{ flex: '0 0 210px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)', marginBottom: 8 }}>City</div>
-            <select value={city} onChange={() => {}} style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 13 }}>
-              {CITIES.map((c) => <option key={c}>{c}</option>)}
+            <select value={city} onChange={(e) => setCity(e.target.value)} style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 13 }}>
+              {(detectedCity && !CITIES.includes(detectedCity) ? [detectedCity, ...CITIES] : CITIES).map((c) => (
+                <option key={c} value={c}>{c === detectedCity ? `📍 ${c}` : c}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -136,6 +148,25 @@ export default function Deals() {
 
         {/* Main feed */}
         <div style={{ flex: '1 1 460px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 32 }}>
+
+          {/* Business owner CTA */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+            padding: '14px 18px', borderRadius: 14,
+            background: 'linear-gradient(120deg, #fdf0e0, #faeeda)',
+            border: '1px solid #f0d090',
+          }}>
+            <span style={{ fontSize: 26 }}>🏪</span>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <div style={{ fontWeight: 800, fontSize: 14.5 }}>Own a restaurant or store?</div>
+              <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>
+                Post your deals free during launch — reach desi customers in {city} directly.
+              </div>
+            </div>
+            <button className="btn-primary" style={{ fontSize: 13 }} onClick={() => user ? setPostOpen(true) : onAuthOpen()}>
+              Post your deal
+            </button>
+          </div>
 
           {/* Near You */}
           <div>
@@ -204,7 +235,7 @@ export default function Deals() {
                 style={{ flex: 1, height: 38, border: '1px solid var(--border)', borderRadius: 8, padding: '0 12px', fontSize: 13 }}
               />
               <button className="btn-primary" onClick={() => user ? setPostOpen(true) : onAuthOpen()}>
-                + Post Deal
+                📸 Spotted a deal? Share it
               </button>
             </div>
 
