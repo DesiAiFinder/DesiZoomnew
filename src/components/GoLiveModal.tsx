@@ -21,6 +21,7 @@ export default function GoLiveModal({ onClose }: Props) {
   const [url, setUrl] = useState('');
   const [platform, setPlatform] = useState('youtube');
   const [category, setCategory] = useState('community');
+  const [audience, setAudience] = useState('national');
   const [streamCity, setStreamCity] = useState(defaultCity);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -81,6 +82,7 @@ export default function GoLiveModal({ onClose }: Props) {
         city: streamCity,
         platform: plat,
         category,
+        audience,
         source,
         stream_url: streamUrl,
         status: 'pending',
@@ -134,6 +136,14 @@ export default function GoLiveModal({ onClose }: Props) {
 
         <div className="field"><label>Title *</label><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Diwali Mela 2026 — Live from Little Elm" /></div>
         <div className="field"><label>Description</label><textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="What are you sharing?" /></div>
+
+        <div className="field">
+          <label>Who is this for?</label>
+          <select value={audience} onChange={(e) => setAudience(e.target.value)}>
+            <option value="national">🇺🇸 Everyone (all cities)</option>
+            <option value="local">📍 My city only</option>
+          </select>
+        </div>
 
         <div className="field">
           <label>Category</label>

@@ -18,6 +18,7 @@ export interface LiveStream {
   status: string;
   category?: string;
   source?: string;
+  audience?: string;
   created_at: string;
 }
 
@@ -72,6 +73,7 @@ export default function Live() {
   const [loading, setLoading] = useState(true);
   const [goLiveOpen, setGoLiveOpen] = useState(false);
   const [vodCat, setVodCat] = useState('all');
+  const [scope, setScope] = useState<'all' | 'local'>('all');
 
   const load = async () => {
     setLoading(true);
@@ -117,7 +119,11 @@ export default function Live() {
 
       <div style={{ padding: '24px 32px 48px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
-          <h2 style={{ fontSize: 18 }}>Live & Recent Streams</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: 18 }}>Live & Recent Streams</h2>
+            <span className={`chip ${scope === 'all' ? 'active' : ''}`} style={{ fontSize: 12 }} onClick={() => setScope('all')}>🇺🇸 Everywhere</span>
+            <span className={`chip ${scope === 'local' ? 'active' : ''}`} style={{ fontSize: 12 }} onClick={() => setScope('local')}>📍 Near me</span>
+          </div>
           <button
             className="btn-primary"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
@@ -150,7 +156,7 @@ export default function Live() {
                 <p style={{ fontSize: 13 }}>Hosting an event in {city}? Hit <strong>Go Live</strong> to stream it to the community.</p>
               </div>
             : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(340px,1fr))', gap: 18 }}>
-                {streams.map((s) => {
+                {streams.filter((s) => scope === 'all' || s.city === city).map((s) => {
                   const embed = toEmbedUrl(s.stream_url);
                   const uploaded = isUploadedVideo(s);
                   return (
