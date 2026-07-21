@@ -12,7 +12,7 @@ import SellerOnboard from '../components/SellerOnboard';
 import StarRating from '../components/StarRating';
 import type { Post } from '../types';
 
-type Tab = 'listings' | 'bookings' | 'tickets' | 'saved' | 'alerts' | 'money';
+type Tab = 'listings' | 'orders' | 'bookings' | 'tickets' | 'saved' | 'alerts' | 'money';
 
 interface TicketRow {
   id: string; quantity: number; amount_cents: number; created_at: string;
@@ -58,8 +58,9 @@ export default function Profile() {
   const [rStars, setRStars] = useState(5);
   const [rComment, setRComment] = useState('');
 
-  // Tickets / saved / alerts
+  // Tickets / saved / alerts / food orders
   const { city } = useLocation();
+  const [foodOrders, setFoodOrders] = useState<Array<{ id: string; status: string; subtotal_cents: number; pickup_time?: string; created_at: string; restaurant?: { name?: string }; order_items?: { item_name: string; quantity: number }[] }>>([]);
   const [tickets, setTickets] = useState<TicketRow[]>([]);
   const [qrCodes, setQrCodes] = useState<Record<string, string>>({});
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
@@ -86,11 +87,19 @@ export default function Profile() {
     setBookings((books as BookingRow[]) ?? []);
     setReviewedIds(await fetchReviewedBookingIds(user.id));
 
-    const [tix, favs, als] = await Promise.all([
+    const [tix, favs, als, { data: fo }] = await Promise.all([
       fetchMyTickets(user.id).catch(() => []),
       fetchFavoritePosts(user.id).catch(() => []),
       fetchMyAlerts(user.id).catch(() => []),
+      supabase
+        .from('orders')
+        .select('id, status, subtotal_cents, pickup_time, created_at, restaurant:restaurants(name), order_items(item_name, quantity)')
+        .eq('customer_id', user.id)
+        .neq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(15),
     ]);
+    setFoodOrders((fo as typeof foodOrders) ?? []);
     setTickets(tix as TicketRow[]);
     setSavedPosts(favs as unknown as Post[]);
     setAlerts(als as AlertRow[]);
@@ -189,6 +198,7 @@ export default function Profile() {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'listings', label: `📝 Listings (${activePosts.length})` },
+    { id: 'orders', label: `🍛 Food orders (${foodOrders.length})` },
     { id: 'bookings', label: `📅 Bookings (${bookings.length})` },
     { id: 'tickets', label: `🎟️ Tickets (${tickets.length})` },
     { id: 'saved', label: `❤️ Saved (${savedPosts.length})` },
@@ -300,6 +310,29 @@ export default function Profile() {
                     : <button onClick={() => { setReviewing(b); setRStars(5); setRComment(''); }} style={{ fontSize: 12, padding: '5px 11px', borderRadius: 7, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent-text)', cursor: 'pointer' }}>★ Rate</button>
                 )}
                 <span style={statusPill(b.status)}>{b.status}</span>
+              </div>
+            ))
+          )
+
+        /* ── FOOD ORDERS ── */
+        ) : tab === 'orders' ? (
+          foodOrders.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>🍛</div>
+              <p>No food orders yet.</p>
+              <Link to="/order" className="btn-primary" style={{ display: 'inline-block', marginTop: 10, textDecoration: 'none' }}>Order pickup</Link>
+            </div>
+          ) : (
+            foodOrders.map((o) => (
+              <div key={o.id} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>🍛 {o.restaurant?.name || 'Restaurant'}</span>
+                  <span style={statusPill(o.status)}>{o.status.replace('_', ' ')}</span>
+                  <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 'auto' }}>pickup {o.pickup_time} · ${(o.subtotal_cents / 100).toFixed(2)}</span>
+                </div>
+                <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 4 }}>
+                  {(o.order_items ?? []).map((it) => `${it.quantity}× ${it.item_name}`).join(', ')}
+                </div>
               </div>
             ))
           )
