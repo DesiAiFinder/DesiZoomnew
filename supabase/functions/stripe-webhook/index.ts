@@ -27,7 +27,22 @@ Deno.serve(async (req) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
-    const { post_id, buyer_id, seller_id, kind, request_id, provider_id, booking_id, ticket_id, event_id, quantity } = session.metadata ?? {};
+    const { post_id, buyer_id, seller_id, kind, request_id, provider_id, booking_id, ticket_id, event_id, quantity, order_id } = session.metadata ?? {};
+
+    // Food pickup order paid → mark paid, record revenue
+    if (session.payment_status === 'paid' && kind === 'order' && order_id) {
+      await supabase.from('orders').update({ status: 'paid' }).eq('id', order_id);
+      const { data: o } = await supabase
+        .from('orders').select('customer_id, owner_id, subtotal_cents, commission_cents').eq('id', order_id).single();
+      if (o) {
+        await supabase.from('payments').insert({
+          buyer_id: o.customer_id, seller_id: o.owner_id,
+          amount_cents: o.subtotal_cents, commission_cents: o.commission_cents,
+          stripe_session_id: session.id, status: 'completed',
+        });
+      }
+      console.log(`🍛 Order paid: ${order_id}`);
+    }
 
     // Ticket purchase paid → confirm, increment sold count, record revenue
     if (session.payment_status === 'paid' && kind === 'ticket' && ticket_id) {

@@ -22,6 +22,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
   const primaryLinks = [
     { to: '/search',      label: 'Businesses' },
     { to: '/deals',       label: 'Deals' },
+    { to: '/order',       label: '🍛 Order Food' },
     { to: '/marketplace', label: 'Marketplace' },
     { to: '/services',    label: 'Services' },
     { to: '/live',        label: '🔴 Live' },
@@ -33,6 +34,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
     { to: '/roommates',   label: '🏘️ Accommodations' },
     { to: '/events',      label: '🎉 Events' },
     { to: '/adda',        label: '☕ Adda' },
+    { to: '/my-restaurant', label: '🍽️ My Restaurant' },
     { to: '/connections', label: '🤝 Connections' },
     { to: '/local-info',  label: '🏛️ Local Info' },
     { to: '/radio',       label: '📻 Radio' },
