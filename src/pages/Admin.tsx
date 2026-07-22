@@ -5,10 +5,16 @@ import {
   adminFetchReports, adminResolveReport,
   adminFetchPayments,
   adminFetchStreams, adminSetStreamStatus,
+  supabase,
 } from '../services/supabase';
 import type { AdminStats, Post } from '../types';
 
-type Tab = 'overview' | 'posts' | 'reports' | 'streams' | 'users';
+type Tab = 'overview' | 'posts' | 'reports' | 'streams' | 'news' | 'users';
+
+interface NewsRow {
+  id: string; title: string; url: string; source?: string; category: string;
+  city?: string; status: string; created_at: string;
+}
 
 interface StreamRow {
   id: string;
@@ -49,6 +55,7 @@ export default function Admin() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [streams, setStreams] = useState<StreamRow[]>([]);
+  const [news, setNews] = useState<NewsRow[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -63,14 +70,16 @@ export default function Admin() {
       adminFetchReports('open'),
       adminFetchPayments(),
       adminFetchStreams(),
+      supabase.from('news_items').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
     ])
-      .then(([s, u, p, r, pay, st]) => {
+      .then(([s, u, p, r, pay, st, nw]) => {
         setStats(s);
         setUsers(u as Record<string, unknown>[]);
         setPosts(p as Post[]);
         setReports(r as ReportRow[]);
         setPayments(pay as PaymentRow[]);
         setStreams(st as StreamRow[]);
+        setNews(((nw as { data?: NewsRow[] }).data) ?? []);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -134,8 +143,15 @@ export default function Admin() {
     { id: 'posts',    label: `📝 Posts (${posts.length})` },
     { id: 'reports',  label: `🚩 Reports${reports.length ? ` (${reports.length})` : ''}` },
     { id: 'streams',  label: `🔴 Streams${pendingStreams.length ? ` (${pendingStreams.length})` : ''}` },
+    { id: 'news',     label: `📰 News${news.length ? ` (${news.length})` : ''}` },
     { id: 'users',    label: `👥 Users (${users.length})` },
   ];
+
+  const handleNews = async (n: NewsRow, status: 'approved' | 'rejected') => {
+    if (status === 'rejected') await supabase.from('news_items').delete().eq('id', n.id);
+    else await supabase.from('news_items').update({ status: 'approved' }).eq('id', n.id);
+    setNews((prev) => prev.filter((x) => x.id !== n.id));
+  };
 
   const handleStream = async (s: StreamRow, status: 'approved' | 'rejected' | 'ended') => {
     await adminSetStreamStatus(s.id, status).catch(() => {});
@@ -396,6 +412,33 @@ export default function Admin() {
                           style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'white', cursor: 'pointer' }}
                         >⏹ End stream</button>
                       )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+
+        /* ── NEWS ─────────────────────────────────────────────── */
+        ) : activeTab === 'news' ? (
+          news.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>📰</div>
+              <p>No community news awaiting review.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {news.map((n) => (
+                <div key={n.id} style={{ padding: 14, borderRadius: 12, border: '1px solid var(--border)', background: '#fffbeb' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{n.title}</div>
+                      <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{n.category} · {n.city || 'Local'} · {new Date(n.created_at).toLocaleString()}</div>
+                      <a href={n.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--accent-text)', fontWeight: 600 }}>🔗 Preview link →</a>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                      <button onClick={() => handleNews(n, 'approved')} style={{ fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 8, border: 'none', background: '#16a34a', color: 'white', cursor: 'pointer' }}>✓ Approve</button>
+                      <button onClick={() => handleNews(n, 'rejected')} style={{ fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 8, border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer' }}>✕ Reject</button>
                     </div>
                   </div>
                 </div>

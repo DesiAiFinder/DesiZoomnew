@@ -6,6 +6,7 @@ import { fetchForYou, fetchEvents, fetchMarketplace } from '../services/supabase
 import DealCard from '../components/DealCard';
 import WeatherWidget from '../components/WeatherWidget';
 import PostModal from '../components/PostModal';
+import DesiNews from '../components/DesiNews';
 import type { Post } from '../types';
 import { CITIES, DESI_FESTIVALS, RADIO_STATIONS } from '../config/env';
 
@@ -275,6 +276,9 @@ export default function Home() {
           <span key={c} className={`chip ${c === city ? 'active' : ''}`} onClick={() => setCity(c)} style={{ flexShrink: 0 }}>{c}</span>
         ))}
       </div>
+
+      {/* Desi News strip */}
+      <DesiNews />
 
       {/* Main 3-col layout */}
       <div className="home-main" style={{ display: 'flex', gap: 24, padding: '20px 32px 48px', flexWrap: 'wrap' }}>
