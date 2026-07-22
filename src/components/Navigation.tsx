@@ -25,20 +25,20 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
 
   // Primary pill-nav row — shown on every page (doubles as quick access + nav)
   const pillLinks = [
-    { to: '/order',       icon: '🍛', label: 'Order Food' },
     { to: '/deals',       icon: '🏷️', label: 'Deals' },
-    { to: '/marketplace', icon: '🛍️', label: 'Marketplace' },
-    { to: '/services',    icon: '🛠️', label: 'Services' },
-    { to: '/search',      icon: '🔍', label: 'Businesses' },
     { to: '/events',      icon: '🎉', label: 'Events' },
+    { to: '/search',      icon: '🔍', label: 'Businesses' },
+    { to: '/order',       icon: '🍛', label: 'Order Food' },
+    { to: '/marketplace', icon: '🛍️', label: 'Marketplace' },
+    { to: '/services',    icon: '🛠️', label: 'Bookings' },
     { to: '/live',        icon: '🔴', label: 'Live' },
   ];
 
   // Secondary links grouped under the "More" dropdown
   const moreLinks = [
-    { to: '/roommates',     label: '🏘️ Accommodations' },
-    { to: '/adda',          label: '☕ Adda' },
-    { to: '/connections',   label: '🤝 Connections' },
+    { to: '/roommates',     label: '🏘️ Rooms' },
+    { to: '/adda',          label: '💬 Community' },
+    { to: '/connections',   label: '🤝 Organizations' },
     { to: '/local-info',    label: '🏛️ Local Info' },
     { to: '/my-restaurant', label: '🍽️ My Restaurant' },
     { to: '/radio',         label: '📻 Radio' },

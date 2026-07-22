@@ -52,8 +52,8 @@ export default function Adda() {
   return (
     <>
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#3d1509,#2a0e05)' }}>
-        <div className="eyebrow">☕ Adda</div>
-        <h1>The Community Adda</h1>
+        <div className="eyebrow">💬 Community</div>
+        <h1>The Community Board</h1>
         <p>Ask anything — visa questions, best pediatrician, where to find fresh curry leaves. Your community has answers.</p>
       </div>
 

@@ -90,7 +90,7 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
   };
 
   const typeLabel: Record<string, string> = {
-    deal: 'Deal', marketplace: 'Marketplace', roommate: 'Roommate', event: 'Event', question: 'Adda',
+    deal: 'Deal', marketplace: 'Marketplace', roommate: 'Roommate', event: 'Event', question: 'Community',
   };
 
   return (

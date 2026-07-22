@@ -267,7 +267,7 @@ export default function Services() {
   return (
     <>
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#1a2a0a,#101806)' }}>
-        <div className="eyebrow">🛠️ Services</div>
+        <div className="eyebrow">🛠️ Bookings</div>
         <h1>Desi Services — Book Trusted Providers</h1>
         <p>Poojas, catering, mehndi, photography & more. Fixed prices, secure payment, contact shared after booking.</p>
       </div>

@@ -279,8 +279,8 @@ export default function Home() {
         <div className="home-categories-col" style={{ flex: '0 0 210px' }}>
           <h3 style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted)', marginBottom: 10 }}>Explore</h3>
           {[
-            { to: '/services',    label: '🛠️ Book a service' },
-            { to: '/adda',        label: '☕ Ask the community' },
+            { to: '/services',    label: '🛠️ Bookings' },
+            { to: '/adda',        label: '💬 Community' },
             { to: '/connections', label: '🤝 Organizations' },
             { to: '/live',        label: '🔴 Live streams' },
             { to: '/local-info',  label: '🏛️ Local info' },
@@ -308,7 +308,7 @@ export default function Home() {
               { key: 'marketplace', label: '🛍️ For sale' },
               { key: 'roommate', label: '🏘️ Rooms' },
               { key: 'event', label: '🎉 Events' },
-              { key: 'question', label: '☕ Adda' },
+              { key: 'question', label: '💬 Community' },
             ].map((f) => (
               <span key={f.key} className={`chip ${feedFilter === f.key ? 'active' : ''}`} style={{ fontSize: 12 }} onClick={() => setFeedFilter(f.key)}>{f.label}</span>
             ))}

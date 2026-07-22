@@ -143,7 +143,7 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
             <option value="marketplace">Marketplace listing</option>
             <option value="roommate">Accommodation (room / apartment / home)</option>
             <option value="event">Event</option>
-            <option value="question">☕ Adda question (ask the community)</option>
+            <option value="question">💬 Community question (ask the neighborhood)</option>
           </select>
         </div>
 

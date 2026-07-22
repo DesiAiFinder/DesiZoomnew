@@ -403,7 +403,7 @@ export default function Profile() {
                   <option value="marketplace">For sale</option>
                   <option value="roommate">Accommodations</option>
                   <option value="event">Events</option>
-                  <option value="question">Adda</option>
+                  <option value="question">Community</option>
                 </select>
                 <button className="btn-primary" onClick={addAlert}>+ Add alert</button>
               </div>
