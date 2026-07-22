@@ -40,7 +40,6 @@ export default function Home() {
     () => new Set(JSON.parse(localStorage.getItem('dz_votes') || '[]'))
   );
   const [playing, setPlaying] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [feedFilter, setFeedFilter] = useState('all');
   const audioRef = useRef<HTMLAudioElement>(null);
   const festival = getNextFestival();
@@ -99,7 +98,7 @@ export default function Home() {
             overflow-y: auto !important;
             padding: 14px 16px !important;
           }
-          .category-grid      { grid-template-columns: repeat(3,1fr) !important; padding: 14px 16px 8px !important; gap: 8px !important; }
+          .category-grid      { padding: 12px 16px 6px !important; gap: 7px !important; }
           .city-chips         { padding: 10px 16px 0 !important; }
           .home-main          { flex-direction: column !important; padding: 16px 16px 32px !important; gap: 16px !important; }
           .home-categories-col{ display: none !important; }
@@ -113,9 +112,6 @@ export default function Home() {
           .hero-search-row    { flex-wrap: wrap !important; }
           .hero-search-row .search-btn { flex: 1 !important; min-width: 0 !important; }
         }
-        @media (max-width: 480px) {
-          .category-grid { grid-template-columns: repeat(2,1fr) !important; }
-        }
       `}</style>
 
       {/* Festival strip */}
@@ -124,10 +120,10 @@ export default function Home() {
       </div>
 
       {/* Hero */}
-      <div className="home-hero" style={{ display: 'flex', background: 'linear-gradient(135deg,#3d1509 55%,#5c2410)', minHeight: 280 }}>
+      <div className="home-hero" style={{ display: 'flex', background: 'linear-gradient(135deg,#3d1509 55%,#5c2410)', minHeight: 210 }}>
 
         {/* Left */}
-        <div className="hero-left" style={{ flex: 1, padding: '32px 36px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="hero-left" style={{ flex: 1, padding: '24px 36px', display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}>
           {/* Badge */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(224,120,32,0.15)', border: '1px solid rgba(224,120,32,0.3)', borderRadius: 20, padding: '5px 14px', width: 'fit-content' }}>
             <span style={{ width: 7, height: 7, background: '#ef9f27', borderRadius: '50%', display: 'inline-block' }} />
@@ -136,67 +132,34 @@ export default function Home() {
 
           {/* Headline */}
           <div>
-            <div style={{ fontSize: 'clamp(22px,3vw,32px)', fontWeight: 700, color: '#fff', lineHeight: 1.15 }}>Everything Desi.</div>
-            <div style={{ fontSize: 'clamp(22px,3vw,32px)', fontWeight: 700, lineHeight: 1.15 }}>
-              <span style={{ color: '#fac775' }}>Deals, rooms, events</span>
+            <div style={{ fontSize: 'clamp(20px,2.8vw,30px)', fontWeight: 700, color: '#fff', lineHeight: 1.15 }}>Everything Desi.</div>
+            <div style={{ fontSize: 'clamp(20px,2.8vw,30px)', fontWeight: 700, lineHeight: 1.15 }}>
+              <span style={{ color: '#fac775' }}>Food, deals, services & events</span>
               <span style={{ color: '#fff' }}> — one zoom.</span>
             </div>
           </div>
 
-          <div className="hero-description" style={{ fontSize: 14, color: 'rgba(210,220,240,0.7)', lineHeight: 1.65, maxWidth: 480 }}>
-            Browse desi restaurant deals, find a roommate, score event tickets, discover Indian businesses nearby, and tune into live desi radio — from your city or any city across the US.
+          <div className="hero-description" style={{ fontSize: 13.5, color: 'rgba(240,220,200,0.72)', lineHeight: 1.55, maxWidth: 500 }}>
+            Order pickup from desi restaurants, book a priest or caterer, grab local deals, buy & sell, find a room, catch events & live streams — all for your city.
           </div>
 
           <WeatherWidget />
 
-          {/* Search bar */}
-          <div className="hero-search-row" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 10, padding: '0 16px', height: 44 }}>
-              <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)' }}>🔍</span>
-              <input
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && searchQuery) window.location.href = `/search?q=${searchQuery}`; }}
-                placeholder="Search deals, businesses, rooms…"
-                style={{ background: 'transparent', border: 'none', outline: 'none', color: 'white', fontSize: 13, flex: 1, minWidth: 0 }}
-              />
-            </div>
-            <Link
-              to={searchQuery ? `/search?q=${searchQuery}` : '/search'}
-              className="search-btn"
-              style={{ background: '#ef9f27', color: '#412402', fontSize: 13, fontWeight: 700, padding: '0 20px', height: 44, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', whiteSpace: 'nowrap' }}
-            >
-              🔍 Search
-            </Link>
+          {/* Hero action buttons — search now lives in the header */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               onClick={() => user ? setPostOpen(true) : onAuthOpen()}
-              style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 600, padding: '0 16px', height: 44, borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0 }}
+              style={{ background: '#ef9f27', color: '#412402', fontSize: 13.5, fontWeight: 700, padding: '0 20px', height: 44, borderRadius: 10, border: 'none', whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0 }}
             >
               + Post
             </button>
             <Link
               to="/live"
-              style={{ background: 'rgba(220,38,38,0.85)', color: 'white', fontSize: 13, fontWeight: 700, padding: '0 16px', height: 44, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
+              style={{ background: 'rgba(220,38,38,0.9)', color: 'white', fontSize: 13.5, fontWeight: 700, padding: '0 18px', height: 44, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
             >
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-block', animation: 'livePulse 1.5s infinite' }} />
-              Live
+              Go Live
             </Link>
-          </div>
-
-          {/* Quick links */}
-          <div className="hero-quicklinks" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {[
-              { to: '/search', label: '🔍 Businesses' },
-              { to: '/deals', label: '🏷️ Deals' },
-              { to: '/marketplace', label: '🛍️ Marketplace' },
-              { to: '/roommates', label: '🏠 Roommates' },
-              { to: '/events', label: '🎉 Events' },
-              { to: '/local-info', label: '🏛️ Local Info' },
-            ].map(l => (
-              <Link key={l.to} to={l.to} style={{ fontSize: 12, padding: '5px 11px', background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.65)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)', textDecoration: 'none' }}>
-                {l.label}
-              </Link>
-            ))}
           </div>
         </div>
 
@@ -250,25 +213,6 @@ export default function Home() {
       )}
 
       <audio ref={audioRef} preload="none" />
-
-      {/* Category tiles */}
-      <div className="category-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, padding: '20px 32px 12px' }}>
-        {[
-          { to: '/search',      icon: '🔍', label: 'Businesses',     bg: 'var(--accent-soft)', textColor: 'var(--accent-text)' },
-          { to: '/deals',       icon: '🏷️', label: 'Deals',          bg: '#fff3e0',           textColor: '#b84d00' },
-          { to: '/marketplace', icon: '🛍️', label: 'Marketplace',    bg: 'var(--pink-soft)',  textColor: 'var(--pink-text)' },
-          { to: '/roommates',   icon: '🏘️', label: 'Accommodations', bg: 'var(--navy)',       textColor: 'white' },
-          { to: '/events',      icon: '🎉', label: 'Events',         bg: 'var(--blue-soft)',  textColor: 'var(--blue-text)' },
-          { to: '/adda',        icon: '☕', label: 'Adda',           bg: '#f5eee2',           textColor: '#6b4a2a' },
-          { to: '/live',        icon: '🔴', label: 'Live',           bg: '#fceaea',           textColor: '#a32d2d' },
-          { to: '/local-info',  icon: '🏛️', label: 'Local Info',     bg: '#edfaf1',           textColor: '#1a6e3c' },
-        ].map(t => (
-          <Link key={t.to} to={t.to} className="tile" style={{ background: t.bg, textDecoration: 'none', padding: '16px 12px', textAlign: 'center' }}>
-            <div style={{ fontSize: 24 }}>{t.icon}</div>
-            <h3 style={{ fontSize: 13, color: t.textColor, marginTop: 6, marginBottom: 0 }}>{t.label}</h3>
-          </Link>
-        ))}
-      </div>
 
       {/* City chips */}
       <div className="city-chips" style={{ display: 'flex', gap: 8, padding: '12px 32px 0', overflowX: 'auto', flexWrap: 'nowrap', scrollbarWidth: 'none' }}>

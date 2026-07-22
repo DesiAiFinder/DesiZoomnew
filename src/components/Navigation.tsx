@@ -18,40 +18,39 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
   const [commOpen, setCommOpen] = useState(false);
   const [search, setSearch] = useState('');
 
-  // Primary links shown top-level on desktop
-  const primaryLinks = [
-    { to: '/search',      label: 'Businesses' },
-    { to: '/deals',       label: 'Deals' },
-    { to: '/order',       label: '🍛 Order Food' },
-    { to: '/marketplace', label: 'Marketplace' },
-    { to: '/services',    label: 'Services' },
-    { to: '/live',        label: '🔴 Live' },
-    { to: '/messages',    label: '💬 Messages' },
+  // Primary pill-nav row — shown on every page (doubles as quick access + nav)
+  const pillLinks = [
+    { to: '/order',       icon: '🍛', label: 'Order Food' },
+    { to: '/deals',       icon: '🏷️', label: 'Deals' },
+    { to: '/marketplace', icon: '🛍️', label: 'Marketplace' },
+    { to: '/services',    icon: '🛠️', label: 'Services' },
+    { to: '/search',      icon: '🔍', label: 'Businesses' },
+    { to: '/events',      icon: '🎉', label: 'Events' },
+    { to: '/live',        icon: '🔴', label: 'Live' },
   ];
 
-  // Secondary links grouped under the "Community" dropdown
-  const communityLinks = [
-    { to: '/roommates',   label: '🏘️ Accommodations' },
-    { to: '/events',      label: '🎉 Events' },
-    { to: '/adda',        label: '☕ Adda' },
+  // Secondary links grouped under the "More" dropdown
+  const moreLinks = [
+    { to: '/roommates',     label: '🏘️ Accommodations' },
+    { to: '/adda',          label: '☕ Adda' },
+    { to: '/connections',   label: '🤝 Connections' },
+    { to: '/local-info',    label: '🏛️ Local Info' },
     { to: '/my-restaurant', label: '🍽️ My Restaurant' },
-    { to: '/connections', label: '🤝 Connections' },
-    { to: '/local-info',  label: '🏛️ Local Info' },
-    { to: '/radio',       label: '📻 Radio' },
+    { to: '/radio',         label: '📻 Radio' },
   ];
 
   // Flat list for the mobile menu (everything)
   const navLinks = [
-    ...primaryLinks,
-    ...communityLinks,
+    ...pillLinks.map((l) => ({ to: l.to, label: `${l.icon} ${l.label}` })),
+    ...moreLinks,
+    ...(user ? [{ to: '/messages', label: '💬 Messages' }] : []),
     ...(user ? [{ to: '/profile', label: '👤 My Profile' }] : []),
     ...(isAdmin ? [{ to: '/admin', label: '🔐 Admin' }] : []),
   ];
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Account';
-
-  // Is the currently selected city the GPS-detected one?
   const isGPS = !!(detectedCity && city === detectedCity);
+  const moreActive = moreLinks.some((l) => l.to === routerLoc.pathname);
 
   return (
     <>
@@ -82,54 +81,157 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
           border-radius: 10px; background: #dcfce7; color: #166534; text-transform: uppercase; letter-spacing: 0.04em;
         }
         .dd-div { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
-        .dd-sec { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 10px 2px; }
+        @keyframes navLivePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
         @media (min-width: 769px) { .show-mobile { display: none !important; } }
         @media (max-width: 768px) { .hidden-mobile { display: none !important; } }
       `}</style>
 
       <header style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 24px', borderBottom: '1px solid var(--border)',
+        display: 'flex', flexDirection: 'column',
+        borderBottom: '1px solid var(--border)',
         background: 'white', position: 'sticky', top: 0, zIndex: 30,
-        flexWrap: 'wrap', gap: '8px',
       }}>
-        {/* Logo */}
-        <Link to="/" style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 22, color: 'var(--text)', textDecoration: 'none', flexShrink: 0 }}>
-          Desi<span style={{ color: 'var(--accent)' }}>Zoom</span>
-        </Link>
+        {/* ── Row 1: utility (logo · search · city · messages · auth) ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 24px', flexWrap: 'wrap' }}>
+          {/* Logo */}
+          <Link to="/" style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 22, color: 'var(--text)', textDecoration: 'none', flexShrink: 0 }}>
+            Desi<span style={{ color: 'var(--accent)' }}>Zoom</span>
+          </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden-mobile" style={{ display: 'flex', gap: 16, fontSize: 13, fontWeight: 500, alignItems: 'center' }}>
-          {primaryLinks.map((l) => (
-            <Link
-              key={l.to} to={l.to}
-              style={{
-                color: routerLoc.pathname === l.to ? 'var(--accent)' : 'var(--text)',
-                textDecoration: 'none', fontWeight: routerLoc.pathname === l.to ? 700 : 500,
-              }}
+          {/* Search — wider, primary */}
+          <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, maxWidth: 360, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 9, padding: '0 13px', height: 36 }}>
+            <span style={{ fontSize: 14, color: 'var(--muted)' }}>🔍</span>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') onSearch(search); }}
+              placeholder="Search deals, food, businesses…"
+              style={{ flex: 1, minWidth: 0, height: '100%', border: 'none', background: 'transparent', fontSize: 13, outline: 'none', color: 'var(--text)' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', flexWrap: 'nowrap' }}>
+            {/* Messages icon (compact) */}
+            {user && (
+              <Link
+                to="/messages"
+                className="hidden-mobile"
+                title="Messages"
+                aria-label="Messages"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 32, height: 32, borderRadius: 8, textDecoration: 'none', fontSize: 16,
+                  border: '1px solid var(--border)',
+                  background: routerLoc.pathname === '/messages' ? 'var(--accent-soft)' : 'white',
+                }}
+              >💬</Link>
+            )}
+
+            {/* City picker */}
+            <div style={{ position: 'relative' }}>
+              <button
+                className={`nav-city-pill ${isGPS ? 'gps' : 'manual'}`}
+                onClick={() => setCityOpen((o) => !o)}
+              >
+                {isGPS ? <><span className="gps-dot" />{city} ▾</> : <>📍 {city} ▾</>}
+              </button>
+
+              {cityOpen && (
+                <div className="city-dropdown">
+                  {detectedCity && (
+                    <>
+                      <div
+                        className={`city-opt ${city === detectedCity ? 'active' : ''}`}
+                        onClick={() => { setCity(detectedCity); setCityOpen(false); }}
+                      >
+                        <span className="gps-dot" />
+                        {detectedCity}
+                        <span className="gps-badge">GPS</span>
+                      </div>
+                      <div className="dd-div" />
+                    </>
+                  )}
+                  {CITIES.map((c) => (
+                    <div
+                      key={c}
+                      className={`city-opt ${c === city && c !== detectedCity ? 'active' : ''}`}
+                      onClick={() => { setCity(c); setCityOpen(false); }}
+                    >
+                      {c}
+                      {c === city && c !== detectedCity && <span style={{ marginLeft: 'auto', fontSize: 11 }}>✓</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Auth */}
+            {user ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Link to="/profile" className="hidden-mobile" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', textDecoration: 'none' }}>👋 {displayName}</Link>
+                <button className="btn-ghost hidden-mobile" onClick={signOut} style={{ border: '1px solid var(--border)', fontSize: 12 }}>Sign out</button>
+              </div>
+            ) : (
+              <button className="btn-ghost hidden-mobile" onClick={onAuthOpen} style={{ border: '1px solid var(--border)', fontSize: 12 }}>Sign in</button>
+            )}
+
+            {/* Hamburger */}
+            <button
+              className="show-mobile"
+              onClick={() => setMenuOpen((o) => !o)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: '0 2px' }}
+              aria-label="Menu"
             >
-              {l.label}
-            </Link>
-          ))}
+              {menuOpen ? '✕' : '☰'}
+            </button>
+          </div>
+        </div>
 
-          {/* Community dropdown */}
+        {/* ── Row 2: pill nav (desktop) ── */}
+        <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 24px 9px', flexWrap: 'wrap' }}>
+          {pillLinks.map((l) => {
+            const active = routerLoc.pathname === l.to;
+            const isLive = l.to === '/live';
+            return (
+              <Link
+                key={l.to} to={l.to}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '6px 13px', borderRadius: 20, fontSize: 12.5,
+                  fontWeight: active ? 700 : 600, textDecoration: 'none', whiteSpace: 'nowrap',
+                  background: active ? 'var(--accent)' : 'white',
+                  color: active ? 'white' : 'var(--text)',
+                  border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                }}
+              >
+                {isLive
+                  ? <span style={{ width: 8, height: 8, borderRadius: '50%', background: active ? 'white' : '#dc2626', display: 'inline-block', animation: 'navLivePulse 1.5s infinite' }} />
+                  : <span style={{ fontSize: 14 }}>{l.icon}</span>}
+                {l.label}
+              </Link>
+            );
+          })}
+
+          {/* More dropdown */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setCommOpen((o) => !o)}
               style={{
-                background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                fontSize: 13, fontWeight: communityLinks.some((l) => l.to === routerLoc.pathname) ? 700 : 500,
-                color: communityLinks.some((l) => l.to === routerLoc.pathname) ? 'var(--accent)' : 'var(--text)',
-                display: 'flex', alignItems: 'center', gap: 3,
+                display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer',
+                padding: '6px 13px', borderRadius: 20, fontSize: 12.5, fontFamily: 'inherit',
+                fontWeight: moreActive ? 700 : 600, whiteSpace: 'nowrap',
+                background: moreActive ? 'var(--accent-soft)' : 'white',
+                color: moreActive ? 'var(--accent-text)' : 'var(--text-secondary)',
+                border: `1px solid ${moreActive ? 'var(--accent)' : 'var(--border)'}`,
               }}
             >
-              Community ▾
+              More {commOpen ? '▴' : '▾'}
             </button>
             {commOpen && (
               <>
                 <div onClick={() => setCommOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 29 }} />
-                <div style={{ position: 'absolute', top: 'calc(100% + 10px)', left: 0, background: 'white', border: '1px solid var(--border)', borderRadius: 12, padding: 6, zIndex: 50, boxShadow: '0 8px 24px rgba(60,40,20,0.14)', minWidth: 190 }}>
-                  {communityLinks.map((l) => (
+                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: 'white', border: '1px solid var(--border)', borderRadius: 12, padding: 6, zIndex: 50, boxShadow: '0 8px 24px rgba(60,40,20,0.14)', minWidth: 200 }}>
+                  {moreLinks.map((l) => (
                     <Link
                       key={l.to} to={l.to}
                       onClick={() => setCommOpen(false)}
@@ -147,91 +249,16 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
               </>
             )}
           </div>
-        </nav>
-
-        {/* Right controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
-          {/* Desktop search */}
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') onSearch(search); }}
-            placeholder="Search…"
-            className="hidden-mobile"
-            style={{ width: 180, height: 32, border: '1px solid var(--border)', borderRadius: 8, padding: '0 12px', fontSize: 13, background: 'var(--bg)', outline: 'none' }}
-          />
-
-          {/* ── City picker ─────────────────────────────── */}
-          <div style={{ position: 'relative' }}>
-            <button
-              className={`nav-city-pill ${isGPS ? 'gps' : 'manual'}`}
-              onClick={() => setCityOpen((o) => !o)}
-            >
-              {isGPS ? <><span className="gps-dot" />{city} ▾</> : <>📍 {city} ▾</>}
-            </button>
-
-            {cityOpen && (
-              <div className="city-dropdown">
-                {/* GPS city pinned at top */}
-                {detectedCity && (
-                  <>
-                    <div
-                      className={`city-opt ${city === detectedCity ? 'active' : ''}`}
-                      onClick={() => { setCity(detectedCity); setCityOpen(false); }}
-                    >
-                      <span className="gps-dot" />
-                      {detectedCity}
-                      <span className="gps-badge">GPS</span>
-                    </div>
-                    <div className="dd-div" />
-                    <div className="dd-sec">All cities</div>
-                  </>
-                )}
-
-                {/* Preset cities */}
-                {CITIES.map((c) => (
-                  <div
-                    key={c}
-                    className={`city-opt ${c === city && c !== detectedCity ? 'active' : ''}`}
-                    onClick={() => { setCity(c); setCityOpen(false); }}
-                  >
-                    {c}
-                    {c === city && c !== detectedCity && <span style={{ marginLeft: 'auto', fontSize: 11 }}>✓</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Auth */}
-          {user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Link to="/profile" className="hidden-mobile" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', textDecoration: 'none' }}>👋 {displayName}</Link>
-              <button className="btn-ghost" onClick={signOut} style={{ border: '1px solid var(--border)', fontSize: 12 }}>Sign out</button>
-            </div>
-          ) : (
-            <button className="btn-ghost" onClick={onAuthOpen} style={{ border: '1px solid var(--border)', fontSize: 12 }}>Sign in</button>
-          )}
-
-          {/* Hamburger */}
-          <button
-            className="show-mobile"
-            onClick={() => setMenuOpen((o) => !o)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: '0 2px' }}
-            aria-label="Menu"
-          >
-            {menuOpen ? '✕' : '☰'}
-          </button>
         </div>
 
-        {/* ── Mobile menu ─────────────────────────────── */}
+        {/* ── Mobile menu ── */}
         {menuOpen && (
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 2, borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 2 }}>
+          <div className="show-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 2, borderTop: '1px solid var(--border)', padding: '10px 20px 14px' }}>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { onSearch(search); setMenuOpen(false); } }}
-              placeholder="Search…"
+              placeholder="Search deals, food, businesses…"
               style={{ width: '100%', height: 38, border: '1px solid var(--border)', borderRadius: 8, padding: '0 12px', fontSize: 13, background: 'var(--bg)', marginBottom: 6, boxSizing: 'border-box' as const }}
             />
 
@@ -250,7 +277,16 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
               </Link>
             ))}
 
-            {/* GPS status in mobile menu */}
+            {/* Auth in mobile menu */}
+            <div style={{ marginTop: 8, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+              {user ? (
+                <button className="btn-ghost" onClick={() => { signOut(); setMenuOpen(false); }} style={{ border: '1px solid var(--border)', fontSize: 13, width: '100%' }}>Sign out</button>
+              ) : (
+                <button className="btn-ghost" onClick={() => { onAuthOpen(); setMenuOpen(false); }} style={{ border: '1px solid var(--border)', fontSize: 13, width: '100%' }}>Sign in</button>
+              )}
+            </div>
+
+            {/* GPS status */}
             {detectedCity && (
               <div style={{ marginTop: 8, padding: '8px 10px', background: '#f0fdf4', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
                 <span className="gps-dot" />
@@ -269,7 +305,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
         )}
       </header>
 
-      {/* Backdrop to close dropdown */}
+      {/* Backdrop to close city dropdown */}
       {cityOpen && <div onClick={() => setCityOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 29 }} />}
     </>
   );
