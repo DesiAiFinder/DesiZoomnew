@@ -29,7 +29,7 @@ const STATION_COLORS = ['#3d0d7a','#0a3a7a','#7a2a0a','#0a5a2a','#6a1a50','#1a3a
 
 export default function Home() {
   const { onAuthOpen } = useOutletContext<OutletCtx>();
-  const { city, setCity } = useLocation();
+  const { city, setCity, nearbyCities } = useLocation();
   const { user } = useAuth();
   const [feed, setFeed] = useState<Post[]>([]);
   const [events, setEvents] = useState<Post[]>([]);
@@ -53,10 +53,10 @@ export default function Home() {
   const load = async () => {
     setLoading(true);
     const [f, e, m, t] = await Promise.all([
-      fetchForYou(city).catch(() => []),
-      fetchEvents(city).catch(() => []),
-      fetchMarketplace(city).catch(() => []),
-      fetchCityToday(city).catch(() => null),
+      fetchForYou(nearbyCities).catch(() => []),
+      fetchEvents(nearbyCities).catch(() => []),
+      fetchMarketplace(nearbyCities).catch(() => []),
+      fetchCityToday(nearbyCities).catch(() => null),
     ]);
     setFeed(f as Post[]);
     setEvents(e as Post[]);
@@ -65,7 +65,7 @@ export default function Home() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [city]);
+  useEffect(() => { load(); }, [nearbyCities]);
 
   const handleVote = (id: string) => {
     setVotedIds((prev) => {

@@ -3,6 +3,7 @@ import { Link, useLocation as useRouterLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import { CITIES } from '../config/env';
+import { RADIUS_OPTIONS } from '../services/geo';
 
 interface Props {
   onAuthOpen: () => void;
@@ -11,12 +12,16 @@ interface Props {
 
 export default function Navigation({ onAuthOpen, onSearch }: Props) {
   const { user, signOut, isAdmin } = useAuth();
-  const { city, setCity, detectedCity } = useLocation();
+  const { city, setCity, detectedCity, radius, setRadius } = useLocation();
   const routerLoc = useRouterLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [cityOpen, setCityOpen] = useState(false);
+  const [radiusOpen, setRadiusOpen] = useState(false);
   const [commOpen, setCommOpen] = useState(false);
   const [search, setSearch] = useState('');
+
+  const radiusLabel = RADIUS_OPTIONS.find((o) => o.mi === radius)?.label
+    ?? (radius > 0 ? `${radius} miles` : 'This city');
 
   // Primary pill-nav row — shown on every page (doubles as quick access + nav)
   const pillLinks = [
@@ -162,6 +167,34 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+
+            {/* Radius picker */}
+            <div className="hidden-mobile" style={{ position: 'relative' }}>
+              <button
+                className="nav-city-pill manual"
+                onClick={() => setRadiusOpen((o) => !o)}
+                title="How far to search"
+              >
+                🔘 {radiusLabel} ▾
+              </button>
+              {radiusOpen && (
+                <>
+                  <div onClick={() => setRadiusOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 29 }} />
+                  <div className="city-dropdown" style={{ minWidth: 150 }}>
+                    {RADIUS_OPTIONS.map((o) => (
+                      <div
+                        key={o.mi}
+                        className={`city-opt ${o.mi === radius ? 'active' : ''}`}
+                        onClick={() => { setRadius(o.mi); setRadiusOpen(false); }}
+                      >
+                        {o.label}
+                        {o.mi === radius && <span style={{ marginLeft: 'auto', fontSize: 11 }}>✓</span>}
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 

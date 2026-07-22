@@ -34,7 +34,7 @@ const NEARBY_QUERIES = [
 
 export default function Deals() {
   const { onAuthOpen } = useOutletContext<OutletCtx>();
-  const { city, setCity, detectedCity, geoLocation } = useLocation();
+  const { city, setCity, detectedCity, geoLocation, nearbyCities } = useLocation();
   const { user } = useAuth();
 
   const [posts, setPosts] = useState<Post[]>([]);
@@ -59,12 +59,12 @@ export default function Deals() {
 
   const loadPosts = async () => {
     setPostsLoading(true);
-    const data = await fetchPosts(city, 'deal', search || undefined).catch(() => []);
+    const data = await fetchPosts(nearbyCities, 'deal', search || undefined).catch(() => []);
     setPosts(data as Post[]);
     setPostsLoading(false);
   };
 
-  useEffect(() => { loadPosts(); }, [city, search]);
+  useEffect(() => { loadPosts(); }, [nearbyCities, search]);
 
   useEffect(() => {
     if (!mapsReady) return;

@@ -20,7 +20,7 @@ function formatTime(iso: string) {
 
 export default function Events() {
   const { onAuthOpen } = useOutletContext<OutletCtx>();
-  const { city } = useLocation();
+  const { city, nearbyCities } = useLocation();
   const { user } = useAuth();
   const [events, setEvents] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,12 +28,12 @@ export default function Events() {
 
   const load = async () => {
     setLoading(true);
-    const data = await fetchEvents(city).catch(() => []);
+    const data = await fetchEvents(nearbyCities).catch(() => []);
     setEvents(data as Post[]);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [city]);
+  useEffect(() => { load(); }, [nearbyCities]);
 
   return (
     <>

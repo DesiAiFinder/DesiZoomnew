@@ -1,9 +1,41 @@
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/env';
+import { geocodeCity, milesBetween } from './geo';
 
 const SUPABASE_URL = env.supabaseUrl || 'https://placeholder.supabase.co';
 const SUPABASE_KEY = env.supabaseAnonKey || 'placeholder-anon-key';
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Normalize a city arg that may be a single city or a list of nearby cities.
+const cityList = (city: string | string[]): string[] => (Array.isArray(city) ? city : [city]);
+
+// ── Area / radius ───────────────────────────────────────────────────────────
+// Cities (from real listings) within `radius` miles of the selected city.
+const _nearbyCache: Record<string, string[]> = {};
+export async function fetchNearbyCities(centerCity: string, radius: number): Promise<string[]> {
+  if (!centerCity || radius <= 0) return [centerCity];
+  const key = `${centerCity}|${radius}`;
+  if (_nearbyCache[key]) return _nearbyCache[key];
+  const center = await geocodeCity(centerCity);
+  if (!center) return [centerCity];
+
+  const [p, r] = await Promise.all([
+    supabase.from('posts').select('city').limit(3000),
+    supabase.from('restaurants').select('city').limit(1000),
+  ]);
+  const candidates = new Set<string>([centerCity]);
+  (p.data ?? []).forEach((x: { city?: string }) => x.city && candidates.add(x.city));
+  (r.data ?? []).forEach((x: { city?: string }) => x.city && candidates.add(x.city));
+
+  const near: string[] = [centerCity];
+  for (const c of candidates) {
+    if (c === centerCity) continue;
+    const ll = await geocodeCity(c);
+    if (ll && milesBetween(center, ll) <= radius) near.push(c);
+  }
+  _nearbyCache[key] = near;
+  return near;
+}
 
 // ── Posts ─────────────────────────────────────────────────────────────────────
 // Sort: sponsored first, then active boosts, then by votes/recency
@@ -15,11 +47,11 @@ function promotedSort<T extends { is_sponsored?: boolean; boosted_until?: string
   return [...rows].sort((a, b) => rank(b) - rank(a));
 }
 
-export async function fetchPosts(city: string, type?: string, search?: string) {
+export async function fetchPosts(city: string | string[], type?: string, search?: string) {
   let q = supabase
     .from('posts')
     .select('*')
-    .eq('city', city)
+    .in('city', cityList(city))
     .eq('is_active', true)
     .order('votes_count', { ascending: false });
   if (type) q = q.eq('type', type);
@@ -29,11 +61,11 @@ export async function fetchPosts(city: string, type?: string, search?: string) {
 }
 
 // Unified "For You" feed — all active posts for a city, promoted first, newest next
-export async function fetchForYou(city: string, type?: string) {
+export async function fetchForYou(city: string | string[], type?: string) {
   let q = supabase
     .from('posts')
     .select('*')
-    .eq('city', city)
+    .in('city', cityList(city))
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(40);
@@ -52,11 +84,11 @@ export async function fetchPostById(id: string) {
   return data;
 }
 
-export async function fetchEvents(city: string) {
+export async function fetchEvents(city: string | string[]) {
   const { data } = await supabase
     .from('posts')
     .select('*')
-    .eq('city', city)
+    .in('city', cityList(city))
     .eq('type', 'event')
     .eq('is_active', true)
     .order('event_date', { ascending: true })
@@ -64,11 +96,11 @@ export async function fetchEvents(city: string) {
   return data ?? [];
 }
 
-export async function fetchMarketplace(city: string, category?: string) {
+export async function fetchMarketplace(city: string | string[], category?: string) {
   let q = supabase
     .from('posts')
     .select('*')
-    .eq('city', city)
+    .in('city', cityList(city))
     .eq('type', 'marketplace')
     .eq('is_active', true)
     .order('created_at', { ascending: false });
@@ -78,21 +110,22 @@ export async function fetchMarketplace(city: string, category?: string) {
 }
 
 // "Your city today" — live snapshot for the home hero cards.
-export async function fetchCityToday(city: string) {
-  const state = city.split(',')[1]?.trim();
+export async function fetchCityToday(city: string | string[]) {
+  const cities = cityList(city);
+  const state = cities[0]?.split(',')[1]?.trim();
   const [live, evs, rests, deals] = await Promise.all([
     supabase.from('live_streams').select('id,title,city,audience')
       .eq('status', 'approved')
       .order('created_at', { ascending: false }).limit(5),
     supabase.from('posts').select('id,title,event_date')
-      .eq('city', city).eq('type', 'event').eq('is_active', true)
+      .in('city', cities).eq('type', 'event').eq('is_active', true)
       .gte('event_date', new Date().toISOString())
       .order('event_date', { ascending: true }).limit(5),
     supabase.from('restaurants').select('id,name,is_open')
       .eq('is_active', true).eq('is_open', true)
-      .ilike('city', state ? `%, ${state}` : city).limit(10),
+      .ilike('city', state ? `%, ${state}` : cities[0]).limit(10),
     supabase.from('posts').select('id,title')
-      .eq('city', city).eq('type', 'deal').eq('is_active', true)
+      .in('city', cities).eq('type', 'deal').eq('is_active', true)
       .order('created_at', { ascending: false }).limit(5),
   ]);
   return {

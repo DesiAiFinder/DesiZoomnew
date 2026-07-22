@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { Location } from '../types';
 import { CITIES, env } from '../config/env';
-import { supabase } from '../services/supabase';
+import { supabase, fetchNearbyCities } from '../services/supabase';
+import { DEFAULT_RADIUS } from '../services/geo';
 
 interface LocationState {
   city: string;
@@ -9,10 +10,15 @@ interface LocationState {
   geoLocation: Location | null;
   geoLoading: boolean;
   detectedCity: string | null;
+  radius: number;
+  setRadius: (r: number) => void;
+  /** Selected city plus every nearby city within the chosen radius. */
+  nearbyCities: string[];
 }
 
 const LocationContext = createContext<LocationState>({
   city: CITIES[0], setCity: () => {}, geoLocation: null, geoLoading: false, detectedCity: null,
+  radius: DEFAULT_RADIUS, setRadius: () => {}, nearbyCities: [CITIES[0]],
 });
 
 async function reverseGeocode(lat: number, lng: number, apiKey: string): Promise<string | null> {
@@ -40,6 +46,25 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [geoLocation, setGeoLocation] = useState<Location | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [detectedCity, setDetectedCity] = useState<string | null>(null);
+  const [radius, setRadiusState] = useState<number>(
+    () => Number(localStorage.getItem('dz_radius') ?? DEFAULT_RADIUS)
+  );
+  const [nearbyCities, setNearbyCities] = useState<string[]>([city]);
+
+  const setRadius = (r: number) => {
+    setRadiusState(r);
+    localStorage.setItem('dz_radius', String(r));
+  };
+
+  // Recompute nearby cities whenever the city or radius changes.
+  useEffect(() => {
+    let cancelled = false;
+    setNearbyCities([city]); // immediate fallback while geocoding resolves
+    fetchNearbyCities(city, radius)
+      .then((list) => { if (!cancelled) setNearbyCities(list.length ? list : [city]); })
+      .catch(() => { if (!cancelled) setNearbyCities([city]); });
+    return () => { cancelled = true; };
+  }, [city, radius]);
 
   // Load city from user profile on login
   useEffect(() => {
@@ -98,7 +123,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <LocationContext.Provider value={{ city, setCity: handleSetCity, geoLocation, geoLoading, detectedCity }}>
+    <LocationContext.Provider value={{ city, setCity: handleSetCity, geoLocation, geoLoading, detectedCity, radius, setRadius, nearbyCities }}>
       {children}
     </LocationContext.Provider>
   );

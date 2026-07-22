@@ -18,7 +18,7 @@ const CAT_ICONS: Record<string, string> = {
 
 export default function Marketplace() {
   const { onAuthOpen } = useOutletContext<OutletCtx>();
-  const { city } = useLocation();
+  const { city, nearbyCities } = useLocation();
   const { user } = useAuth();
   const [items, setItems] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,12 +43,12 @@ export default function Marketplace() {
 
   const load = async () => {
     setLoading(true);
-    const data = await fetchMarketplace(city, activeCat === 'All' ? undefined : activeCat).catch(() => []);
+    const data = await fetchMarketplace(nearbyCities, activeCat === 'All' ? undefined : activeCat).catch(() => []);
     setItems(data as Post[]);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [city, activeCat]);
+  useEffect(() => { load(); }, [nearbyCities, activeCat]);
 
   return (
     <>
