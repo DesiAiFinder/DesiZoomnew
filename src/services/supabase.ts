@@ -77,6 +77,32 @@ export async function fetchMarketplace(city: string, category?: string) {
   return promotedSort(data ?? []);
 }
 
+// "Your city today" — live snapshot for the home hero cards.
+export async function fetchCityToday(city: string) {
+  const state = city.split(',')[1]?.trim();
+  const [live, evs, rests, deals] = await Promise.all([
+    supabase.from('live_streams').select('id,title,city,audience')
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false }).limit(5),
+    supabase.from('posts').select('id,title,event_date')
+      .eq('city', city).eq('type', 'event').eq('is_active', true)
+      .gte('event_date', new Date().toISOString())
+      .order('event_date', { ascending: true }).limit(5),
+    supabase.from('restaurants').select('id,name,is_open')
+      .eq('is_active', true).eq('is_open', true)
+      .ilike('city', state ? `%, ${state}` : city).limit(10),
+    supabase.from('posts').select('id,title')
+      .eq('city', city).eq('type', 'deal').eq('is_active', true)
+      .order('created_at', { ascending: false }).limit(5),
+  ]);
+  return {
+    live: (live.data ?? []) as { id: string; title: string }[],
+    events: (evs.data ?? []) as { id: string; title: string; event_date?: string }[],
+    restaurants: (rests.data ?? []) as { id: string; name: string }[],
+    deals: (deals.data ?? []) as { id: string; title: string }[],
+  };
+}
+
 export async function createPost(payload: Record<string, unknown>) {
   const { data, error } = await supabase.from('posts').insert(payload).select().single();
   if (error) throw error;

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { useLocation } from '../contexts/LocationContext';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchForYou, fetchEvents, fetchMarketplace } from '../services/supabase';
+import { fetchForYou, fetchEvents, fetchMarketplace, fetchCityToday } from '../services/supabase';
 import DealCard from '../components/DealCard';
 import WeatherWidget from '../components/WeatherWidget';
 import PostModal from '../components/PostModal';
@@ -41,19 +41,27 @@ export default function Home() {
   );
   const [playing, setPlaying] = useState<number | null>(null);
   const [feedFilter, setFeedFilter] = useState('all');
+  const [today, setToday] = useState<Awaited<ReturnType<typeof fetchCityToday>> | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const festival = getNextFestival();
 
+  // Time-based greeting for the hero
+  const hour = new Date().getHours();
+  const greetWord = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = user?.user_metadata?.display_name?.split(' ')[0] || user?.email?.split('@')[0];
+
   const load = async () => {
     setLoading(true);
-    const [f, e, m] = await Promise.all([
+    const [f, e, m, t] = await Promise.all([
       fetchForYou(city).catch(() => []),
       fetchEvents(city).catch(() => []),
       fetchMarketplace(city).catch(() => []),
+      fetchCityToday(city).catch(() => null),
     ]);
     setFeed(f as Post[]);
     setEvents(e as Post[]);
     setMarket(m as Post[]);
+    setToday(t);
     setLoading(false);
   };
 
@@ -79,6 +87,22 @@ export default function Home() {
   };
 
   const nowPlaying = playing !== null ? RADIO_STATIONS[playing] : null;
+
+  // "Your city today" hero cards — each shows only when it has real data
+  const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+  type TCard = { key: string; k: string; kc: string; t: string; m: string; to: string };
+  const todayCards: TCard[] = [];
+  if (today) {
+    if (today.live.length)
+      todayCards.push({ key: 'live', k: '🔴 LIVE NOW', kc: '#ff9a9a', t: today.live[0].title, m: today.live.length > 1 ? `+${today.live.length - 1} more streaming` : 'Watching now', to: '/live' });
+    if (today.events.length)
+      todayCards.push({ key: 'event', k: '🎉 UPCOMING', kc: '#9cc9ff', t: today.events[0].title, m: fmtDate(today.events[0].event_date), to: '/events' });
+    if (today.restaurants.length)
+      todayCards.push({ key: 'food', k: '🍛 OPEN FOR PICKUP', kc: '#ffd699', t: today.restaurants.length > 1 ? `${today.restaurants[0].name} +${today.restaurants.length - 1} more` : today.restaurants[0].name, m: 'Order now →', to: '/order' });
+    if (today.deals.length)
+      todayCards.push({ key: 'deal', k: '🏷️ HOT DEAL', kc: '#93f0cb', t: today.deals[0].title, m: today.deals.length > 1 ? `+${today.deals.length - 1} more deals` : 'Grab it →', to: '/deals' });
+  }
+  const hasToday = todayCards.length > 0;
 
   return (
     <>
@@ -124,11 +148,17 @@ export default function Home() {
 
         {/* Left */}
         <div className="hero-left" style={{ flex: 1, padding: '24px 36px', display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}>
-          {/* Badge */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(224,120,32,0.15)', border: '1px solid rgba(224,120,32,0.3)', borderRadius: 20, padding: '5px 14px', width: 'fit-content' }}>
-            <span style={{ width: 7, height: 7, background: '#ef9f27', borderRadius: '50%', display: 'inline-block' }} />
-            <span style={{ fontSize: 12, color: '#f5a85a', fontWeight: 600 }}>Your city. Your community.</span>
-          </div>
+          {/* Greeting (signed in) or badge (guest) */}
+          {firstName ? (
+            <div style={{ fontSize: 15, color: '#fac775', fontWeight: 700, textTransform: 'capitalize' }}>
+              {greetWord}, {firstName} 👋
+            </div>
+          ) : (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(224,120,32,0.15)', border: '1px solid rgba(224,120,32,0.3)', borderRadius: 20, padding: '5px 14px', width: 'fit-content' }}>
+              <span style={{ width: 7, height: 7, background: '#ef9f27', borderRadius: '50%', display: 'inline-block' }} />
+              <span style={{ fontSize: 12, color: '#f5a85a', fontWeight: 600 }}>Your city. Your community.</span>
+            </div>
+          )}
 
           {/* Headline */}
           <div>
@@ -163,6 +193,22 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Center: "Your city today" cards — fill the space, hide when empty */}
+        {hasToday && (
+          <div className="hero-today" style={{ flex: '1.3 1 300px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, alignContent: 'center', padding: '20px 10px' }}>
+            {todayCards.map(c => (
+              <Link
+                key={c.key} to={c.to}
+                style={{ display: 'block', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(250,199,117,0.18)', borderRadius: 12, padding: '11px 12px', textDecoration: 'none' }}
+              >
+                <div style={{ fontSize: 9.5, fontWeight: 700, color: c.kc, letterSpacing: '0.03em' }}>{c.k}</div>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: '#fbeee0', marginTop: 5, lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.t}</div>
+                <div style={{ fontSize: 10.5, color: 'rgba(240,220,200,0.55)', marginTop: 3 }}>{c.m}</div>
+              </Link>
+            ))}
+          </div>
+        )}
+
         {/* Right: Radio sidebar — hidden on mobile */}
         <div className="hero-radio-sidebar" style={{ flex: '0 0 220px', background: 'rgba(0,0,0,0.35)', borderLeft: '1px solid rgba(255,255,255,0.07)', padding: '20px 16px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -170,7 +216,7 @@ export default function Home() {
             <Link to="/radio" style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>All →</Link>
           </div>
 
-          {RADIO_STATIONS.map((s, i) => (
+          {RADIO_STATIONS.slice(0, 5).map((s, i) => (
             <div
               key={i}
               onClick={() => toggleStation(i)}
@@ -192,7 +238,9 @@ export default function Home() {
           ))}
 
           <div style={{ marginTop: 'auto', paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>Live 24/7 South Asian radio</div>
+            {RADIO_STATIONS.length > 5
+              ? <Link to="/radio" style={{ fontSize: 11, color: '#fac775', fontWeight: 600, textAlign: 'center', display: 'block', textDecoration: 'none' }}>+ {RADIO_STATIONS.length - 5} more stations →</Link>
+              : <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>Live 24/7 South Asian radio</div>}
           </div>
         </div>
       </div>
