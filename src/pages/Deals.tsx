@@ -160,7 +160,7 @@ export default function Deals() {
             <div style={{ flex: 1, minWidth: 220 }}>
               <div style={{ fontWeight: 800, fontSize: 14.5 }}>Own a restaurant or store?</div>
               <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>
-                Post your deals free during launch — reach desi customers in {city} directly.
+                Post your deals free during launch. Reach desi customers in {city} directly.
               </div>
             </div>
             <button className="btn-primary" style={{ fontSize: 13 }} onClick={() => user ? setPostOpen(true) : onAuthOpen()}>
@@ -207,7 +207,7 @@ export default function Deals() {
             ) : (
               <>
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
-                  Showing {nearby.length} places near {city} — call or visit their website for current deals & offers.
+                  Showing {nearby.length} places near {city}. Call or visit their website for current deals & offers.
                 </div>
                 {nearby.map((b) => (
                   <div key={b.id} style={{ marginBottom: 10 }}>

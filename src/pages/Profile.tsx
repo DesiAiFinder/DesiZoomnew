@@ -211,7 +211,7 @@ export default function Profile() {
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#3d1509,#2a0e05)' }}>
         <div className="eyebrow">👤 Profile</div>
         <h1>Hi, {displayName}</h1>
-        <p>Manage your listings, bookings, purchases and sales — all in one place.</p>
+        <p>Manage your listings, bookings, purchases and sales, all in one place.</p>
       </div>
 
       <div style={{ padding: '24px 32px 48px' }}>

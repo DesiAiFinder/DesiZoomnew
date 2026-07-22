@@ -55,7 +55,7 @@ export default function Marketplace() {
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#2a0a1a,#1a0610)' }}>
         <div className="eyebrow">🛍️ Marketplace</div>
         <h1>Desi Marketplace</h1>
-        <p>Buy, sell, find jobs, matrimony & community listings — all in one place.</p>
+        <p>Buy, sell, find jobs, matrimony & community listings, all in one place.</p>
       </div>
 
       <div style={{ padding: '20px 32px 48px' }}>

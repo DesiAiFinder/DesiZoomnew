@@ -57,7 +57,7 @@ export default function Roommates() {
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#0f1f3a,#081428)' }}>
         <div className="eyebrow">🏘️ Accommodations</div>
         <h1>Rooms, Roommates & Rentals</h1>
-        <p>No broker fees. Rooms, apartments, homes & sublets — direct from the desi community in your city.</p>
+        <p>No broker fees. Rooms, apartments, homes & sublets, direct from the desi community in your city.</p>
       </div>
 
       <div style={{ padding: '24px 32px 48px' }}>
@@ -86,7 +86,7 @@ export default function Roommates() {
 
         {/* Info banner */}
         <div style={{ padding: '12px 16px', background: 'var(--blue-soft)', border: '1px solid #c8d8f0', borderRadius: 10, marginBottom: 20, fontSize: 13 }}>
-          💡 <strong>Tip:</strong> Always meet in a public place first. DesiZoom does not verify listings — exercise caution.
+          💡 <strong>Tip:</strong> Always meet in a public place first. DesiZoom does not verify listings, so exercise caution.
         </div>
 
         {loading

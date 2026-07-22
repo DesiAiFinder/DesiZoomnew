@@ -268,7 +268,7 @@ export default function Services() {
     <>
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#1a2a0a,#101806)' }}>
         <div className="eyebrow">🛠️ Bookings</div>
-        <h1>Desi Services — Book Trusted Providers</h1>
+        <h1>Desi Services: Book Trusted Providers</h1>
         <p>Poojas, catering, mehndi, photography & more. Fixed prices, secure payment, contact shared after booking.</p>
       </div>
 
@@ -310,7 +310,7 @@ export default function Services() {
                 ? <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--muted)' }}>
                     <div style={{ fontSize: 44, marginBottom: 10 }}>📅</div>
                     <p>No bookable services in {city} yet.</p>
-                    <p style={{ fontSize: 13 }}>Are you a provider? List your services in the "For providers" tab — it's free.</p>
+                    <p style={{ fontSize: 13 }}>Are you a provider? List your services in the "For providers" tab. It's free.</p>
                   </div>
                 : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 14 }}>
                     {filteredOfferings.map((o) => (
@@ -370,7 +370,7 @@ export default function Services() {
           <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
               <p style={{ fontSize: 13.5, color: 'var(--muted)', margin: 0, maxWidth: 480 }}>
-                Don't see what you need in the catalog? Post a custom request — providers in {city} will reach out.
+                Don't see what you need in the catalog? Post a custom request and providers in {city} will reach out.
               </p>
               <button className="btn-primary" onClick={() => user ? setShowReqForm((v) => !v) : onAuthOpen()}>+ Post Request</button>
             </div>

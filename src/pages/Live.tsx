@@ -114,7 +114,7 @@ export default function Live() {
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#2a0a0a,#180606)' }}>
         <div className="eyebrow">🔴 Live</div>
         <h1>DesiZoom Live</h1>
-        <p>Community live streams — news, events, celebrations & more. Streams are reviewed by admins before going public.</p>
+        <p>Community live streams: news, events, celebrations & more. Streams are reviewed by admins before going public.</p>
       </div>
 
       <div style={{ padding: '24px 32px 48px' }}>
@@ -139,7 +139,7 @@ export default function Live() {
           <div style={{ marginBottom: 24 }}>
             {myStreams.map((s) => (
               <div key={s.id} style={{ padding: '10px 14px', background: s.status === 'pending' ? '#fff8e6' : '#fee2e2', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 8, fontSize: 13 }}>
-                {s.status === 'pending' ? '⏳' : '❌'} <strong>{s.title}</strong> — {s.status === 'pending' ? 'awaiting admin approval' : 'was not approved'}
+                {s.status === 'pending' ? '⏳' : '❌'} <strong>{s.title}</strong>: {s.status === 'pending' ? 'awaiting admin approval' : 'was not approved'}
               </div>
             ))}
           </div>
@@ -200,7 +200,7 @@ export default function Live() {
         <div style={{ padding: '0 32px 48px' }}>
           <h2 style={{ fontSize: 18, marginBottom: 6 }}>📼 Past Streams</h2>
           <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '0 0 14px' }}>
-            Recordings of previous community streams — browse by category.
+            Recordings of previous community streams. Browse by category.
           </p>
 
           {/* Category filter */}

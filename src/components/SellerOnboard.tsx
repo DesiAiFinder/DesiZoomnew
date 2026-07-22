@@ -52,7 +52,7 @@ export default function SellerOnboard() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, flexWrap: 'wrap' }}>
         <span style={{ width: 8, height: 8, background: '#22c55e', borderRadius: '50%', display: 'inline-block' }} />
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#166534' }}>Bank account connected — you can receive payments</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#166534' }}>Bank account connected. You can receive payments</span>
         <button
           onClick={handleConnect}
           disabled={working}

@@ -134,7 +134,7 @@ export default function GoLiveModal({ onClose }: Props) {
           </div>
         )}
 
-        <div className="field"><label>Title *</label><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Diwali Mela 2026 — Live from Little Elm" /></div>
+        <div className="field"><label>Title *</label><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Diwali Mela 2026 · Live from Little Elm" /></div>
         <div className="field"><label>Description</label><textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="What are you sharing?" /></div>
 
         <div className="field">

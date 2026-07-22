@@ -54,7 +54,7 @@ export default function Adda() {
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#3d1509,#2a0e05)' }}>
         <div className="eyebrow">💬 Community</div>
         <h1>The Community Board</h1>
-        <p>Ask anything — visa questions, best pediatrician, where to find fresh curry leaves. Your community has answers.</p>
+        <p>Ask anything: visa questions, best pediatrician, where to find fresh curry leaves. Your community has answers.</p>
       </div>
 
       <div style={{ padding: '24px 32px 48px' }}>
@@ -71,7 +71,7 @@ export default function Adda() {
           <div>
             <h2 style={{ fontSize: 18 }}>Questions in {city}</h2>
             <p style={{ fontSize: 13, color: 'var(--muted)', margin: '4px 0 0' }}>
-              {filtered.length} question{filtered.length !== 1 ? 's' : ''} — answers appear in comments
+              {filtered.length} question{filtered.length !== 1 ? 's' : ''} · answers appear in comments
             </p>
           </div>
           <button className="btn-primary" onClick={() => user ? setPostOpen(true) : onAuthOpen()}>
@@ -93,7 +93,7 @@ export default function Adda() {
             ? <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>☕</div>
                 <p>No questions yet in {city}.</p>
-                <p style={{ fontSize: 13 }}>Be the first — ask about schools, visas, restaurants, anything.</p>
+                <p style={{ fontSize: 13 }}>Be the first. Ask about schools, visas, restaurants, anything.</p>
                 <button className="btn-primary" onClick={() => user ? setPostOpen(true) : onAuthOpen()}>
                   + Ask the first question
                 </button>

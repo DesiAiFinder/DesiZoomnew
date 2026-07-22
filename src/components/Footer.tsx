@@ -14,7 +14,7 @@ export default function Footer() {
               Desi<span style={{ color: 'var(--accent)' }}>Zoom</span>
             </div>
             <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
-              Everything Desi in one place — deals, businesses, events, roommates & radio for the South Asian community.
+              Everything Desi in one place: deals, businesses, events, rooms & radio for the South Asian community.
             </p>
           </div>
 
@@ -55,8 +55,8 @@ export default function Footer() {
           </div>
         </div>
 
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-          <span style={{ fontSize: 12 }}>© {new Date().getFullYear()} DesiZoom. Connecting the Desi community.</span>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+          <span style={{ fontSize: 12 }}>© {new Date().getFullYear()} DesiZoom. All rights reserved. Your desi community, all in one place.</span>
           <a href="mailto:info@desizoom.com" style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}>info@desizoom.com</a>
         </div>
       </div>

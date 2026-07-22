@@ -260,7 +260,7 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
               </button>
             )}
             {reported && (
-              <span style={{ marginLeft: 'auto', fontSize: 11, color: '#166534' }}>✓ Reported — thanks</span>
+              <span style={{ marginLeft: 'auto', fontSize: 11, color: '#166534' }}>✓ Reported, thanks</span>
             )}
           </div>
         </div>

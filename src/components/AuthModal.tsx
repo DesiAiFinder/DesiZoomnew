@@ -30,7 +30,7 @@ export default function AuthModal({ onClose }: Props) {
     const { error } = await supabase.auth.signUp({ email, password });
     setLoading(false);
     if (error) return m(error.message, false);
-    m('Account created — check your email to confirm.', true);
+    m('Account created. Check your email to confirm.', true);
   };
 
   const magicLink = async () => {

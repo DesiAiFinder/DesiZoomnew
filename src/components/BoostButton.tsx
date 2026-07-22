@@ -46,7 +46,7 @@ export default function BoostButton({ post }: { post: Post }) {
     <div style={{ padding: '14px 16px', background: '#fff8e6', border: '1px solid #f0d090', borderRadius: 10 }}>
       <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>🚀 Boost this listing</div>
       <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 10 }}>
-        Pin your listing to the top of the feed for {BOOST_DAYS} days — {BOOST_PRICE} one-time.
+        Pin your listing to the top of the feed for {BOOST_DAYS} days. {BOOST_PRICE} one-time.
       </div>
       <button
         onClick={handleBoost}

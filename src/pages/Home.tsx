@@ -140,7 +140,7 @@ export default function Home() {
 
       {/* Festival strip */}
       <div className="festival">
-        🪔 {festival.name} is in {festival.days} days — get your listing posted before the rush!
+        🪔 {festival.name} is in {festival.days} days. Get your listing posted before the rush!
       </div>
 
       {/* Hero */}
@@ -164,13 +164,13 @@ export default function Home() {
           <div>
             <div style={{ fontSize: 'clamp(20px,2.8vw,30px)', fontWeight: 700, color: '#fff', lineHeight: 1.15 }}>Everything Desi.</div>
             <div style={{ fontSize: 'clamp(20px,2.8vw,30px)', fontWeight: 700, lineHeight: 1.15 }}>
-              <span style={{ color: '#fac775' }}>Food, deals, services & events</span>
-              <span style={{ color: '#fff' }}> — one zoom.</span>
+              <span style={{ color: '#fac775' }}>Food, deals, services & events.</span>
+              <span style={{ color: '#fff' }}> One zoom.</span>
             </div>
           </div>
 
           <div className="hero-description" style={{ fontSize: 13.5, color: 'rgba(240,220,200,0.72)', lineHeight: 1.55, maxWidth: 500 }}>
-            Order pickup from desi restaurants, book a priest or caterer, grab local deals, buy & sell, find a room, catch events & live streams — all for your city.
+            Order pickup from desi restaurants, book a priest or caterer, grab local deals, buy & sell, find a room, catch events & live streams, all for your city.
           </div>
 
           <WeatherWidget />
@@ -250,7 +250,7 @@ export default function Home() {
         <div style={{ background: '#3d1509', borderBottom: '1px solid rgba(239,159,39,0.3)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 32, height: 32, borderRadius: '50%', background: STATION_COLORS[playing! % STATION_COLORS.length], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>📻</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nowPlaying.name} — Now Playing</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nowPlaying.name} · Now Playing</div>
             <div style={{ fontSize: 11, color: 'rgba(200,200,200,0.5)' }}>{nowPlaying.lang} · Live 24/7</div>
           </div>
           <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 14, marginRight: 8 }}>

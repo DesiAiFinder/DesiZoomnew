@@ -52,7 +52,7 @@ export default function Connections() {
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#2a1a0a,#181006)' }}>
         <div className="eyebrow">🤝 Indian Connections</div>
         <h1>Community Organizations</h1>
-        <p>Local desi organizations, temples, associations & their leadership — get connected in {city}.</p>
+        <p>Local desi organizations, temples, associations & their leadership. Get connected in {city}.</p>
       </div>
 
       <div style={{ padding: '24px 32px 48px' }}>
@@ -77,7 +77,7 @@ export default function Connections() {
             ? <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>🤝</div>
                 <p>No organizations listed yet for {showAllCities ? 'any city' : city}.</p>
-                <p style={{ fontSize: 13 }}>Know one? Email us and we'll add it — or admins can add via the dashboard.</p>
+                <p style={{ fontSize: 13 }}>Know one? Email us and we'll add it, or admins can add via the dashboard.</p>
               </div>
             : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(320px,1fr))', gap: 16 }}>
                 {filtered.map((org) => {

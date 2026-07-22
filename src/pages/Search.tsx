@@ -72,7 +72,7 @@ export default function Search() {
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#1a3a2a,#0f2219)' }}>
         <div className="eyebrow">🔍 Business Search</div>
         <h1>Find Desi Businesses Near You</h1>
-        <p>Grocery stores, restaurants, temples, travel agents & services — powered by Google Maps</p>
+        <p>Grocery stores, restaurants, temples, travel agents & services, powered by Google Maps</p>
       </div>
 
       <div style={{ padding: '24px 32px 48px' }}>

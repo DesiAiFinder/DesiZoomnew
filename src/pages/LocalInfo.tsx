@@ -123,7 +123,7 @@ export default function LocalInfoPage() {
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#0a2a14,#061810)' }}>
         <div className="eyebrow">🏛️ Local Info</div>
         <h1>Local Information for {city}</h1>
-        <p>Utilities, emergency contacts, government services, trash schedules & city info — near your location.</p>
+        <p>Utilities, emergency contacts, government services, trash schedules & city info, near your location.</p>
       </div>
 
       <div style={{ padding: '24px 32px 48px' }}>
@@ -141,7 +141,7 @@ export default function LocalInfoPage() {
               )}
             </div>
             <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '0 0 12px' }}>
-              Live results near {geoLocation ? 'your current location' : city} — expand a card for phone & directions.
+              Live results near {geoLocation ? 'your current location' : city}. Expand a card for phone & directions.
             </p>
 
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>

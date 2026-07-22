@@ -129,7 +129,7 @@ export default function Order() {
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#2a1500,#1a0d00)' }}>
         <div className="eyebrow">🍛 Order Food</div>
         <h1>{active ? active.name : 'Order Pickup from Desi Restaurants'}</h1>
-        <p>{active ? (active.pickup_note || 'Order ahead, skip the wait, pick up fresh.') : 'Order ahead for pickup — support local desi restaurants directly, no delivery fees.'}</p>
+        <p>{active ? (active.pickup_note || 'Order ahead, skip the wait, pick up fresh.') : 'Order ahead for pickup. Support local desi restaurants directly, no delivery fees.'}</p>
       </div>
 
       <div style={{ padding: '24px 32px 48px' }}>
@@ -149,7 +149,7 @@ export default function Order() {
               ? <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--muted)' }}>
                   <div style={{ fontSize: 44, marginBottom: 10 }}>🍛</div>
                   <p>No restaurants taking orders in {city} yet.</p>
-                  <p style={{ fontSize: 13 }}>Own a restaurant? List your menu from your profile — just 6% per order (vs 30% on delivery apps).</p>
+                  <p style={{ fontSize: 13 }}>Own a restaurant? List your menu from your profile. Just 6% per order (vs 30% on delivery apps).</p>
                 </div>
               : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 14 }}>
                   {restaurants.map((r) => (
@@ -184,7 +184,7 @@ export default function Order() {
               {dist[active.id] != null && (
                 <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 600, color: dist[active.id] > WARN_MILES ? '#b45309' : '#128c4b', background: dist[active.id] > WARN_MILES ? '#fff7ed' : '#f0fdf4', border: `1px solid ${dist[active.id] > WARN_MILES ? '#fed7aa' : '#bbf7d0'}`, borderRadius: 10, padding: '10px 14px' }}>
                   {dist[active.id] > WARN_MILES
-                    ? `⚠️ ${active.name} is about ${Math.round(dist[active.id])} miles away. This is pickup only — no delivery. Make sure you can drive there to collect your order.`
+                    ? `⚠️ ${active.name} is about ${Math.round(dist[active.id])} miles away. This is pickup only, no delivery. Make sure you can drive there to collect your order.`
                     : `📍 About ${Math.round(dist[active.id])} mi away · pickup at the restaurant`}
                 </div>
               )}
@@ -245,7 +245,7 @@ export default function Order() {
             <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '6px 0 12px' }}>{active.pickup_note || 'You’ll get a confirmation; pick up at the restaurant.'}</p>
             {dist[active.id] != null && dist[active.id] > WARN_MILES && (
               <div style={{ fontSize: 12.5, fontWeight: 600, color: '#b45309', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '9px 12px', margin: '0 0 12px' }}>
-                ⚠️ This restaurant is about {Math.round(dist[active.id])} miles away — pickup only, no delivery. Only order if you can get there.
+                ⚠️ This restaurant is about {Math.round(dist[active.id])} miles away. Pickup only, no delivery. Only order if you can get there.
               </div>
             )}
             <div className="field"><label>Name</label><input value={cName} onChange={(e) => setCName(e.target.value)} placeholder="For the order" /></div>

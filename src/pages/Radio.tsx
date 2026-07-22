@@ -7,7 +7,7 @@ export default function Radio() {
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#1a1000,#0f0800)' }}>
         <div className="eyebrow">📻 Radio</div>
         <h1>Desi Radio</h1>
-        <p>Listen to Bollywood, Punjabi, regional Indian music & talk shows — live from your browser.</p>
+        <p>Listen to Bollywood, Punjabi, regional Indian music & talk shows, live from your browser.</p>
       </div>
 
       <div style={{ padding: '32px 32px 48px' }}>
