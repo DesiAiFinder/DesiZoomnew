@@ -3,6 +3,9 @@ import { useOutletContext } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import { supabase } from '../services/supabase';
+import { geocodeCity, milesBetween } from '../services/geo';
+
+const WARN_MILES = 10; // pickup distance beyond which we flag "are you sure?"
 
 interface OutletCtx { onAuthOpen: () => void; }
 
@@ -19,13 +22,14 @@ interface CartLine { id: string; name: string; price_cents: number; quantity: nu
 export default function Order() {
   const { onAuthOpen } = useOutletContext<OutletCtx>();
   const { user } = useAuth();
-  const { city } = useLocation();
+  const { city, geoLocation } = useLocation();
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [active, setActive] = useState<Restaurant | null>(null);
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dist, setDist] = useState<Record<string, number>>({}); // restaurant id → miles from user
 
   // Checkout modal
   const [checkout, setCheckout] = useState(false);
@@ -50,6 +54,23 @@ export default function Order() {
         setLoading(false);
       });
   }, [city]);
+
+  // Distance from the user (real GPS, else selected city) to each restaurant.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!restaurants.length) return;
+      const center = geoLocation ?? await geocodeCity(city);
+      if (!center) return;
+      const out: Record<string, number> = {};
+      for (const r of restaurants) {
+        const pt = await geocodeCity(r.address ? `${r.address}, ${r.city}` : r.city);
+        if (pt) out[r.id] = milesBetween(center, pt);
+      }
+      if (!cancelled) setDist(out);
+    })();
+    return () => { cancelled = true; };
+  }, [restaurants, geoLocation, city]);
 
   const openRestaurant = async (r: Restaurant) => {
     setActive(r); setCart([]);
@@ -139,12 +160,19 @@ export default function Order() {
                         </div>
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontWeight: 800, fontSize: 15 }}>{r.name}</div>
-                          <div style={{ fontSize: 12, color: 'var(--muted)' }}>{r.cuisine || 'Indian'} · 📍 {r.city}</div>
+                          <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                            {r.cuisine || 'Indian'} · 📍 {r.city}{dist[r.id] != null ? ` · ~${Math.round(dist[r.id])} mi` : ''}
+                          </div>
                         </div>
                       </div>
                       <div style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: r.is_open ? '#128c4b' : '#dc2626' }}>
                         {r.is_open ? '🟢 Taking orders' : '⚫ Closed'}
                       </div>
+                      {dist[r.id] != null && dist[r.id] > WARN_MILES && (
+                        <div style={{ marginTop: 8, fontSize: 11, fontWeight: 600, color: '#b45309', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '4px 8px' }}>
+                          ⚠️ ~{Math.round(dist[r.id])} mi away · pickup only, no delivery
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -153,6 +181,13 @@ export default function Order() {
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div style={{ flex: '1 1 420px', minWidth: 0 }}>
               <button onClick={() => { setActive(null); setCart([]); }} style={{ background: 'none', border: 'none', color: 'var(--accent-text)', fontWeight: 600, fontSize: 13, cursor: 'pointer', marginBottom: 14, padding: 0 }}>← All restaurants</button>
+              {dist[active.id] != null && (
+                <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 600, color: dist[active.id] > WARN_MILES ? '#b45309' : '#128c4b', background: dist[active.id] > WARN_MILES ? '#fff7ed' : '#f0fdf4', border: `1px solid ${dist[active.id] > WARN_MILES ? '#fed7aa' : '#bbf7d0'}`, borderRadius: 10, padding: '10px 14px' }}>
+                  {dist[active.id] > WARN_MILES
+                    ? `⚠️ ${active.name} is about ${Math.round(dist[active.id])} miles away. This is pickup only — no delivery. Make sure you can drive there to collect your order.`
+                    : `📍 About ${Math.round(dist[active.id])} mi away · pickup at the restaurant`}
+                </div>
+              )}
               {categories.map((cat) => (
                 <div key={cat} style={{ marginBottom: 24 }}>
                   <h3 style={{ fontSize: 15, marginBottom: 10 }}>{cat}</h3>
@@ -208,6 +243,11 @@ export default function Order() {
             <button onClick={() => setCheckout(false)} style={{ position: 'absolute', top: 14, right: 16, fontSize: 18, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)' }}>✕</button>
             <h2 style={{ fontSize: 19 }}>Pickup from {active.name}</h2>
             <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '6px 0 12px' }}>{active.pickup_note || 'You’ll get a confirmation; pick up at the restaurant.'}</p>
+            {dist[active.id] != null && dist[active.id] > WARN_MILES && (
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#b45309', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '9px 12px', margin: '0 0 12px' }}>
+                ⚠️ This restaurant is about {Math.round(dist[active.id])} miles away — pickup only, no delivery. Only order if you can get there.
+              </div>
+            )}
             <div className="field"><label>Name</label><input value={cName} onChange={(e) => setCName(e.target.value)} placeholder="For the order" /></div>
             <div className="field"><label>Phone *</label><input value={cPhone} onChange={(e) => setCPhone(e.target.value)} placeholder="Restaurant calls if needed" /></div>
             <div className="field"><label>Pickup time</label>
