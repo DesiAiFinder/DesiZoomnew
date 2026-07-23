@@ -25,9 +25,21 @@ export default function Listing() {
   const { id } = useParams<{ id: string }>();
   const { onAuthOpen } = useOutletContext<OutletCtx>();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [mainPhoto, setMainPhoto] = useState(0);
+
+  const removeListing = async () => {
+    if (!post) return;
+    if (!window.confirm(`Remove "${post.title}"? It will no longer be visible on DesiZoom.`)) return;
+    try {
+      await deleteMyPost(post.id);
+      navigate('/profile');
+    } catch {
+      alert('Could not remove the listing. Please try again.');
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -153,9 +165,17 @@ export default function Listing() {
             </button>
           </div>
 
-          {/* Boost — only for the owner */}
-          {user?.id === post.user_id && !post.is_sold && (
-            <BoostButton post={post} />
+          {/* Owner controls */}
+          {user?.id === post.user_id && (
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {!post.is_sold && <BoostButton post={post} />}
+              <button
+                onClick={removeListing}
+                style={{ fontSize: 13, fontWeight: 600, padding: '9px 16px', borderRadius: 10, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', width: 'fit-content' }}
+              >
+                🗑️ Remove listing
+              </button>
+            </div>
           )}
         </div>
       </div>
