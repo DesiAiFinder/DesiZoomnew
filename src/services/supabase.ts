@@ -471,3 +471,65 @@ export async function adminFetchPayments() {
     .limit(200);
   return data ?? [];
 }
+
+// ── Admin: restaurants ────────────────────────────────────────────────────────
+export async function adminFetchRestaurants() {
+  const { data } = await supabase
+    .from('restaurants')
+    .select('*')
+    .order('created_at', { ascending: false });
+  return data ?? [];
+}
+export async function adminSetRestaurantActive(id: string, active: boolean) {
+  await supabase.from('restaurants').update({ is_active: active }).eq('id', id);
+}
+export async function adminDeleteRestaurant(id: string) {
+  // menu_items and orders cascade via FK on delete
+  const { error } = await supabase.from('restaurants').delete().eq('id', id);
+  if (error) throw error;
+}
+export async function adminDeleteStream(id: string) {
+  const { error } = await supabase.from('live_streams').delete().eq('id', id);
+  if (error) throw error;
+}
+export async function adminDeleteNews(id: string) {
+  const { error } = await supabase.from('news_items').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── Admin: food orders ────────────────────────────────────────────────────────
+export async function adminFetchOrders() {
+  const { data } = await supabase
+    .from('orders')
+    .select('*, restaurant:restaurants(name)')
+    .neq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  return data ?? [];
+}
+
+// ── Admin: organizations ──────────────────────────────────────────────────────
+export async function adminFetchOrgs() {
+  const { data } = await supabase
+    .from('organizations')
+    .select('*')
+    .order('city', { ascending: true })
+    .order('name', { ascending: true });
+  return data ?? [];
+}
+export async function adminSaveOrg(payload: Record<string, unknown>) {
+  if (payload.id) {
+    const { id, ...rest } = payload;
+    const { error } = await supabase.from('organizations').update(rest).eq('id', id as string);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from('organizations').insert(payload);
+    if (error) throw error;
+  }
+}
+export async function adminSetOrgActive(id: string, active: boolean) {
+  await supabase.from('organizations').update({ is_active: active }).eq('id', id);
+}
+export async function adminDeleteOrg(id: string) {
+  await supabase.from('organizations').delete().eq('id', id);
+}

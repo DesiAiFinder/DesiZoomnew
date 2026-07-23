@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useOutletContext } from 'react-router-dom';
+import { useParams, Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchPostById } from '../services/supabase';
+import { fetchPostById, deleteMyPost } from '../services/supabase';
 import BuyButton from '../components/BuyButton';
 import MessageButton from '../components/MessageButton';
 import SellerInfo from '../components/SellerInfo';

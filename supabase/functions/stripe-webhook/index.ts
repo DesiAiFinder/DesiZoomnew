@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
         await supabase.from('payments').insert({
           buyer_id: o.customer_id, seller_id: o.owner_id,
           amount_cents: o.subtotal_cents, commission_cents: o.commission_cents,
-          stripe_session_id: session.id, status: 'completed',
+          stripe_session_id: session.id, status: 'completed', kind: 'order',
         });
       }
       console.log(`🍛 Order paid: ${order_id}`);
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
         await supabase.from('payments').insert({
           buyer_id: t.buyer_id, seller_id: t.organizer_id,
           amount_cents: t.amount_cents, commission_cents: t.commission_cents,
-          stripe_session_id: session.id, status: 'completed',
+          stripe_session_id: session.id, status: 'completed', kind: 'ticket',
         });
       }
       console.log(`🎟️ Tickets paid: ${ticket_id} x${qty}`);
@@ -84,6 +84,7 @@ Deno.serve(async (req) => {
           commission_cents: b.commission_cents,
           stripe_session_id: session.id,
           status: 'completed',
+          kind: 'booking',
         });
       }
       console.log(`📅 Booking paid: ${booking_id}`);
@@ -91,11 +92,18 @@ Deno.serve(async (req) => {
 
     // Service lead unlock
     if (session.payment_status === 'paid' && kind === 'lead' && request_id && provider_id) {
+      const leadAmount = session.amount_total ?? 1000;
       await supabase.from('lead_unlocks').insert({
         request_id,
         provider_id,
-        amount_cents: session.amount_total ?? 1000,
+        amount_cents: leadAmount,
         stripe_session_id: session.id,
+      });
+      // Lead fee is 100% platform revenue → record it for admin totals
+      await supabase.from('payments').insert({
+        buyer_id: buyer_id ?? null, seller_id: null,
+        amount_cents: leadAmount, commission_cents: leadAmount,
+        stripe_session_id: session.id, status: 'completed', kind: 'lead',
       });
       console.log(`🔓 Lead unlocked: request=${request_id} provider=${provider_id}`);
     }
@@ -108,6 +116,13 @@ Deno.serve(async (req) => {
           .from('posts')
           .update({ boosted_until: boostedUntil })
           .eq('id', post_id);
+        // Boost fee is 100% platform revenue → record it for admin totals
+        const boostAmount = session.amount_total ?? 299;
+        await supabase.from('payments').insert({
+          buyer_id: buyer_id ?? null, seller_id: null, post_id,
+          amount_cents: boostAmount, commission_cents: boostAmount,
+          stripe_session_id: session.id, status: 'completed', kind: 'boost',
+        });
         console.log(`🚀 Boost activated: post=${post_id} until=${boostedUntil}`);
       } else {
         // Marketplace sale
@@ -118,7 +133,7 @@ Deno.serve(async (req) => {
 
         await supabase
           .from('payments')
-          .update({ status: 'completed' })
+          .update({ status: 'completed', kind: 'sale' })
           .eq('stripe_session_id', session.id);
 
         console.log(`✅ Sale completed: post=${post_id} buyer=${buyer_id} seller=${seller_id}`);

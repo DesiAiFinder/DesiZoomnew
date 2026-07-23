@@ -4,12 +4,29 @@ import {
   adminFetchAllPosts, adminSetPostActive, adminDeletePost, adminSetSponsored,
   adminFetchReports, adminResolveReport,
   adminFetchPayments,
-  adminFetchStreams, adminSetStreamStatus,
+  adminFetchStreams, adminSetStreamStatus, adminDeleteStream,
+  adminFetchRestaurants, adminSetRestaurantActive, adminDeleteRestaurant,
+  adminFetchOrders,
+  adminFetchOrgs, adminSaveOrg, adminSetOrgActive, adminDeleteOrg,
   supabase,
 } from '../services/supabase';
 import type { AdminStats, Post } from '../types';
 
-type Tab = 'overview' | 'posts' | 'reports' | 'streams' | 'news' | 'users';
+type Tab = 'overview' | 'posts' | 'reports' | 'streams' | 'news' | 'restaurants' | 'orders' | 'orgs' | 'users';
+
+// Revenue-stream labels for payments
+const KIND_META: Record<string, { icon: string; label: string }> = {
+  sale:    { icon: '🛍️', label: 'Marketplace' },
+  order:   { icon: '🍛', label: 'Food order' },
+  ticket:  { icon: '🎟️', label: 'Ticket' },
+  booking: { icon: '🛠️', label: 'Booking' },
+  boost:   { icon: '🚀', label: 'Boost' },
+  lead:    { icon: '🔓', label: 'Lead' },
+};
+
+interface RestaurantRow { id: string; name: string; cuisine?: string; city: string; is_open: boolean; is_active: boolean; created_at: string; }
+interface OrderRow { id: string; customer_name?: string; customer_phone?: string; subtotal_cents: number; commission_cents: number; status: string; created_at: string; restaurant?: { name: string }; }
+interface OrgRow { id: string; name: string; org_type?: string; city: string; website?: string; phone?: string; email?: string; is_active: boolean; }
 
 interface NewsRow {
   id: string; title: string; url: string; source?: string; category: string;
@@ -41,6 +58,7 @@ interface PaymentRow {
   amount_cents: number;
   commission_cents: number;
   status: string;
+  kind?: string;
   created_at: string;
   post?: { title: string };
 }
@@ -57,9 +75,18 @@ export default function Admin() {
   const [streams, setStreams] = useState<StreamRow[]>([]);
   const [news, setNews] = useState<NewsRow[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [restaurants, setRestaurants] = useState<RestaurantRow[]>([]);
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [orgs, setOrgs] = useState<OrgRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [postFilter, setPostFilter] = useState('');
+
+  // Org add/edit form
+  const blankOrg = { name: '', city: '', org_type: 'cultural', website: '', phone: '', email: '' };
+  const [orgForm, setOrgForm] = useState<Record<string, string>>(blankOrg);
+  const [orgFormOpen, setOrgFormOpen] = useState(false);
+  const [orgMsg, setOrgMsg] = useState('');
 
   const loadAll = () => {
     setLoading(true);
@@ -71,21 +98,74 @@ export default function Admin() {
       adminFetchPayments(),
       adminFetchStreams(),
       supabase.from('news_items').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+      adminFetchRestaurants(),
+      adminFetchOrders(),
+      adminFetchOrgs(),
     ])
-      .then(([s, u, p, r, pay, st, nw]) => {
-        setStats(s);
+      .then(([s, u, p, r, pay, st, nw, rest, ord, og]) => {
+        setStats(s as AdminStats);
         setUsers(u as Record<string, unknown>[]);
         setPosts(p as Post[]);
         setReports(r as ReportRow[]);
         setPayments(pay as PaymentRow[]);
         setStreams(st as StreamRow[]);
         setNews(((nw as { data?: NewsRow[] }).data) ?? []);
+        setRestaurants(rest as RestaurantRow[]);
+        setOrders(ord as OrderRow[]);
+        setOrgs(og as OrgRow[]);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { loadAll(); }, []);
+
+  // Revenue split by stream (completed only)
+  const kindKeys = ['sale', 'order', 'ticket', 'booking', 'boost', 'lead'];
+  const revenueByKind = kindKeys.map((k) => {
+    const rows = payments.filter((p) => p.status === 'completed' && (p.kind || 'sale') === k);
+    return { k, meta: KIND_META[k], commission: rows.reduce((s, p) => s + p.commission_cents, 0), count: rows.length };
+  }).filter((x) => x.count > 0);
+
+  const toggleRestaurant = async (r: RestaurantRow) => {
+    await adminSetRestaurantActive(r.id, !r.is_active).catch(() => {});
+    setRestaurants((prev) => prev.map((x) => x.id === r.id ? { ...x, is_active: !r.is_active } : x));
+  };
+
+  const removeRestaurant = async (r: RestaurantRow) => {
+    if (!window.confirm(`Permanently delete "${r.name}" and its menu & orders? This cannot be undone.`)) return;
+    await adminDeleteRestaurant(r.id).catch(() => {});
+    setRestaurants((prev) => prev.filter((x) => x.id !== r.id));
+  };
+
+  const removeStream = async (s: StreamRow) => {
+    if (!window.confirm(`Permanently delete stream "${s.title}"? This cannot be undone.`)) return;
+    await adminDeleteStream(s.id).catch(() => {});
+    setStreams((prev) => prev.filter((x) => x.id !== s.id));
+  };
+
+  const saveOrg = async () => {
+    if (!orgForm.name.trim() || !orgForm.city.trim()) { setOrgMsg('Name and city are required.'); return; }
+    try {
+      await adminSaveOrg({ ...orgForm });
+      setOrgMsg('✅ Saved.');
+      setOrgForm(blankOrg);
+      const og = await adminFetchOrgs();
+      setOrgs(og as OrgRow[]);
+      setTimeout(() => { setOrgFormOpen(false); setOrgMsg(''); }, 900);
+    } catch (e: unknown) { setOrgMsg(e instanceof Error ? e.message : 'Could not save.'); }
+  };
+
+  const toggleOrg = async (o: OrgRow) => {
+    await adminSetOrgActive(o.id, !o.is_active).catch(() => {});
+    setOrgs((prev) => prev.map((x) => x.id === o.id ? { ...x, is_active: !o.is_active } : x));
+  };
+
+  const removeOrg = async (o: OrgRow) => {
+    if (!window.confirm(`Delete "${o.name}"?`)) return;
+    await adminDeleteOrg(o.id).catch(() => {});
+    setOrgs((prev) => prev.filter((x) => x.id !== o.id));
+  };
 
   // Revenue calculations
   const completed = payments.filter((p) => p.status === 'completed');
@@ -139,12 +219,15 @@ export default function Admin() {
 
   const pendingStreams = streams.filter((s) => s.status === 'pending');
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'overview', label: '📊 Overview' },
-    { id: 'posts',    label: `📝 Posts (${posts.length})` },
-    { id: 'reports',  label: `🚩 Reports${reports.length ? ` (${reports.length})` : ''}` },
-    { id: 'streams',  label: `🔴 Streams${pendingStreams.length ? ` (${pendingStreams.length})` : ''}` },
-    { id: 'news',     label: `📰 News${news.length ? ` (${news.length})` : ''}` },
-    { id: 'users',    label: `👥 Users (${users.length})` },
+    { id: 'overview',    label: '📊 Overview' },
+    { id: 'posts',       label: `📝 Posts (${posts.length})` },
+    { id: 'reports',     label: `🚩 Reports${reports.length ? ` (${reports.length})` : ''}` },
+    { id: 'streams',     label: `🔴 Streams${pendingStreams.length ? ` (${pendingStreams.length})` : ''}` },
+    { id: 'news',        label: `📰 News${news.length ? ` (${news.length})` : ''}` },
+    { id: 'restaurants', label: `🍛 Restaurants (${restaurants.length})` },
+    { id: 'orders',      label: `📦 Orders (${orders.length})` },
+    { id: 'orgs',        label: `🏛️ Orgs (${orgs.length})` },
+    { id: 'users',       label: `👥 Users (${users.length})` },
   ];
 
   const handleNews = async (n: NewsRow, status: 'approved' | 'rejected') => {
@@ -226,6 +309,22 @@ export default function Admin() {
               ))}
             </div>
 
+            {/* Revenue by stream */}
+            {revenueByKind.length > 0 && (
+              <>
+                <h2 style={{ fontSize: 17, marginBottom: 14 }}>Revenue by stream</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12, marginBottom: 24 }}>
+                  {revenueByKind.map((r) => (
+                    <div key={r.k} style={{ padding: 14, background: 'white', borderRadius: 12, border: '1px solid var(--border)' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{r.meta.icon} {r.meta.label}</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, fontFamily: "'Space Grotesk',sans-serif", marginTop: 6 }}>${(r.commission / 100).toFixed(2)}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{r.count} txn{r.count !== 1 ? 's' : ''}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
             {/* Recent transactions */}
             {payments.length > 0 && (
               <>
@@ -234,15 +333,18 @@ export default function Admin() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: 'var(--bg)' }}>
-                        {['Item', 'Amount', 'Your Cut', 'Status', 'Date'].map((h) => (
+                        {['Type', 'Item', 'Amount', 'Your Cut', 'Status', 'Date'].map((h) => (
                           <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--muted)', textTransform: 'uppercase' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {payments.slice(0, 15).map((p, i) => (
+                      {payments.slice(0, 15).map((p, i) => {
+                        const meta = KIND_META[p.kind || 'sale'] || KIND_META.sale;
+                        return (
                         <tr key={p.id} style={{ borderTop: '1px solid var(--border)', background: i % 2 === 0 ? 'white' : 'var(--bg)' }}>
-                          <td style={{ padding: '10px 14px' }}>{p.post?.title || '—'}</td>
+                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>{meta.icon} {meta.label}</td>
+                          <td style={{ padding: '10px 14px' }}>{p.post?.title || meta.label}</td>
                           <td style={{ padding: '10px 14px' }}>${(p.amount_cents / 100).toFixed(2)}</td>
                           <td style={{ padding: '10px 14px', fontWeight: 700, color: '#166534' }}>${(p.commission_cents / 100).toFixed(2)}</td>
                           <td style={{ padding: '10px 14px' }}>
@@ -254,7 +356,8 @@ export default function Admin() {
                           </td>
                           <td style={{ padding: '10px 14px', color: 'var(--muted)' }}>{new Date(p.created_at).toLocaleDateString()}</td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -412,6 +515,10 @@ export default function Admin() {
                           style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'white', cursor: 'pointer' }}
                         >⏹ End stream</button>
                       )}
+                      <button
+                        onClick={() => removeStream(s)}
+                        style={{ fontSize: 12, padding: '6px 12px', borderRadius: 8, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer' }}
+                      >🗑️ Delete</button>
                     </div>
                   </div>
                 </div>
@@ -445,6 +552,139 @@ export default function Admin() {
               ))}
             </div>
           )
+
+        /* ── RESTAURANTS ──────────────────────────────────────── */
+        ) : activeTab === 'restaurants' ? (
+          restaurants.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>🍛</div>
+              <p>No restaurants yet.</p>
+            </div>
+          ) : (
+            <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg)' }}>
+                    {['Restaurant', 'City', 'Open', 'Status', 'Actions'].map((h) => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--muted)', textTransform: 'uppercase' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {restaurants.map((r, i) => (
+                    <tr key={r.id} style={{ borderTop: '1px solid var(--border)', background: i % 2 === 0 ? 'white' : 'var(--bg)', opacity: r.is_active ? 1 : 0.55 }}>
+                      <td style={{ padding: '10px 14px', fontWeight: 600 }}>{r.name}<span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {r.cuisine || 'Indian'}</span></td>
+                      <td style={{ padding: '10px 14px', color: 'var(--muted)' }}>{r.city}</td>
+                      <td style={{ padding: '10px 14px' }}>{r.is_open ? '🟢' : '⚫'}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: r.is_active ? '#e8f9ee' : '#fee2e2', color: r.is_active ? '#128c4b' : '#dc2626' }}>{r.is_active ? 'active' : 'hidden'}</span>
+                      </td>
+                      <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                        <button onClick={() => toggleRestaurant(r)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'white', cursor: 'pointer', marginRight: 6 }}>{r.is_active ? '🙈 Hide' : '👁️ Show'}</button>
+                        <button onClick={() => removeRestaurant(r)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer' }}>🗑️ Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+
+        /* ── ORDERS ───────────────────────────────────────────── */
+        ) : activeTab === 'orders' ? (
+          orders.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>📦</div>
+              <p>No food orders yet.</p>
+            </div>
+          ) : (
+            <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg)' }}>
+                    {['Restaurant', 'Customer', 'Phone', 'Total', 'Your Cut', 'Status', 'Date'].map((h) => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--muted)', textTransform: 'uppercase' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((o, i) => (
+                    <tr key={o.id} style={{ borderTop: '1px solid var(--border)', background: i % 2 === 0 ? 'white' : 'var(--bg)' }}>
+                      <td style={{ padding: '10px 14px', fontWeight: 600 }}>{o.restaurant?.name || '—'}</td>
+                      <td style={{ padding: '10px 14px' }}>{o.customer_name || '—'}</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--muted)' }}>{o.customer_phone || '—'}</td>
+                      <td style={{ padding: '10px 14px' }}>${(o.subtotal_cents / 100).toFixed(2)}</td>
+                      <td style={{ padding: '10px 14px', fontWeight: 700, color: '#166534' }}>${(o.commission_cents / 100).toFixed(2)}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: 'var(--bg)', color: 'var(--text)' }}>{o.status}</span>
+                      </td>
+                      <td style={{ padding: '10px 14px', color: 'var(--muted)' }}>{new Date(o.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+
+        /* ── ORGANIZATIONS ────────────────────────────────────── */
+        ) : activeTab === 'orgs' ? (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+              <h2 style={{ fontSize: 18 }}>Organizations ({orgs.length})</h2>
+              <button className="btn-primary" onClick={() => { setOrgForm(blankOrg); setOrgFormOpen((v) => !v); }}>{orgFormOpen ? '✕ Close' : '+ Add organization'}</button>
+            </div>
+
+            {orgFormOpen && (
+              <div style={{ border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 16, background: 'var(--bg)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 10 }}>
+                  <div className="field"><label>Name *</label><input value={orgForm.name} onChange={(e) => setOrgForm({ ...orgForm, name: e.target.value })} placeholder="e.g. Telugu Association of DFW" /></div>
+                  <div className="field"><label>City *</label><input value={orgForm.city} onChange={(e) => setOrgForm({ ...orgForm, city: e.target.value })} placeholder="e.g. Dallas, TX" /></div>
+                  <div className="field"><label>Type</label>
+                    <select value={orgForm.org_type} onChange={(e) => setOrgForm({ ...orgForm, org_type: e.target.value })}>
+                      {['cultural', 'temple', 'professional', 'student', 'nonprofit', 'sports', 'other'].map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div className="field"><label>Website</label><input value={orgForm.website} onChange={(e) => setOrgForm({ ...orgForm, website: e.target.value })} placeholder="https://…" /></div>
+                  <div className="field"><label>Phone</label><input value={orgForm.phone} onChange={(e) => setOrgForm({ ...orgForm, phone: e.target.value })} /></div>
+                  <div className="field"><label>Email</label><input value={orgForm.email} onChange={(e) => setOrgForm({ ...orgForm, email: e.target.value })} /></div>
+                </div>
+                <button className="btn-primary" style={{ marginTop: 10 }} onClick={saveOrg}>Save organization</button>
+                {orgMsg && <span style={{ fontSize: 13, marginLeft: 10, color: orgMsg.startsWith('✅') ? '#166534' : '#dc2626' }}>{orgMsg}</span>}
+              </div>
+            )}
+
+            {orgs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted)' }}>No organizations yet. Add one above.</div>
+            ) : (
+              <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg)' }}>
+                      {['Name', 'City', 'Type', 'Status', 'Actions'].map((h) => (
+                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--muted)', textTransform: 'uppercase' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orgs.map((o, i) => (
+                      <tr key={o.id} style={{ borderTop: '1px solid var(--border)', background: i % 2 === 0 ? 'white' : 'var(--bg)', opacity: o.is_active ? 1 : 0.55 }}>
+                        <td style={{ padding: '10px 14px', fontWeight: 600 }}>{o.name}{o.website && <a href={o.website} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 6, fontSize: 11, color: 'var(--accent-text)' }}>↗</a>}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--muted)' }}>{o.city}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--muted)' }}>{o.org_type || 'other'}</td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: o.is_active ? '#e8f9ee' : '#fee2e2', color: o.is_active ? '#128c4b' : '#dc2626' }}>{o.is_active ? 'active' : 'hidden'}</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                          <button onClick={() => toggleOrg(o)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'white', cursor: 'pointer', marginRight: 6 }}>{o.is_active ? '🙈 Hide' : '👁️ Show'}</button>
+                          <button onClick={() => removeOrg(o)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer' }}>🗑️ Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
         /* ── USERS ────────────────────────────────────────────── */
         ) : (

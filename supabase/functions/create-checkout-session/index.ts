@@ -90,6 +90,7 @@ Deno.serve(async (req) => {
       stripe_session_id: session.id,
       stripe_account_id: stripeAccountId,
       status: 'pending',
+      kind: 'sale',
     });
 
     return new Response(
