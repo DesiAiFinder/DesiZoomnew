@@ -44,9 +44,8 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
     { to: '/radio',         label: '📻 Radio' },
   ];
 
-  // Flat list for the mobile menu (everything)
+  // Mobile hamburger holds only the secondary links (pills are visible on mobile too)
   const navLinks = [
-    ...pillLinks.map((l) => ({ to: l.to, label: `${l.icon} ${l.label}` })),
     ...moreLinks,
     ...(user ? [{ to: '/messages', label: '💬 Messages' }] : []),
     ...(user ? [{ to: '/profile', label: '👤 My Profile' }] : []),
@@ -88,7 +87,15 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
         .dd-div { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
         @keyframes navLivePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
         @media (min-width: 769px) { .show-mobile { display: none !important; } }
-        @media (max-width: 768px) { .hidden-mobile { display: none !important; } }
+        @media (max-width: 768px) {
+          .hidden-mobile { display: none !important; }
+          /* Search drops to its own full-width line under the logo */
+          .nav-search { order: 10; flex: 1 1 100% !important; max-width: none !important; }
+          /* Pill nav stays visible on mobile, slightly tighter */
+          .nav-pills { padding: 0 14px 8px !important; gap: 5px !important; }
+          .nav-pills a, .nav-pills button { padding: 5px 10px !important; font-size: 11.5px !important; }
+          .nav-row1 { padding: 10px 14px !important; }
+        }
       `}</style>
 
       <header style={{
@@ -97,14 +104,14 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
         background: 'white', position: 'sticky', top: 0, zIndex: 30,
       }}>
         {/* ── Row 1: utility (logo · search · city · messages · auth) ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 24px', flexWrap: 'wrap' }}>
+        <div className="nav-row1" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 24px', flexWrap: 'wrap' }}>
           {/* Logo */}
           <Link to="/" style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 22, color: 'var(--text)', textDecoration: 'none', flexShrink: 0 }}>
             Desi<span style={{ color: 'var(--accent)' }}>Zoom</span>
           </Link>
 
-          {/* Search — wider, primary */}
-          <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, maxWidth: 360, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 9, padding: '0 13px', height: 36 }}>
+          {/* Search — wider, primary (full-width line on mobile) */}
+          <div className="nav-search" style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, maxWidth: 360, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 9, padding: '0 13px', height: 36 }}>
             <span style={{ fontSize: 14, color: 'var(--muted)' }}>🔍</span>
             <input
               value={search}
@@ -220,8 +227,8 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
           </div>
         </div>
 
-        {/* ── Row 2: pill nav (desktop) ── */}
-        <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 24px 9px', flexWrap: 'wrap' }}>
+        {/* ── Row 2: pill nav (all screen sizes) ── */}
+        <div className="nav-pills" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 24px 9px', flexWrap: 'wrap' }}>
           {pillLinks.map((l) => {
             const active = routerLoc.pathname === l.to;
             const isLive = l.to === '/live';
@@ -287,14 +294,6 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
         {/* ── Mobile menu ── */}
         {menuOpen && (
           <div className="show-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 2, borderTop: '1px solid var(--border)', padding: '10px 20px 14px' }}>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { onSearch(search); setMenuOpen(false); } }}
-              placeholder="Search deals, food, businesses…"
-              style={{ width: '100%', height: 38, border: '1px solid var(--border)', borderRadius: 8, padding: '0 12px', fontSize: 13, background: 'var(--bg)', marginBottom: 6, boxSizing: 'border-box' as const }}
-            />
-
             {navLinks.map((l) => (
               <Link
                 key={l.to} to={l.to}

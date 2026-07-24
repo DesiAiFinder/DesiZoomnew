@@ -1,170 +1,117 @@
-# DesiZoom — Go-Live Rollout Plan
+# DesiZoom — Rollout Plan (updated)
 
-Work top to bottom. Each phase depends on the ones above it. Boxes are yours to check off.
-
----
-
-## Phase 0 — Accounts & keys to gather first
-
-You'll need these before anything else works. Collect them into a password manager.
-
-- [ ] **Supabase** project (already have) → Project URL + `anon` key + `service_role` key
-- [ ] **Stripe** account, switched to **Live mode** → live secret key (`sk_live_…`) + publishable key (`pk_live_…`)
-- [ ] **Google Cloud** → enable **Places API** *and* **Geocoding API**, turn on billing, create an API key (restrict to your domain)
-- [ ] **OpenWeather** API key (free tier is fine)
-- [ ] **Ticketmaster** Discovery API key (only if you want national event listings)
-- [ ] **VAPID** keys for web push (generate in Phase 5)
-- [ ] **Domain** (e.g. desizoom.com) + **Vercel** project connected to your GitHub repo
+Work top to bottom. `[x]` = already done. Project ref: `rroyfpheqwalxylgeidu`.
 
 ---
 
-## Phase 1 — Database (Supabase → SQL Editor)
+## Phase 1 — Code push (frontend)
 
-Run each file's contents in the SQL Editor, **in this order**. Most are idempotent, but order matters because later ones reference earlier tables.
+One push covers everything built recently: pill-nav header + single search, hero greeting
++ "Your city today" cards, radius search (50 mi default), pickup distance warnings,
+English nav labels, copy cleanup + new footer, admin revenue-by-stream +
+Restaurants/Orders/Orgs tabs, admin full delete, owner "Remove listing" button.
 
-1. [ ] `supabase/schema.sql` (base tables — only if this is a fresh project)
-2. [ ] `migration_photos_messaging.sql`
-3. [ ] `migration_admin.sql`
-4. [ ] `migration_boost.sql`
-5. [ ] `migration_services.sql`
-6. [ ] `migration_service_bookings.sql`
-7. [ ] `migration_reviews.sql`
-8. [ ] `migration_favorites_alerts.sql`
-9. [ ] `migration_tickets.sql`
-10. [ ] `migration_food_ordering.sql`
-11. [ ] `migration_news.sql`
-12. [ ] `migration_connections_live.sql`
-13. [ ] `migration_stream_categories.sql`
-14. [ ] `migration_stream_video.sql`
-15. [ ] `migration_vod.sql`
-16. [ ] `migration_org_refresh.sql`
-17. [ ] `migration_stripe.sql` (creates the `payments` table — it's in your outputs folder)
-18. [ ] `seed_organizations.sql` (seed the Desi Organizations list)
-
-- [ ] Make yourself an admin: `update public.profiles set role = 'admin' where id = '<your-user-id>';`
-- [ ] **Do NOT run `cleanup_before_launch.sql` yet** — that's the very last step (Phase 8).
+- [ ] `git add -A && git commit -m "Launch batch" && git push`
+- [ ] Confirm Vercel build goes green and desizoomnew.vercel.app shows the new header
 
 ---
 
-## Phase 2 — Edge functions (Supabase CLI)
+## Phase 2 — Database migrations (Supabase → SQL Editor)
 
-### 2a. Set the function secrets (once)
+Run any base migrations from the old list you haven't yet, then these NEW ones:
 
-```
-supabase secrets set STRIPE_SECRET_KEY=sk_live_xxx
-supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_xxx        # from Phase 3
-supabase secrets set VAPID_PUBLIC_KEY=xxx                    # from Phase 5
-supabase secrets set VAPID_PRIVATE_KEY=xxx                   # from Phase 5
-supabase secrets set VAPID_SUBJECT=mailto:info@desizoom.com
-```
-(`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically — don't set them.)
+- [ ] `migration_payments_kind.sql` — adds `kind` to payments; boost/lead revenue can be recorded
+- [ ] `migration_admin_full_access.sql` — admin can delete anything (RLS policies)
+- [ ] Verify you're admin: `select public.is_admin();` while logged in, or check profiles.role
 
-### 2b. Deploy every function
-
-```
-supabase functions deploy stripe-webhook --no-verify-jwt
-supabase functions deploy fetch-news --no-verify-jwt
-supabase functions deploy refresh-orgs --no-verify-jwt
-supabase functions deploy create-checkout-session
-supabase functions deploy create-order-session
-supabase functions deploy create-booking-session
-supabase functions deploy create-ticket-session
-supabase functions deploy create-lead-session
-supabase functions deploy create-boost-session
-supabase functions deploy create-connect-account
-supabase functions deploy notify-alerts
-supabase functions deploy notify-providers
-supabase functions deploy send-push
-```
-
-- [ ] `stripe-webhook`, `fetch-news`, `refresh-orgs` use `--no-verify-jwt` (called by Stripe / cron, not a logged-in user)
-- [ ] The `create-*-session` functions keep JWT verification (called from the app by a signed-in user)
-
-### 2c. Schedule the recurring ones (Supabase → Database → Cron, or pg_cron)
-
-- [ ] `fetch-news` — every few hours (refreshes the news strip)
-- [ ] `refresh-orgs` — daily (refreshes organization info)
+> Full base-migration order (only if starting fresh): schema → photos_messaging → admin →
+> boost → services → service_bookings → reviews → favorites_alerts → tickets →
+> food_ordering → news → connections_live → stream_categories → stream_video → vod →
+> org_refresh → stripe → seed_organizations.
 
 ---
 
-## Phase 3 — Stripe (live)
+## Phase 3 — Edge functions (Supabase CLI)
 
-- [ ] Toggle the dashboard to **Live mode** and copy the live keys
-- [ ] **Enable Connect** → Express accounts (this is how sellers/restaurants/providers connect their bank)
-- [ ] Set your platform **branding** (name, logo, support email/phone) — Connect requires it
-- [ ] Create a **webhook endpoint**:
-  - URL: `https://<your-project-ref>.supabase.co/functions/v1/stripe-webhook`
-  - Events: `checkout.session.completed` (at minimum)
-  - Copy the **Signing secret** (`whsec_…`) → that's your `STRIPE_WEBHOOK_SECRET` in Phase 2a
-- [ ] Fill in your **business profile / payout details** so Stripe can actually move money
-- [ ] Confirm currency is correct (USD) and commission logic matches: marketplace 8%, bookings 8%, tickets 5%, food 6%, boosts $2.99, lead unlock $10
-
----
-
-## Phase 4 — Frontend env vars (Vercel → Project → Settings → Environment Variables)
-
-Set these, then redeploy. They must match your `.env.local`.
-
-- [ ] `VITE_SUPABASE_URL`
-- [ ] `VITE_SUPABASE_ANON_KEY`
-- [ ] `VITE_GOOGLE_PLACES_API_KEY`
-- [ ] `VITE_OPENWEATHER_API_KEY`
-- [ ] `VITE_TICKETMASTER_API_KEY`
-- [ ] `VITE_VAPID_PUBLIC_KEY` (from Phase 5)
-- [ ] `VITE_ADMIN_PASSWORD` (your admin gate)
-- [ ] Point your custom **domain** at the Vercel project + confirm HTTPS
-- [ ] Trigger a fresh deploy after setting vars
+- [x] `supabase functions deploy stripe-webhook --no-verify-jwt` ✅ (deployed)
+- [ ] `supabase functions deploy create-checkout-session`
+- [ ] Deploy the rest if not current:
+  `create-order-session`, `create-booking-session`, `create-ticket-session`,
+  `create-lead-session`, `create-boost-session`, `create-connect-account`,
+  `fetch-news --no-verify-jwt`, `refresh-orgs --no-verify-jwt`,
+  `notify-alerts`, `notify-providers`, `send-push`
+- [ ] Schedule cron: `fetch-news` every few hours, `refresh-orgs` daily
 
 ---
 
-## Phase 5 — Web push (VAPID)
+## Phase 4 — Stripe LIVE mode
 
-- [ ] Generate a key pair: `npx web-push generate-vapid-keys`
-- [ ] Public key → `VAPID_PUBLIC_KEY` (secret) **and** `VITE_VAPID_PUBLIC_KEY` (frontend) — same value
-- [ ] Private key → `VAPID_PRIVATE_KEY` (secret only)
-- [ ] `VAPID_SUBJECT` → `mailto:info@desizoom.com`
-- [ ] Test: enable alerts in a profile, trigger one, confirm the browser notification arrives
+Test and live are fully separate: new keys, new webhook, Connect re-enabled.
 
----
+1. [ ] **Activate account** (business details + payout bank) — required to leave test mode
+2. [ ] Toggle **Live mode**, copy `sk_live_…` and `pk_live_…`
+3. [ ] `supabase secrets set STRIPE_SECRET_KEY=sk_live_xxx`
+4. [ ] Enable **Connect → Express** in live + set platform branding (name, logo, support email)
+5. [ ] Add **live webhook endpoint**:
+   - URL: `https://rroyfpheqwalxylgeidu.supabase.co/functions/v1/stripe-webhook`
+   - Events: `checkout.session.completed`, `charge.refunded`
+   - [ ] `supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_xxx` (the LIVE signing secret)
 
-## Phase 6 — Seed real content (so it doesn't look empty)
-
-Density beats features. Before inviting anyone:
-
-- [ ] Add a handful of real **restaurants** with menus (or onboard 1–2 owners you know)
-- [ ] Post 5–10 real **deals** from local desi businesses
-- [ ] Add 2–3 upcoming **events**
-- [ ] Confirm the seeded **Organizations** show up in Local Info
-- [ ] Verify the **news strip** and **radio** are playing
+Note: test-mode Connect accounts don't carry over — sellers/restaurants reconnect once in live.
 
 ---
 
-## Phase 7 — Test every money flow IN LIVE MODE
+## Phase 5 — Remaining config
 
-Do one real, small transaction per flow, then refund it. After each, check the `payments` table got a row and the status flipped `pending → paid`.
+- [ ] **Google Cloud**: Places API **and Geocoding API** both enabled, billing on
+      (Geocoding powers radius search + pickup distance — without it they fall back to exact city)
+- [ ] **VAPID**: `npx web-push generate-vapid-keys` →
+      `supabase secrets set VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT=mailto:info@desizoom.com`
+      and `VITE_VAPID_PUBLIC_KEY` in Vercel
+- [ ] **Vercel env vars** current: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+      `VITE_GOOGLE_PLACES_API_KEY`, `VITE_OPENWEATHER_API_KEY`, `VITE_TICKETMASTER_API_KEY`,
+      `VITE_VAPID_PUBLIC_KEY`, `VITE_ADMIN_PASSWORD` → redeploy after changes
+- [ ] Custom domain pointed + HTTPS (if using desizoom.com)
+
+---
+
+## Phase 6 — Live smoke tests (real card, small amounts, then refund)
+
+After each, check Admin → Overview: payment appears with the right **Type** and status `completed`.
 
 - [ ] Marketplace sale (8%)
+- [ ] Food order (6%) — appears in customer profile AND restaurant dashboard AND admin Orders tab
 - [ ] Service booking (8%)
-- [ ] Event ticket (5%) — confirm QR code appears in profile
-- [ ] Food order (6%) — confirm it shows in customer profile *and* the restaurant dashboard
-- [ ] Boost a listing ($2.99)
-- [ ] Lead unlock ($10)
-- [ ] Confirm a seller's Stripe Connect onboarding completes and they can receive a payout
+- [ ] Event ticket (5%) — QR shows in profile
+- [ ] Boost ($2.99) — now appears in revenue (new)
+- [ ] Lead unlock ($10) — now appears in revenue (new)
+- [ ] Seller Connect onboarding completes in live mode
 
 ---
 
-## Phase 8 — Final cleanup & launch
+## Phase 7 — Cleanup (AFTER smoke tests, BEFORE inviting users)
 
-- [ ] Run **`cleanup_before_launch.sql`** to wipe test content (keeps accounts, orgs, news; backs up to `*_backup` tables first)
-- [ ] Delete throwaway test accounts in Supabase → Authentication → Users (keep your admin)
-- [ ] Final smoke test on the live domain (sign up, browse, one purchase)
-- [ ] Announce to your first ~20 Little Elm / DFW users
-- [ ] After a few days of confidence, drop the `*_backup` tables (snippet at the bottom of the cleanup script)
+- [ ] Run `cleanup_before_launch.sql` — backs up every content table to `*_backup`, then wipes.
+      Keeps accounts, organizations, news. **Never run this once real users are active.**
+- [ ] Delete throwaway test accounts (Supabase → Authentication → Users; keep admin)
+- [ ] Verify: wiped tables show 0, `posts_backup` shows your old count
 
 ---
 
-## Still optional / later
+## Phase 8 — Seed & launch
 
-- [ ] Terms of Use + Privacy Policy pages (nice for trust; Stripe likes having them)
-- [ ] Strip "US/America" wording if you ever expand beyond the US
-- [ ] Locale flexibility (currency, km vs miles, dynamic city list) — only when expanding abroad
+- [ ] Seed real content: 1–2 restaurants with menus, 5–10 deals, 2–3 events
+- [ ] Final smoke test on the live domain (sign up fresh, browse, one purchase)
+- [ ] Invite first ~20 Little Elm / DFW users
+- [ ] Lead marketing with what has content (Deals, Businesses, News, feed); grow
+      Order Food / Bookings / Live as they fill in
+- [ ] After a few stable days: drop `*_backup` tables (snippet at bottom of cleanup script)
+
+---
+
+## Later / optional
+
+- [ ] Terms of Use + Privacy Policy pages (footer links)
+- [ ] Reviews / service-provider moderation tab in admin
+- [ ] Full news manager (approved RSS items list) in admin
+- [ ] Locale flexibility (currency, km, dynamic cities) when expanding beyond the US
