@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
   try {
     const {
       offering_id, customer_id, requested_date, requested_time,
-      note, customer_phone, success_url, cancel_url,
+      note, customer_phone, success_url, cancel_url, embedded,
     } = await req.json();
     if (!offering_id || !customer_id || !requested_date) {
       throw new Error('offering_id, customer_id and requested_date required');
@@ -96,8 +96,9 @@ Deno.serve(async (req) => {
         kind: 'booking',
         booking_id: booking.id,
       },
-      success_url,
-      cancel_url,
+      ...(embedded
+        ? { ui_mode: 'embedded' as const, redirect_on_completion: 'never' as const }
+        : { success_url, cancel_url }),
     });
 
     await supabase
@@ -106,7 +107,7 @@ Deno.serve(async (req) => {
       .eq('id', booking.id);
 
     return new Response(
-      JSON.stringify({ url: session.url }),
+      JSON.stringify({ url: session.url, client_secret: session.client_secret }),
       { headers: { ...cors, 'Content-Type': 'application/json' } }
     );
   } catch (err: unknown) {

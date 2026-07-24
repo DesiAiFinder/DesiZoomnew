@@ -4,6 +4,7 @@ export const env = {
   googlePlacesKey: import.meta.env.VITE_GOOGLE_PLACES_API_KEY as string,
   openWeatherKey: import.meta.env.VITE_OPENWEATHER_API_KEY as string,
   adminPassword: import.meta.env.VITE_ADMIN_PASSWORD as string,
+  stripePublishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string,
 };
 
 export const CITIES = [

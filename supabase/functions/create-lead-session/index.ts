@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
-    const { request_id, provider_id, success_url, cancel_url } = await req.json();
+    const { request_id, provider_id, success_url, cancel_url, embedded } = await req.json();
     if (!request_id || !provider_id) throw new Error('request_id and provider_id required');
 
     const { data: request } = await supabase
@@ -62,12 +62,13 @@ Deno.serve(async (req) => {
         request_id: request.id,
         provider_id,
       },
-      success_url,
-      cancel_url,
+      ...(embedded
+        ? { ui_mode: 'embedded' as const, redirect_on_completion: 'never' as const }
+        : { success_url, cancel_url }),
     });
 
     return new Response(
-      JSON.stringify({ url: session.url }),
+      JSON.stringify({ url: session.url, client_secret: session.client_secret }),
       { headers: { ...cors, 'Content-Type': 'application/json' } }
     );
   } catch (err: unknown) {

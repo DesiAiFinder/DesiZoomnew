@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import { supabase } from '../services/supabase';
 import { geocodeCity, milesBetween } from '../services/geo';
+import { embedAvailable, startCheckout } from '../services/stripeEmbed';
 
 const WARN_MILES = 10; // pickup distance beyond which we flag "are you sure?"
 
@@ -101,6 +102,8 @@ export default function Order() {
     if (!cPhone.trim()) { setErr('Phone required for pickup coordination.'); return; }
     setBusy(true); setErr('');
     try {
+      const successUrl = `${window.location.origin}/order?paid=1`;
+      const embedded = await embedAvailable();
       const { data, error } = await supabase.functions.invoke('create-order-session', {
         body: {
           restaurant_id: active!.id,
@@ -110,12 +113,15 @@ export default function Order() {
           customer_phone: cPhone.trim(),
           pickup_time: cPickup,
           note: cNote.trim() || null,
-          success_url: `${window.location.origin}/order?paid=1`,
+          embedded,
+          success_url: successUrl,
           cancel_url: `${window.location.origin}/order`,
         },
       });
       if (error || data?.error) throw new Error(data?.error || error?.message);
-      window.location.href = data.url;
+      setCheckout(false);
+      await startCheckout(data, successUrl);
+      setBusy(false);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : 'Something went wrong');
       setBusy(false);
@@ -259,7 +265,7 @@ export default function Order() {
             </div>
             <div className="field"><label>Note to kitchen</label><textarea value={cNote} onChange={(e) => setCNote(e.target.value)} placeholder="Spice level, allergies…" /></div>
             <button className="btn-primary" onClick={placeOrder} disabled={busy}>
-              {busy ? 'Redirecting…' : `Pay $${(subtotal / 100).toFixed(2)} & Order`}
+              {busy ? 'Opening checkout…' : `Pay $${(subtotal / 100).toFixed(2)} & Order`}
             </button>
             {err && <div style={{ fontSize: 13, marginTop: 8, color: '#dc2626' }}>{err}</div>}
           </div>

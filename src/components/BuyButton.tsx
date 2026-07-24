@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
+import { embedAvailable, startCheckout } from '../services/stripeEmbed';
 
 interface Props {
   postId: string;
@@ -41,16 +42,20 @@ export default function BuyButton({ postId, priceCents, isSold, sellerId }: Prop
     setLoading(true);
     setError('');
     try {
+      const successUrl = `${window.location.origin}/marketplace?payment=success`;
+      const embedded = await embedAvailable();
       const { data, error: fnErr } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           post_id: postId,
           buyer_id: user.id,
-          success_url: `${window.location.origin}/marketplace?payment=success`,
+          embedded,
+          success_url: successUrl,
           cancel_url: `${window.location.origin}/marketplace?payment=cancelled`,
         },
       });
       if (fnErr || data?.error) throw new Error(data?.error || fnErr?.message);
-      window.location.href = data.url;
+      await startCheckout(data, successUrl);
+      setLoading(false);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setLoading(false);
@@ -73,7 +78,7 @@ export default function BuyButton({ postId, priceCents, isSold, sellerId }: Prop
           cursor: loading ? 'not-allowed' : 'pointer',
         }}
       >
-        {loading ? 'Redirecting…' : `Buy · $${price}`}
+        {loading ? 'Opening checkout…' : `Buy · $${price}`}
       </button>
       {error && <span style={{ fontSize: 11, color: '#dc2626' }}>{error}</span>}
     </div>

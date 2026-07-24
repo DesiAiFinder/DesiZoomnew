@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import { supabase } from '../services/supabase';
+import { embedAvailable, startCheckout } from '../services/stripeEmbed';
 import SellerOnboard from '../components/SellerOnboard';
 import StarRating from '../components/StarRating';
 import { CITIES } from '../config/env';
@@ -169,6 +170,8 @@ export default function Services() {
     if (!bPhone.trim()) return setBErr('Phone is required so the provider can coordinate.');
     setBBusy(true); setBErr('');
     try {
+      const successUrl = `${window.location.origin}/services?booking=success`;
+      const embedded = await embedAvailable();
       const { data, error } = await supabase.functions.invoke('create-booking-session', {
         body: {
           offering_id: bookingFor!.id,
@@ -177,12 +180,15 @@ export default function Services() {
           requested_time: bTime || null,
           customer_phone: bPhone.trim(),
           note: bNote.trim() || null,
-          success_url: `${window.location.origin}/services?booking=success`,
+          embedded,
+          success_url: successUrl,
           cancel_url: `${window.location.origin}/services`,
         },
       });
       if (error || data?.error) throw new Error(data?.error || error?.message);
-      window.location.href = data.url;
+      setBookingFor(null);
+      await startCheckout(data, successUrl);
+      setBBusy(false);
     } catch (e: unknown) {
       setBErr(e instanceof Error ? e.message : 'Something went wrong');
       setBBusy(false);
@@ -539,7 +545,7 @@ export default function Services() {
             <div className="field"><label>Your phone *</label><input value={bPhone} onChange={(e) => setBPhone(e.target.value)} placeholder="Shared with provider after payment" /></div>
             <div className="field"><label>Note to provider</label><textarea value={bNote} onChange={(e) => setBNote(e.target.value)} placeholder="Address area, number of people, language preference…" /></div>
             <button className="btn-primary" onClick={submitBooking} disabled={bBusy}>
-              {bBusy ? 'Redirecting…' : `Pay $${(bookingFor.price_cents / 100).toFixed(0)} & Book`}
+              {bBusy ? 'Opening checkout…' : `Pay $${(bookingFor.price_cents / 100).toFixed(0)} & Book`}
             </button>
             <p style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>
               Secure payment via Stripe. Provider receives your contact details once payment completes.

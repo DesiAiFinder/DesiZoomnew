@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
+import { embedAvailable, startCheckout } from '../services/stripeEmbed';
 import type { Post } from '../types';
 
 export default function BuyTicketButton({ event }: { event: Post }) {
@@ -27,17 +28,21 @@ export default function BuyTicketButton({ event }: { event: Post }) {
     if (!user) { setError('Sign in to buy tickets'); return; }
     setLoading(true); setError('');
     try {
+      const successUrl = `${window.location.origin}/events?ticket=success`;
+      const embedded = await embedAvailable();
       const { data, error: fnErr } = await supabase.functions.invoke('create-ticket-session', {
         body: {
           event_id: event.id,
           buyer_id: user.id,
           quantity: qty,
-          success_url: `${window.location.origin}/events?ticket=success`,
+          embedded,
+          success_url: successUrl,
           cancel_url: `${window.location.origin}/events`,
         },
       });
       if (fnErr || data?.error) throw new Error(data?.error || fnErr?.message);
-      window.location.href = data.url;
+      await startCheckout(data, successUrl);
+      setLoading(false);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
       setLoading(false);
@@ -51,7 +56,7 @@ export default function BuyTicketButton({ event }: { event: Post }) {
           {[1, 2, 3, 4, 5, 6].filter((n) => remaining == null || n <= remaining).map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
         <button onClick={buy} disabled={loading} className="btn-primary" style={{ fontSize: 13 }}>
-          {loading ? 'Redirecting…' : `🎟️ Buy · $${(parseInt(price) * qty)}`}
+          {loading ? 'Opening checkout…' : `🎟️ Buy · $${(parseInt(price) * qty)}`}
         </button>
       </div>
       {remaining != null && remaining <= 20 && <span style={{ fontSize: 11, color: '#b84d00' }}>Only {remaining} left!</span>}

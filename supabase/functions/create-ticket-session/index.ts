@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
-    const { event_id, buyer_id, quantity, success_url, cancel_url } = await req.json();
+    const { event_id, buyer_id, quantity, success_url, cancel_url, embedded } = await req.json();
     const qty = Math.max(1, parseInt(quantity) || 1);
     if (!event_id || !buyer_id) throw new Error('event_id and buyer_id required');
 
@@ -87,14 +87,15 @@ Deno.serve(async (req) => {
         event_id: event.id,
         quantity: qty.toString(),
       },
-      success_url,
-      cancel_url,
+      ...(embedded
+        ? { ui_mode: 'embedded' as const, redirect_on_completion: 'never' as const }
+        : { success_url, cancel_url }),
     });
 
     await supabase.from('tickets').update({ stripe_session_id: session.id }).eq('id', ticket.id);
 
     return new Response(
-      JSON.stringify({ url: session.url }),
+      JSON.stringify({ url: session.url, client_secret: session.client_secret }),
       { headers: { ...cors, 'Content-Type': 'application/json' } }
     );
   } catch (err: unknown) {

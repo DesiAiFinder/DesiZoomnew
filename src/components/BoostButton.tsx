@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
+import { embedAvailable, startCheckout } from '../services/stripeEmbed';
 import type { Post } from '../types';
 
 const BOOST_PRICE = '$2.99';
@@ -26,16 +27,20 @@ export default function BoostButton({ post }: { post: Post }) {
     setLoading(true);
     setError('');
     try {
+      const successUrl = `${window.location.origin}/listing/${post.id}?boost=success`;
+      const embedded = await embedAvailable();
       const { data, error: fnErr } = await supabase.functions.invoke('create-boost-session', {
         body: {
           post_id: post.id,
           user_id: user.id,
-          success_url: `${window.location.origin}/listing/${post.id}?boost=success`,
+          embedded,
+          success_url: successUrl,
           cancel_url: `${window.location.origin}/listing/${post.id}`,
         },
       });
       if (fnErr || data?.error) throw new Error(data?.error || fnErr?.message);
-      window.location.href = data.url;
+      await startCheckout(data, successUrl);
+      setLoading(false);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setLoading(false);
@@ -54,7 +59,7 @@ export default function BoostButton({ post }: { post: Post }) {
         className="btn-primary"
         style={{ fontSize: 13, padding: '8px 18px' }}
       >
-        {loading ? 'Redirecting…' : `Boost for ${BOOST_PRICE}`}
+        {loading ? 'Opening checkout…' : `Boost for ${BOOST_PRICE}`}
       </button>
       {error && <div style={{ fontSize: 11, color: '#dc2626', marginTop: 8 }}>{error}</div>}
     </div>

@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
-    const { post_id, buyer_id, success_url, cancel_url } = await req.json();
+    const { post_id, buyer_id, success_url, cancel_url, embedded } = await req.json();
     if (!post_id || !buyer_id) throw new Error('post_id and buyer_id required');
 
     // Fetch post details
@@ -76,8 +76,9 @@ Deno.serve(async (req) => {
         seller_id: post.user_id,
         commission_cents: commission.toString(),
       },
-      success_url: success_url || 'https://desizoomnew.vercel.app/marketplace?payment=success',
-      cancel_url: cancel_url || 'https://desizoomnew.vercel.app/marketplace?payment=cancelled',
+      ...(embedded
+        ? { ui_mode: 'embedded' as const, redirect_on_completion: 'never' as const }
+        : { success_url, cancel_url }),
     });
 
     // Pre-create a pending payment record
@@ -94,7 +95,7 @@ Deno.serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ url: session.url, session_id: session.id }),
+      JSON.stringify({ url: session.url, client_secret: session.client_secret, session_id: session.id }),
       { headers: { ...cors, 'Content-Type': 'application/json' } }
     );
   } catch (err: unknown) {

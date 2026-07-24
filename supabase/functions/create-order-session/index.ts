@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
-    const { restaurant_id, customer_id, items, customer_name, customer_phone, pickup_time, note, success_url, cancel_url } = await req.json();
+    const { restaurant_id, customer_id, items, customer_name, customer_phone, pickup_time, note, success_url, cancel_url, embedded } = await req.json();
     if (!restaurant_id || !customer_id || !Array.isArray(items) || items.length === 0) {
       throw new Error('restaurant_id, customer_id and items required');
     }
@@ -88,13 +88,14 @@ Deno.serve(async (req) => {
         transfer_data: { destination: profile.stripe_account_id },
       },
       metadata: { kind: 'order', order_id: order.id },
-      success_url,
-      cancel_url,
+      ...(embedded
+        ? { ui_mode: 'embedded' as const, redirect_on_completion: 'never' as const }
+        : { success_url, cancel_url }),
     });
 
     await supabase.from('orders').update({ stripe_session_id: session.id }).eq('id', order.id);
 
-    return new Response(JSON.stringify({ url: session.url }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ url: session.url, client_secret: session.client_secret }), { headers: { ...cors, 'Content-Type': 'application/json' } });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return new Response(JSON.stringify({ error: message }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
