@@ -22,11 +22,13 @@ export default function Footer() {
           <div style={{ flex: '0 0 140px' }}>
             <div style={{ fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'white', marginBottom: 12 }}>Explore</div>
             {[
-              { to: '/search',      label: 'Businesses' },
               { to: '/deals',       label: 'Deals' },
-              { to: '/marketplace', label: 'Marketplace' },
-              { to: '/roommates',   label: 'Roommates' },
               { to: '/events',      label: 'Events' },
+              { to: '/search',      label: 'Businesses' },
+              { to: '/order',       label: 'Order Food' },
+              { to: '/marketplace', label: 'Marketplace' },
+              { to: '/services',    label: 'Bookings' },
+              { to: '/roommates',   label: 'Rooms' },
               { to: '/radio',       label: 'Radio' },
             ].map((l) => (
               <div key={l.to} style={{ marginBottom: 8 }}>
@@ -42,8 +44,10 @@ export default function Footer() {
           <div style={{ flex: '0 0 140px' }}>
             <div style={{ fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'white', marginBottom: 12 }}>Community</div>
             {[
-              { to: '/local-info', label: 'Local Info' },
-              { to: '/about',      label: 'About Us' },
+              { to: '/local-info',  label: 'Local Info' },
+              { to: '/adda',        label: 'Community' },
+              { to: '/connections', label: 'Organizations' },
+              { to: '/live',        label: 'Live & Streams' },
             ].map((l) => (
               <div key={l.to} style={{ marginBottom: 8 }}>
                 <Link to={l.to} style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', textDecoration: 'none' }}
