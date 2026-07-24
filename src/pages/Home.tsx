@@ -132,9 +132,15 @@ export default function Home() {
           .mkt-grid           { grid-template-columns: repeat(2,1fr) !important; }
           .festival           { font-size: 12px !important; padding: 8px 14px !important; }
           .hero-description   { display: none !important; }
-          .hero-quicklinks    { display: none !important; }
-          .hero-search-row    { flex-wrap: wrap !important; }
-          .hero-search-row .search-btn { flex: 1 !important; min-width: 0 !important; }
+          /* City-today cards: compact block right under the hero buttons */
+          .hero-today {
+            flex: unset !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            padding: 0 18px 16px !important;
+            align-content: start !important;
+            gap: 8px !important;
+          }
         }
       `}</style>
 
