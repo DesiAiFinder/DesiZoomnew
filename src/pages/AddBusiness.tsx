@@ -48,6 +48,8 @@ export default function AddBusiness() {
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [desc, setDesc] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState('');
 
   // Step 3 (first items — optional)
   const [items, setItems] = useState<ItemDraft[]>([{ name: '', price: '' }]);
@@ -65,6 +67,18 @@ export default function AddBusiness() {
 
   const stepLabels = ['What you offer', 'Profile', engine === 'food' ? 'Your menu' : 'Your services', 'Get paid'];
 
+  // Upload the logo to storage; returns a public URL (or null)
+  const uploadLogo = async (): Promise<string | null> => {
+    if (!logoFile) return null;
+    const ext = logoFile.name.split('.').pop() || 'png';
+    const path = `${user!.id}/logo-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('post-images').upload(path, logoFile, {
+      cacheControl: '31536000', contentType: logoFile.type,
+    });
+    if (error) throw new Error(`Logo upload failed: ${error.message}`);
+    return supabase.storage.from('post-images').getPublicUrl(path).data.publicUrl;
+  };
+
   // Create the business + engine row when leaving step 2
   const createBusiness = async () => {
     if (!user) return onAuthOpen();
@@ -72,9 +86,11 @@ export default function AddBusiness() {
     if (!city.trim()) return setErr('City is required.');
     setBusy(true); setErr('');
     try {
+      const logoUrl = await uploadLogo();
       const { data: biz, error: bErr } = await supabase.from('businesses').insert({
         owner_id: user.id, name: name.trim(), business_type: type, city: city.trim(),
         address: address.trim() || null, phone: phone.trim() || null, description: desc.trim() || null,
+        logo_url: logoUrl,
       }).select().single();
       if (bErr) throw bErr;
       setBizId(biz.id);
@@ -84,6 +100,7 @@ export default function AddBusiness() {
           owner_id: user.id, name: name.trim(), city: city.trim(),
           address: address.trim() || null, phone: phone.trim() || null,
           cuisine: type === 'grocery' ? 'Grocery' : 'Indian',
+          logo_url: logoUrl,
           business_id: biz.id,
         }).select().single();
         if (rErr) throw rErr;
@@ -188,6 +205,30 @@ export default function AddBusiness() {
         {step === 2 && (
           <div>
             <h2 style={{ fontSize: 20, marginBottom: 14 }}>Tell customers about you</h2>
+
+            {/* Logo */}
+            <div className="field">
+              <label>Logo or photo (optional)</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border)' }}>
+                  {logoPreview ? <img src={logoPreview} alt="Logo preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (TYPES.find((t) => t.key === type)?.icon || '🏪')}
+                </div>
+                <label style={{ fontSize: 12.5, fontWeight: 600, padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'white', cursor: 'pointer' }}>
+                  {logoFile ? '✓ Change logo' : '📷 Upload logo'}
+                  <input
+                    type="file" accept="image/*" style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      if (f.size > 4 * 1024 * 1024) { setErr('Logo must be under 4MB.'); return; }
+                      setErr(''); setLogoFile(f); setLogoPreview(URL.createObjectURL(f));
+                    }}
+                  />
+                </label>
+                {logoFile && <button onClick={() => { setLogoFile(null); setLogoPreview(''); }} style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 12, cursor: 'pointer' }}>Remove</button>}
+              </div>
+            </div>
+
             <div className="field"><label>Business name *</label><input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ruchulu Catering" /></div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <div className="field" style={{ flex: '1 1 200px' }}><label>City *</label>

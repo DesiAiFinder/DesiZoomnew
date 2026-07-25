@@ -35,6 +35,8 @@ export default function MyBusiness() {
   const [ePhone, setEPhone] = useState('');
   const [eAddress, setEAddress] = useState('');
   const [eDesc, setEDesc] = useState('');
+  const [eLogoFile, setELogoFile] = useState<File | null>(null);
+  const [eLogoPreview, setELogoPreview] = useState('');
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -54,15 +56,25 @@ export default function MyBusiness() {
 
   const startEdit = () => {
     setEName(biz.name); setEPhone(biz.phone || ''); setEAddress(biz.address || ''); setEDesc(biz.description || '');
+    setELogoFile(null); setELogoPreview('');
     setEditing(true);
   };
 
   const saveEdit = async () => {
-    const patch = { name: eName.trim() || biz.name, phone: ePhone.trim() || null, address: eAddress.trim() || null, description: eDesc.trim() || null };
+    let logoUrl = biz.logo_url || null;
+    if (eLogoFile) {
+      const ext = eLogoFile.name.split('.').pop() || 'png';
+      const path = `${user!.id}/logo-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('post-images').upload(path, eLogoFile, {
+        cacheControl: '31536000', contentType: eLogoFile.type,
+      });
+      if (!error) logoUrl = supabase.storage.from('post-images').getPublicUrl(path).data.publicUrl;
+    }
+    const patch = { name: eName.trim() || biz.name, phone: ePhone.trim() || null, address: eAddress.trim() || null, description: eDesc.trim() || null, logo_url: logoUrl };
     await supabase.from('businesses').update(patch).eq('id', biz.id);
-    // Keep engine rows in sync for name/phone/address
+    // Keep engine rows in sync for name/phone/address/logo
     if (meta.engine === 'food') {
-      await supabase.from('restaurants').update({ name: patch.name, phone: patch.phone, address: patch.address }).eq('business_id', biz.id);
+      await supabase.from('restaurants').update({ name: patch.name, phone: patch.phone, address: patch.address, logo_url: logoUrl }).eq('business_id', biz.id);
     } else {
       await supabase.from('service_providers').update({ business_name: patch.name, phone: patch.phone, description: patch.description }).eq('business_id', biz.id);
     }
@@ -116,6 +128,27 @@ export default function MyBusiness() {
 
           {editing && (
             <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 10 }}>
+              <div className="field" style={{ gridColumn: '1 / -1' }}>
+                <label>Logo</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                    {(eLogoPreview || biz.logo_url)
+                      ? <img src={eLogoPreview || biz.logo_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : meta.icon}
+                  </div>
+                  <label style={{ fontSize: 12.5, fontWeight: 600, padding: '7px 13px', borderRadius: 8, border: '1px solid var(--border)', background: 'white', cursor: 'pointer' }}>
+                    {eLogoFile ? '✓ Change' : '📷 Upload new logo'}
+                    <input
+                      type="file" accept="image/*" style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (!f || f.size > 4 * 1024 * 1024) return;
+                        setELogoFile(f); setELogoPreview(URL.createObjectURL(f));
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
               <div className="field"><label>Name</label><input style={inputStyle} value={eName} onChange={(e) => setEName(e.target.value)} /></div>
               <div className="field"><label>Phone</label><input style={inputStyle} value={ePhone} onChange={(e) => setEPhone(e.target.value)} /></div>
               <div className="field"><label>Address</label><input style={inputStyle} value={eAddress} onChange={(e) => setEAddress(e.target.value)} /></div>
