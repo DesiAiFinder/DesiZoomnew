@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation as useRouterLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import { CITIES } from '../config/env';
 import { RADIUS_OPTIONS } from '../services/geo';
+import { supabase } from '../services/supabase';
 
 interface Props {
   onAuthOpen: () => void;
@@ -23,6 +24,18 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
   const radiusLabel = RADIUS_OPTIONS.find((o) => o.mi === radius)?.label
     ?? (radius > 0 ? `${radius} miles` : 'This city');
 
+  // Does this user have a business? (pill flips Add Business → My Business)
+  const [hasBusiness, setHasBusiness] = useState(false);
+  useEffect(() => {
+    if (!user) { setHasBusiness(false); return; }
+    supabase.from('businesses').select('id').eq('owner_id', user.id).maybeSingle()
+      .then(({ data }) => setHasBusiness(!!data), () => setHasBusiness(false));
+  }, [user]);
+
+  const bizPill = hasBusiness
+    ? { to: '/my-business',  label: 'My Business' }
+    : { to: '/add-business', label: 'Add Business' };
+
   // Primary pill-nav row — shown on every page (doubles as quick access + nav)
   const pillLinks = [
     { to: '/deals',       icon: '🏷️', label: 'Deals' },
@@ -36,12 +49,11 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
 
   // Secondary links grouped under the "More" dropdown
   const moreLinks = [
-    { to: '/roommates',     label: '🏘️ Rooms' },
-    { to: '/adda',          label: '💬 Community' },
-    { to: '/connections',   label: '🤝 Organizations' },
-    { to: '/local-info',    label: '🏛️ Local Info' },
-    { to: '/my-restaurant', label: '🍽️ My Restaurant' },
-    { to: '/radio',         label: '📻 Radio' },
+    { to: '/roommates',   label: '🏘️ Rooms' },
+    { to: '/adda',        label: '💬 Community' },
+    { to: '/connections', label: '🤝 Organizations' },
+    { to: '/local-info',  label: '🏛️ Local Info' },
+    { to: '/radio',       label: '📻 Radio' },
   ];
 
   // Mobile hamburger holds only the secondary links (pills are visible on mobile too)
@@ -251,6 +263,22 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
               </Link>
             );
           })}
+
+          {/* Add Business / My Business (state-aware, accent-outlined) */}
+          <Link
+            to={bizPill.to}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 13px', borderRadius: 20, fontSize: 12.5,
+              fontWeight: routerLoc.pathname === bizPill.to ? 700 : 600,
+              textDecoration: 'none', whiteSpace: 'nowrap',
+              background: routerLoc.pathname === bizPill.to ? 'var(--accent)' : 'var(--accent-soft)',
+              color: routerLoc.pathname === bizPill.to ? 'white' : 'var(--accent-text)',
+              border: '1px solid var(--accent)',
+            }}
+          >
+            <span style={{ fontSize: 14 }}>🏪</span>{bizPill.label}
+          </Link>
 
           {/* More dropdown */}
           <div style={{ position: 'relative' }}>

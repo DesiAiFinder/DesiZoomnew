@@ -19,6 +19,8 @@ import Services from './pages/Services';
 import Profile from './pages/Profile';
 import Order from './pages/Order';
 import MyRestaurant from './pages/MyRestaurant';
+import AddBusiness from './pages/AddBusiness';
+import MyBusiness from './pages/MyBusiness';
 import LocalInfo from './pages/LocalInfo';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
@@ -51,6 +53,8 @@ export default function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="order" element={<Order />} />
             <Route path="my-restaurant" element={<MyRestaurant />} />
+            <Route path="add-business" element={<AddBusiness />} />
+            <Route path="my-business" element={<MyBusiness />} />
             <Route path="local-info" element={<LocalInfo />} />
             <Route
               path="admin"
