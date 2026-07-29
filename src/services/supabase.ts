@@ -237,7 +237,10 @@ export async function countUnreadMessages(userId: string): Promise<number> {
 // ── Seller stats (trust signals) ──────────────────────────────────────────────
 export async function fetchSellerStats(sellerId: string) {
   const [{ data: profile }, { data: stats }] = await Promise.all([
-    supabase.from('profiles').select('display_name, created_at').eq('id', sellerId).maybeSingle(),
+    // public_profiles, not profiles: the base table is own-row-or-admin so that
+    // email / stripe_account_id aren't world-readable. See
+    // migration_fix_profile_exposure.sql.
+    supabase.from('public_profiles').select('display_name, created_at').eq('id', sellerId).maybeSingle(),
     supabase.from('seller_stats').select('completed_sales').eq('seller_id', sellerId).maybeSingle(),
   ]);
   return {
