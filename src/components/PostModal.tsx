@@ -4,12 +4,17 @@ import { useLocation } from '../contexts/LocationContext';
 import { createPost, supabase } from '../services/supabase';
 import { CITIES } from '../config/env';
 
-interface Props { onClose: () => void; defaultType?: string; }
+interface Props {
+  onClose: () => void;
+  defaultType?: string;
+  /** Optional starting values, e.g. when organising a group movie screening */
+  prefill?: { title?: string; description?: string; venue?: string };
+}
 
 const MAX_PHOTOS = 4;
 const MAX_SIZE_MB = 5;
 
-export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
+export default function PostModal({ onClose, defaultType = 'deal', prefill }: Props) {
   const { user } = useAuth();
   const { city, detectedCity } = useLocation();
 
@@ -17,8 +22,8 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
   const defaultCity = detectedCity || city;
 
   const [type, setType] = useState(defaultType);
-  const [title, setTitle] = useState('');
-  const [desc, setDesc] = useState('');
+  const [title, setTitle] = useState(prefill?.title ?? '');
+  const [desc, setDesc] = useState(prefill?.description ?? '');
   const [price, setPrice] = useState('');
   const [postCity, setPostCity] = useState(defaultCity);
   const [category, setCategory] = useState('For sale');
@@ -28,7 +33,7 @@ export default function PostModal({ onClose, defaultType = 'deal' }: Props) {
   const [rent, setRent] = useState('');
   const [accomType, setAccomType] = useState('Roommate');
   const [topic, setTopic] = useState('General');
-  const [venue, setVenue] = useState('');
+  const [venue, setVenue] = useState(prefill?.venue ?? '');
   const [ticketPrice, setTicketPrice] = useState('');
   const [ticketsTotal, setTicketsTotal] = useState('');
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
