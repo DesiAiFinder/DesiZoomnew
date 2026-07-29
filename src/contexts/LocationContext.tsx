@@ -1,8 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { Location } from '../types';
 import { CITIES, env } from '../config/env';
-import { fetchNearbyCities } from '../services/supabase';
-import { loadGoogleMaps } from '../services/googlePlaces';
+import { supabase, fetchNearbyCities } from '../services/supabase';
 import { DEFAULT_RADIUS } from '../services/geo';
 
 interface LocationState {
@@ -22,43 +21,20 @@ const LocationContext = createContext<LocationState>({
   radius: DEFAULT_RADIUS, setRadius: () => {}, nearbyCities: [CITIES[0]],
 });
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-declare const google: any;
-
-/**
- * Turn coordinates into "City, ST".
- *
- * Uses the Maps JavaScript API geocoder, NOT the REST endpoint at
- * maps.googleapis.com/maps/api/geocode/json. That REST endpoint is a
- * server-side web service: it returns no Access-Control-Allow-Origin header,
- * so a browser fetch() is blocked by CORS and always fails. The old code did
- * exactly that inside a bare `catch {}`, which is why city detection silently
- * never worked in production on any device.
- */
 async function reverseGeocode(lat: number, lng: number, apiKey: string): Promise<string | null> {
   try {
-    await loadGoogleMaps(apiKey);
-
-    const results: any[] = await new Promise((resolve, reject) => {
-      new google.maps.Geocoder().geocode(
-        { location: { lat, lng } },
-        (res: any[], status: string) => {
-          if (status === 'OK' && res?.length) resolve(res);
-          else reject(new Error(`Geocoder status: ${status}`));
-        }
-      );
-    });
-
-    const components = results[0]?.address_components ?? [];
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`
+    );
+    const data = await res.json();
+    const components = data.results?.[0]?.address_components ?? [];
     const cityComp = components.find((c: any) => c.types.includes('locality'));
     const stateComp = components.find((c: any) => c.types.includes('administrative_area_level_1'));
     if (cityComp && stateComp) {
       return `${cityComp.long_name}, ${stateComp.short_name}`;
     }
-    console.warn('[location] geocoded, but no locality/state in result', components);
-  } catch (e) {
-    // Log it. The previous silent catch is what hid this bug for weeks.
-    console.warn('[location] reverse geocode failed:', e);
+  } catch {
+    // ignore
   }
   return null;
 }
@@ -90,17 +66,23 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, [city, radius]);
 
-  // City is stored per-browser in localStorage only.
-  //
-  // There used to be a profiles.city sync here, but profiles has never had a
-  // city column in production — the query failed silently for the whole life
-  // of the app. When the column was briefly added, this effect woke up and
-  // overwrote every signed-in user's detected city with the column default,
-  // clobbering their localStorage. Removed rather than repaired.
-  //
-  // If cross-device city is wanted later: add the column as nullable with NO
-  // default, and only apply it when the user has explicitly chosen a city
-  // (otherwise a stored value always beats live geolocation).
+  // Load city from user profile on login
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('city')
+          .eq('id', session.user.id)
+          .single();
+        if (data?.city) {
+          setCity(data.city);
+          localStorage.setItem('dz_city', data.city);
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Auto-detect geolocation + reverse geocode city
   useEffect(() => {
@@ -131,9 +113,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const handleSetCity = (c: string) => {
+  const handleSetCity = async (c: string) => {
     setCity(c);
     localStorage.setItem('dz_city', c);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await supabase.from('profiles').update({ city: c }).eq('id', session.user.id);
+    }
   };
 
   return (
