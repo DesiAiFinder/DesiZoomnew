@@ -323,7 +323,7 @@ export default function Home() {
               { key: 'all', label: '✨ All' },
               { key: 'deal', label: '🏷️ Deals' },
               { key: 'marketplace', label: '🛍️ For sale' },
-              { key: 'roommate', label: '🏘️ Rooms' },
+              { key: 'roommate', label: '🏘️ Housing' },
               { key: 'event', label: '🎉 Events' },
               { key: 'question', label: '💬 Community' },
             ].map((f) => (
