@@ -53,7 +53,18 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
         { to: '/search',      label: '🔍 Business directory' },
       ],
     },
-    { id: 'services', label: 'Services', to: '/services' },
+    {
+      id: 'services', label: 'Services',
+      items: [
+        { to: '/services',                          label: '🛠️ All services' },
+        { to: '/services?cat=Priest %26 Pooja',      label: '🕉️ Priest & Pooja' },
+        { to: '/services?cat=Catering',              label: '🍽️ Catering' },
+        { to: '/services?cat=Photography %26 Video', label: '📸 Photography & Video' },
+        { to: '/services?cat=Mehndi %26 Makeup',     label: '💄 Mehndi & Makeup' },
+        { to: '/services?cat=Event Decor',           label: '🎪 Event Decor' },
+        { to: '/services?tab=requests',              label: '🙋 Post a custom request' },
+      ],
+    },
     {
       id: 'whatson', label: "What's On",
       items: [
@@ -73,8 +84,16 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
     },
   ];
 
+  // Items may carry query strings (e.g. /services?cat=Catering).
+  // isCurrent = same path; isExact = same path AND same query (for highlighting).
+  const isCurrent = (to: string) => to.split('?')[0] === routerLoc.pathname;
+  const isExact = (to: string) => {
+    const [path, query = ''] = to.split('?');
+    return path === routerLoc.pathname &&
+      decodeURIComponent(query) === decodeURIComponent(routerLoc.search.replace(/^\?/, ''));
+  };
   const groupActive = (g: NavGroup) =>
-    g.to ? routerLoc.pathname === g.to : !!g.items?.some((i) => i.to === routerLoc.pathname);
+    g.to ? isCurrent(g.to) : !!g.items?.some((i) => isCurrent(i.to));
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Account';
   const initial = displayName.charAt(0).toUpperCase();
@@ -180,7 +199,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
                           <Link
                             key={i.to} to={i.to}
                             onClick={() => setOpenGroup(null)}
-                            className={`cat-item ${routerLoc.pathname === i.to ? 'on' : ''}`}
+                            className={`cat-item ${isExact(i.to) ? 'on' : ''}`}
                           >
                             {i.label}
                           </Link>

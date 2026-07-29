@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import { supabase } from '../services/supabase';
@@ -51,8 +51,20 @@ export default function Services() {
   const { city, detectedCity } = useLocation();
   const defaultCity = detectedCity || city;
 
+  const [params] = useSearchParams();
   const [tab, setTab] = useState<'book' | 'requests' | 'provide'>('book');
   const [activeCat, setActiveCat] = useState('All');
+
+  // Deep links from the nav: /services?cat=Catering and /services?tab=requests
+  useEffect(() => {
+    const t = params.get('tab');
+    if (t === 'requests' || t === 'provide' || t === 'book') setTab(t);
+    const c = params.get('cat');
+    if (c) {
+      const match = SERVICE_CATEGORIES.find((s) => s.replace(/^\S+\s/, '') === c || s === c);
+      setActiveCat(match ?? 'All');
+    }
+  }, [params]);
   const [offerings, setOfferings] = useState<Offering[]>([]);
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [myProvider, setMyProvider] = useState<Provider | null>(null);
