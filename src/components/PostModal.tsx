@@ -146,7 +146,7 @@ export default function PostModal({ onClose, defaultType = 'deal', prefill }: Pr
           <select value={type} onChange={(e) => setType(e.target.value)}>
             <option value="deal">Deal</option>
             <option value="marketplace">Marketplace listing</option>
-            <option value="roommate">Accommodation (room / apartment / home)</option>
+            <option value="roommate">Room / apartment / home</option>
             <option value="event">Event</option>
             <option value="question">💬 Community question (ask the neighborhood)</option>
           </select>

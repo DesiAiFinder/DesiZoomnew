@@ -50,7 +50,7 @@ export default function Connections() {
   return (
     <>
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#2a1a0a,#181006)' }}>
-        <div className="eyebrow">🤝 Indian Connections</div>
+        <div className="eyebrow">🤝 Organizations</div>
         <h1>Community Organizations</h1>
         <p>Local desi organizations, temples, associations & their leadership. Get connected in {city}.</p>
       </div>

@@ -81,17 +81,10 @@ export const RADIO_STATIONS = [
   },
 ];
 
+// Classifieds only — real services live in the Services section (bookable,
+// paid), and temples live in the Business directory / Organizations.
 export const MKT_CATEGORIES = [
-  'All', 'For sale', 'Vehicles', 'Services',
-  'Jobs', 'Matrimony', 'Student', 'Temple', 'Lost & found',
-];
-
-export const DEAL_CATEGORIES = [
-  { key: 'all', label: '🛍️ All' },
-  { key: 'deal', label: '🏷️ Deals' },
-  { key: 'marketplace', label: '🛍️ Marketplace' },
-  { key: 'roommate', label: '🏠 Roommates' },
-  { key: 'event', label: '🎉 Events' },
+  'All', 'For sale', 'Vehicles', 'Jobs', 'Matrimony', 'Student', 'Lost & found',
 ];
 
 export const BUSINESS_CATEGORIES = [
