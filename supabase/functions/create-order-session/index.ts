@@ -22,14 +22,14 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
-    const { restaurant_id, customer_id, items, customer_name, customer_phone, pickup_time, note, success_url, cancel_url, embedded } = await req.json();
+    const { restaurant_id, customer_id, items, customer_name, customer_phone, pickup_time, note, fulfillment_type, delivery_address, success_url, cancel_url, embedded } = await req.json();
     if (!restaurant_id || !customer_id || !Array.isArray(items) || items.length === 0) {
       throw new Error('restaurant_id, customer_id and items required');
     }
 
     const { data: restaurant } = await supabase
       .from('restaurants')
-      .select('id, name, owner_id, is_open, is_active')
+      .select('id, name, owner_id, is_open, is_active, offers_pickup, offers_delivery, offers_shipping, delivery_fee_cents, delivery_minimum_cents, shipping_fee_cents')
       .eq('id', restaurant_id)
       .single();
     if (!restaurant || !restaurant.is_active) throw new Error('Restaurant not found');
@@ -59,6 +59,23 @@ Deno.serve(async (req) => {
       .from('profiles').select('stripe_account_id').eq('id', restaurant.owner_id).single();
     if (!profile?.stripe_account_id) throw new Error('This restaurant has not set up payments yet.');
 
+    // ── Fulfillment: validate the chosen method and compute its fee ──────────
+    const method = (fulfillment_type as string) || 'pickup';
+    const supports =
+      method === 'pickup'   ? restaurant.offers_pickup !== false :
+      method === 'delivery' ? !!restaurant.offers_delivery :
+      method === 'shipping' ? !!restaurant.offers_shipping : false;
+    if (!supports) throw new Error(`This business does not offer ${method}.`);
+    if (method !== 'pickup' && !delivery_address) throw new Error('An address is required for delivery or shipping.');
+    if (method === 'delivery' && (restaurant.delivery_minimum_cents ?? 0) > subtotal) {
+      throw new Error(`Delivery requires a minimum order of $${((restaurant.delivery_minimum_cents ?? 0) / 100).toFixed(2)}.`);
+    }
+    const fulfillmentFee =
+      method === 'delivery' ? (restaurant.delivery_fee_cents ?? 0) :
+      method === 'shipping' ? (restaurant.shipping_fee_cents ?? 0) : 0;
+
+    // Commission applies to the items only — the business keeps 100% of the
+    // delivery/shipping fee since they're doing that work themselves.
     const commission = Math.round(subtotal * COMMISSION_RATE);
 
     // Create pending order + items
@@ -68,6 +85,9 @@ Deno.serve(async (req) => {
         restaurant_id, owner_id: restaurant.owner_id, customer_id,
         customer_name: customer_name || null, customer_phone: customer_phone || null,
         pickup_time: pickup_time || 'ASAP', note: note || null,
+        fulfillment_type: method,
+        delivery_address: method === 'pickup' ? null : delivery_address,
+        delivery_fee_cents: fulfillmentFee,
         subtotal_cents: subtotal, commission_cents: commission, status: 'pending',
       })
       .select().single();
@@ -79,10 +99,19 @@ Deno.serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      line_items: lineItems.map((li) => ({
-        price_data: { currency: 'usd', unit_amount: li.price_cents, product_data: { name: li.name } },
-        quantity: li.quantity,
-      })),
+      line_items: [
+        ...lineItems.map((li) => ({
+          price_data: { currency: 'usd', unit_amount: li.price_cents, product_data: { name: li.name } },
+          quantity: li.quantity,
+        })),
+        ...(fulfillmentFee > 0 ? [{
+          price_data: {
+            currency: 'usd', unit_amount: fulfillmentFee,
+            product_data: { name: method === 'delivery' ? 'Delivery fee' : 'Shipping fee' },
+          },
+          quantity: 1,
+        }] : []),
+      ],
       payment_intent_data: {
         application_fee_amount: commission,
         transfer_data: { destination: profile.stripe_account_id },

@@ -8,6 +8,9 @@ import PostModal from '../components/PostModal';
 interface Business {
   id: string; owner_id: string; name: string; business_type: string; city: string;
   address?: string; phone?: string; description?: string; logo_url?: string; is_active: boolean;
+  offers_pickup?: boolean; offers_delivery?: boolean; offers_shipping?: boolean;
+  delivery_fee_cents?: number; delivery_minimum_cents?: number;
+  delivery_radius_miles?: number; shipping_fee_cents?: number;
 }
 
 const TYPE_META: Record<string, { icon: string; label: string; engine: 'food' | 'booking' }> = {
@@ -37,6 +40,13 @@ export default function MyBusiness() {
   const [eDesc, setEDesc] = useState('');
   const [eLogoFile, setELogoFile] = useState<File | null>(null);
   const [eLogoPreview, setELogoPreview] = useState('');
+  const [fPickup, setFPickup] = useState(true);
+  const [fDelivery, setFDelivery] = useState(false);
+  const [fShipping, setFShipping] = useState(false);
+  const [dFee, setDFee] = useState('');
+  const [dMin, setDMin] = useState('');
+  const [dRadius, setDRadius] = useState('10');
+  const [sFee, setSFee] = useState('');
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -57,6 +67,13 @@ export default function MyBusiness() {
   const startEdit = () => {
     setEName(biz.name); setEPhone(biz.phone || ''); setEAddress(biz.address || ''); setEDesc(biz.description || '');
     setELogoFile(null); setELogoPreview('');
+    setFPickup(biz.offers_pickup !== false);
+    setFDelivery(!!biz.offers_delivery);
+    setFShipping(!!biz.offers_shipping);
+    setDFee(biz.delivery_fee_cents ? (biz.delivery_fee_cents / 100).toString() : '');
+    setDMin(biz.delivery_minimum_cents ? (biz.delivery_minimum_cents / 100).toString() : '');
+    setDRadius((biz.delivery_radius_miles ?? 10).toString());
+    setSFee(biz.shipping_fee_cents ? (biz.shipping_fee_cents / 100).toString() : '');
     setEditing(true);
   };
 
@@ -70,11 +87,17 @@ export default function MyBusiness() {
       });
       if (!error) logoUrl = supabase.storage.from('post-images').getPublicUrl(path).data.publicUrl;
     }
-    const patch = { name: eName.trim() || biz.name, phone: ePhone.trim() || null, address: eAddress.trim() || null, description: eDesc.trim() || null, logo_url: logoUrl };
+    const dollars = (v: string) => Math.round((parseFloat(v) || 0) * 100);
+    const fulfillment = {
+      offers_pickup: fPickup, offers_delivery: fDelivery, offers_shipping: fShipping,
+      delivery_fee_cents: dollars(dFee), delivery_minimum_cents: dollars(dMin),
+      delivery_radius_miles: parseInt(dRadius) || 10, shipping_fee_cents: dollars(sFee),
+    };
+    const patch = { name: eName.trim() || biz.name, phone: ePhone.trim() || null, address: eAddress.trim() || null, description: eDesc.trim() || null, logo_url: logoUrl, ...fulfillment };
     await supabase.from('businesses').update(patch).eq('id', biz.id);
-    // Keep engine rows in sync for name/phone/address/logo
+    // Keep engine rows in sync for name/phone/address/logo/fulfillment
     if (meta.engine === 'food') {
-      await supabase.from('restaurants').update({ name: patch.name, phone: patch.phone, address: patch.address, logo_url: logoUrl }).eq('business_id', biz.id);
+      await supabase.from('restaurants').update({ name: patch.name, phone: patch.phone, address: patch.address, logo_url: logoUrl, ...fulfillment }).eq('business_id', biz.id);
     } else {
       await supabase.from('service_providers').update({ business_name: patch.name, phone: patch.phone, description: patch.description }).eq('business_id', biz.id);
     }
@@ -153,6 +176,35 @@ export default function MyBusiness() {
               <div className="field"><label>Phone</label><input style={inputStyle} value={ePhone} onChange={(e) => setEPhone(e.target.value)} /></div>
               <div className="field"><label>Address</label><input style={inputStyle} value={eAddress} onChange={(e) => setEAddress(e.target.value)} /></div>
               <div className="field" style={{ gridColumn: '1 / -1' }}><label>Description</label><textarea value={eDesc} onChange={(e) => setEDesc(e.target.value)} style={{ width: '100%', minHeight: 60, border: '1px solid var(--border)', borderRadius: 8, padding: 10, fontSize: 13, boxSizing: 'border-box', fontFamily: 'inherit' }} /></div>
+
+              {/* Fulfillment */}
+              <div style={{ gridColumn: '1 / -1', padding: '12px 14px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>How customers get it</div>
+                <div style={{ fontSize: 11.5, color: 'var(--muted)', marginBottom: 9 }}>You keep 100% of delivery and shipping fees.</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {[
+                    { on: fPickup, set: setFPickup, icon: '🏪', label: 'Pickup' },
+                    { on: fDelivery, set: setFDelivery, icon: '🚗', label: 'Delivery' },
+                    { on: fShipping, set: setFShipping, icon: '📦', label: 'Shipping' },
+                  ].map((o) => (
+                    <label key={o.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderRadius: 20, cursor: 'pointer', background: o.on ? 'var(--accent-soft)' : 'white', border: `1px solid ${o.on ? 'var(--accent)' : 'var(--border)'}`, fontSize: 12.5, fontWeight: o.on ? 700 : 500 }}>
+                      <input type="checkbox" checked={o.on} onChange={(e) => o.set(e.target.checked)} />
+                      {o.icon} {o.label}
+                    </label>
+                  ))}
+                </div>
+                {fDelivery && (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                    <div className="field" style={{ flex: '1 1 100px', margin: 0 }}><label>Fee $</label><input style={inputStyle} value={dFee} onChange={(e) => setDFee(e.target.value)} placeholder="5" inputMode="decimal" /></div>
+                    <div className="field" style={{ flex: '1 1 100px', margin: 0 }}><label>Min order $</label><input style={inputStyle} value={dMin} onChange={(e) => setDMin(e.target.value)} placeholder="25" inputMode="decimal" /></div>
+                    <div className="field" style={{ flex: '1 1 100px', margin: 0 }}><label>Radius (mi)</label><input style={inputStyle} value={dRadius} onChange={(e) => setDRadius(e.target.value)} inputMode="numeric" /></div>
+                  </div>
+                )}
+                {fShipping && (
+                  <div className="field" style={{ maxWidth: 160, marginTop: 8 }}><label>Shipping fee $</label><input style={inputStyle} value={sFee} onChange={(e) => setSFee(e.target.value)} placeholder="8" inputMode="decimal" /></div>
+                )}
+              </div>
+
               <div><button className="btn-primary" onClick={saveEdit}>Save changes</button></div>
             </div>
           )}

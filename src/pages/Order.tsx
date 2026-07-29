@@ -13,6 +13,9 @@ interface OutletCtx { onAuthOpen: () => void; }
 interface Restaurant {
   id: string; owner_id: string; name: string; cuisine?: string; city: string;
   address?: string; phone?: string; logo_url?: string; pickup_note?: string; is_open: boolean;
+  offers_pickup?: boolean; offers_delivery?: boolean; offers_shipping?: boolean;
+  delivery_fee_cents?: number; delivery_minimum_cents?: number;
+  delivery_radius_miles?: number; shipping_fee_cents?: number;
 }
 interface MenuItem {
   id: string; restaurant_id: string; name: string; description?: string;
@@ -40,6 +43,8 @@ export default function Order() {
   const [cNote, setCNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [fulfillment, setFulfillment] = useState<'pickup' | 'delivery' | 'shipping'>('pickup');
+  const [cAddress, setCAddress] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -73,8 +78,20 @@ export default function Order() {
     return () => { cancelled = true; };
   }, [restaurants, geoLocation, city]);
 
+  // What this restaurant supports (default to pickup for older records)
+  const methodsFor = (r: Restaurant) => {
+    const m: ('pickup' | 'delivery' | 'shipping')[] = [];
+    if (r.offers_pickup !== false) m.push('pickup');
+    if (r.offers_delivery) m.push('delivery');
+    if (r.offers_shipping) m.push('shipping');
+    return m.length ? m : ['pickup' as const];
+  };
+  const feeFor = (r: Restaurant | null, f: string) =>
+    !r ? 0 : f === 'delivery' ? (r.delivery_fee_cents ?? 0) : f === 'shipping' ? (r.shipping_fee_cents ?? 0) : 0;
+
   const openRestaurant = async (r: Restaurant) => {
     setActive(r); setCart([]);
+    setFulfillment(methodsFor(r)[0]);
     const { data } = await supabase
       .from('menu_items').select('*').eq('restaurant_id', r.id).eq('is_available', true).order('category').order('sort');
     setMenu((data as MenuItem[]) ?? []);
@@ -99,7 +116,16 @@ export default function Order() {
 
   const placeOrder = async () => {
     if (!user) return onAuthOpen();
-    if (!cPhone.trim()) { setErr('Phone required for pickup coordination.'); return; }
+    if (!cPhone.trim()) { setErr('Phone number is required so they can reach you.'); return; }
+    if (fulfillment !== 'pickup' && !cAddress.trim()) {
+      setErr(fulfillment === 'delivery' ? 'Delivery address is required.' : 'Shipping address is required.');
+      return;
+    }
+    const minimum = active?.delivery_minimum_cents ?? 0;
+    if (fulfillment === 'delivery' && minimum > 0 && subtotal < minimum) {
+      setErr(`Delivery requires a minimum order of $${(minimum / 100).toFixed(2)}.`);
+      return;
+    }
     setBusy(true); setErr('');
     try {
       const successUrl = `${window.location.origin}/order?paid=1`;
@@ -113,6 +139,8 @@ export default function Order() {
           customer_phone: cPhone.trim(),
           pickup_time: cPickup,
           note: cNote.trim() || null,
+          fulfillment_type: fulfillment,
+          delivery_address: fulfillment === 'pickup' ? null : cAddress.trim(),
           embedded,
           success_url: successUrl,
           cancel_url: `${window.location.origin}/order`,
@@ -171,8 +199,15 @@ export default function Order() {
                           </div>
                         </div>
                       </div>
-                      <div style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: r.is_open ? '#128c4b' : '#dc2626' }}>
-                        {r.is_open ? '🟢 Taking orders' : '⚫ Closed'}
+                      <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: r.is_open ? '#128c4b' : '#dc2626' }}>
+                          {r.is_open ? '🟢 Taking orders' : '⚫ Closed'}
+                        </span>
+                        {methodsFor(r).map((m) => (
+                          <span key={m} style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--muted)' }}>
+                            {m === 'pickup' ? '🏪 Pickup' : m === 'delivery' ? `🚗 Delivery${r.delivery_fee_cents ? ` $${(r.delivery_fee_cents / 100).toFixed(0)}` : ''}` : '📦 Ships'}
+                          </span>
+                        ))}
                       </div>
                       {dist[r.id] != null && dist[r.id] > WARN_MILES && (
                         <div style={{ marginTop: 8, fontSize: 11, fontWeight: 600, color: '#b45309', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '4px 8px' }}>
@@ -189,9 +224,9 @@ export default function Order() {
               <button onClick={() => { setActive(null); setCart([]); }} style={{ background: 'none', border: 'none', color: 'var(--accent-text)', fontWeight: 600, fontSize: 13, cursor: 'pointer', marginBottom: 14, padding: 0 }}>← All restaurants</button>
               {dist[active.id] != null && (
                 <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 600, color: dist[active.id] > WARN_MILES ? '#b45309' : '#128c4b', background: dist[active.id] > WARN_MILES ? '#fff7ed' : '#f0fdf4', border: `1px solid ${dist[active.id] > WARN_MILES ? '#fed7aa' : '#bbf7d0'}`, borderRadius: 10, padding: '10px 14px' }}>
-                  {dist[active.id] > WARN_MILES
-                    ? `⚠️ ${active.name} is about ${Math.round(dist[active.id])} miles away. This is pickup only, no delivery. Make sure you can drive there to collect your order.`
-                    : `📍 About ${Math.round(dist[active.id])} mi away · pickup at the restaurant`}
+                  {dist[active.id] > WARN_MILES && !active.offers_delivery
+                    ? `⚠️ ${active.name} is about ${Math.round(dist[active.id])} miles away and does not deliver. Pickup only, so make sure you can drive there.`
+                    : `📍 About ${Math.round(dist[active.id])} mi away${active.offers_delivery ? ` · delivers within ${active.delivery_radius_miles ?? 10} mi` : ' · pickup at the restaurant'}`}
                 </div>
               )}
               {categories.map((cat) => (
@@ -229,11 +264,17 @@ export default function Order() {
                         <span style={{ fontWeight: 600 }}>${((c.price_cents * c.quantity) / 100).toFixed(2)}</span>
                       </div>
                     ))}
+                    {feeFor(active, fulfillment) > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--muted)', marginTop: 6 }}>
+                        <span>{fulfillment === 'delivery' ? 'Delivery' : 'Shipping'}</span>
+                        <span>${(feeFor(active, fulfillment) / 100).toFixed(2)}</span>
+                      </div>
+                    )}
                     <div style={{ borderTop: '1px solid var(--border)', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15 }}>
-                      <span>Total</span><span>${(subtotal / 100).toFixed(2)}</span>
+                      <span>Total</span><span>${((subtotal + feeFor(active, fulfillment)) / 100).toFixed(2)}</span>
                     </div>
                     <button className="btn-primary" style={{ width: '100%', marginTop: 12 }} onClick={() => user ? setCheckout(true) : onAuthOpen()}>
-                      Checkout · ${(subtotal / 100).toFixed(2)}
+                      Checkout · ${((subtotal + feeFor(active, fulfillment)) / 100).toFixed(2)}
                     </button>
                   </>
               }
@@ -254,9 +295,48 @@ export default function Order() {
                 ⚠️ This restaurant is about {Math.round(dist[active.id])} miles away. Pickup only, no delivery. Only order if you can get there.
               </div>
             )}
+            {/* How do you want it? */}
+            {methodsFor(active).length > 1 && (
+              <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 12 }}>
+                {methodsFor(active).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setFulfillment(m)}
+                    style={{
+                      flex: 1, minWidth: 90, padding: '9px 10px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+                      border: `1px solid ${fulfillment === m ? 'var(--accent)' : 'var(--border)'}`,
+                      background: fulfillment === m ? 'var(--accent-soft)' : 'white',
+                      color: fulfillment === m ? 'var(--accent-text)' : 'var(--text)',
+                      fontWeight: fulfillment === m ? 700 : 500, fontSize: 12.5,
+                    }}
+                  >
+                    {m === 'pickup' ? '🏪 Pickup' : m === 'delivery' ? '🚗 Delivery' : '📦 Ship it'}
+                    {feeFor(active, m) > 0 && <span style={{ display: 'block', fontSize: 10.5, fontWeight: 500, color: 'var(--muted)' }}>+${(feeFor(active, m) / 100).toFixed(2)}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {fulfillment === 'delivery' && (active.delivery_minimum_cents ?? 0) > 0 && subtotal < (active.delivery_minimum_cents ?? 0) && (
+              <div style={{ fontSize: 12.5, color: '#b45309', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 9, padding: '8px 11px', marginBottom: 10 }}>
+                Delivery needs a minimum order of ${((active.delivery_minimum_cents ?? 0) / 100).toFixed(2)}. Add ${(((active.delivery_minimum_cents ?? 0) - subtotal) / 100).toFixed(2)} more, or choose pickup.
+              </div>
+            )}
+
             <div className="field"><label>Name</label><input value={cName} onChange={(e) => setCName(e.target.value)} placeholder="For the order" /></div>
             <div className="field"><label>Phone *</label><input value={cPhone} onChange={(e) => setCPhone(e.target.value)} placeholder="Restaurant calls if needed" /></div>
-            <div className="field"><label>Pickup time</label>
+            {fulfillment !== 'pickup' && (
+              <div className="field">
+                <label>{fulfillment === 'delivery' ? 'Delivery address *' : 'Shipping address *'}</label>
+                <textarea
+                  value={cAddress}
+                  onChange={(e) => setCAddress(e.target.value)}
+                  placeholder="Street, apt, city, ZIP"
+                  style={{ width: '100%', minHeight: 56, border: '1px solid var(--border)', borderRadius: 8, padding: 10, fontSize: 13, boxSizing: 'border-box', fontFamily: 'inherit' }}
+                />
+              </div>
+            )}
+            <div className="field"><label>{fulfillment === 'pickup' ? 'Pickup time' : fulfillment === 'delivery' ? 'Preferred time' : 'When to ship'}</label>
               <select value={cPickup} onChange={(e) => setCPickup(e.target.value)}>
                 <option>ASAP</option>
                 <option>In 30 min</option><option>In 1 hour</option>
@@ -265,7 +345,7 @@ export default function Order() {
             </div>
             <div className="field"><label>Note to kitchen</label><textarea value={cNote} onChange={(e) => setCNote(e.target.value)} placeholder="Spice level, allergies…" /></div>
             <button className="btn-primary" onClick={placeOrder} disabled={busy}>
-              {busy ? 'Opening checkout…' : `Pay $${(subtotal / 100).toFixed(2)} & Order`}
+              {busy ? 'Opening checkout…' : `Pay $${((subtotal + feeFor(active, fulfillment)) / 100).toFixed(2)} & Order`}
             </button>
             {err && <div style={{ fontSize: 13, marginTop: 8, color: '#dc2626' }}>{err}</div>}
           </div>

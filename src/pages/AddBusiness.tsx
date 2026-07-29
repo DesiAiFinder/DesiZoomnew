@@ -51,6 +51,15 @@ export default function AddBusiness() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState('');
 
+  // How customers get it
+  const [fPickup, setFPickup] = useState(true);
+  const [fDelivery, setFDelivery] = useState(false);
+  const [fShipping, setFShipping] = useState(false);
+  const [dFee, setDFee] = useState('');
+  const [dMin, setDMin] = useState('');
+  const [dRadius, setDRadius] = useState('10');
+  const [sFee, setSFee] = useState('');
+
   // Step 3 (first items — optional)
   const [items, setItems] = useState<ItemDraft[]>([{ name: '', price: '' }]);
 
@@ -84,13 +93,20 @@ export default function AddBusiness() {
     if (!user) return onAuthOpen();
     if (!name.trim()) return setErr('Business name is required.');
     if (!city.trim()) return setErr('City is required.');
+    if (!fPickup && !fDelivery && !fShipping) return setErr('Pick at least one way customers can get their order.');
     setBusy(true); setErr('');
+    const dollars = (v: string) => Math.round((parseFloat(v) || 0) * 100);
+    const fulfillment = {
+      offers_pickup: fPickup, offers_delivery: fDelivery, offers_shipping: fShipping,
+      delivery_fee_cents: dollars(dFee), delivery_minimum_cents: dollars(dMin),
+      delivery_radius_miles: parseInt(dRadius) || 10, shipping_fee_cents: dollars(sFee),
+    };
     try {
       const logoUrl = await uploadLogo();
       const { data: biz, error: bErr } = await supabase.from('businesses').insert({
         owner_id: user.id, name: name.trim(), business_type: type, city: city.trim(),
         address: address.trim() || null, phone: phone.trim() || null, description: desc.trim() || null,
-        logo_url: logoUrl,
+        logo_url: logoUrl, ...fulfillment,
       }).select().single();
       if (bErr) throw bErr;
       setBizId(biz.id);
@@ -101,7 +117,7 @@ export default function AddBusiness() {
           address: address.trim() || null, phone: phone.trim() || null,
           cuisine: type === 'grocery' ? 'Grocery' : 'Indian',
           logo_url: logoUrl,
-          business_id: biz.id,
+          business_id: biz.id, ...fulfillment,
         }).select().single();
         if (rErr) throw rErr;
         setEngineId(rest.id);
@@ -244,6 +260,40 @@ export default function AddBusiness() {
             </div>
             <div className="field"><label>Address {engine === 'food' ? '(pickup location) *' : '(optional)'}</label><input style={inputStyle} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, city" /></div>
             <div className="field"><label>Short description</label><textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={engine === 'food' ? 'e.g. Authentic Hyderabadi biryani, fresh daily' : 'e.g. Traditional poojas for all occasions, 15 years experience'} style={{ width: '100%', minHeight: 70, border: '1px solid var(--border)', borderRadius: 9, padding: 10, fontSize: 13.5, boxSizing: 'border-box', fontFamily: 'inherit' }} /></div>
+            {/* How customers get it */}
+            <div style={{ marginTop: 6, padding: '14px 16px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 3 }}>How can customers get it?</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
+                Pick all that apply. You keep 100% of any delivery or shipping fee — our commission only applies to the items.
+              </div>
+
+              {[
+                { on: fPickup, set: setFPickup, icon: '🏪', label: 'Pickup', hint: 'Customer collects from you' },
+                { on: fDelivery, set: setFDelivery, icon: '🚗', label: 'Delivery', hint: 'You deliver locally yourself' },
+                { on: fShipping, set: setFShipping, icon: '📦', label: 'Shipping', hint: 'You mail it anywhere' },
+              ].map((o) => (
+                <label key={o.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 9, marginBottom: 6, cursor: 'pointer', background: o.on ? 'var(--accent-soft)' : 'white', border: `1px solid ${o.on ? 'var(--accent)' : 'var(--border)'}` }}>
+                  <input type="checkbox" checked={o.on} onChange={(e) => o.set(e.target.checked)} style={{ width: 16, height: 16 }} />
+                  <span style={{ fontSize: 17 }}>{o.icon}</span>
+                  <span style={{ flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>{o.label}</span>
+                    <span style={{ fontSize: 11.5, color: 'var(--muted)', display: 'block' }}>{o.hint}</span>
+                  </span>
+                </label>
+              ))}
+
+              {fDelivery && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+                  <div className="field" style={{ flex: '1 1 110px', margin: 0 }}><label>Delivery fee $</label><input style={inputStyle} value={dFee} onChange={(e) => setDFee(e.target.value)} placeholder="5" inputMode="decimal" /></div>
+                  <div className="field" style={{ flex: '1 1 110px', margin: 0 }}><label>Min order $</label><input style={inputStyle} value={dMin} onChange={(e) => setDMin(e.target.value)} placeholder="25" inputMode="decimal" /></div>
+                  <div className="field" style={{ flex: '1 1 110px', margin: 0 }}><label>Within (miles)</label><input style={inputStyle} value={dRadius} onChange={(e) => setDRadius(e.target.value)} placeholder="10" inputMode="numeric" /></div>
+                </div>
+              )}
+              {fShipping && (
+                <div className="field" style={{ maxWidth: 180, marginTop: 8 }}><label>Shipping fee $</label><input style={inputStyle} value={sFee} onChange={(e) => setSFee(e.target.value)} placeholder="8" inputMode="decimal" /></div>
+              )}
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14 }}>
               <button className="btn-ghost" style={{ border: '1px solid var(--border)' }} onClick={() => setStep(1)}>← Back</button>
               <button className="btn-primary" disabled={busy} onClick={createBusiness}>{busy ? 'Creating…' : 'Continue →'}</button>
