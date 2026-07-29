@@ -11,63 +11,80 @@ interface Props {
   onSearch: (q: string) => void;
 }
 
+interface NavItem { to: string; label: string }
+interface NavGroup { id: string; label: string; to?: string; items?: NavItem[] }
+
 export default function Navigation({ onAuthOpen, onSearch }: Props) {
   const { user, signOut, isAdmin } = useAuth();
   const { city, setCity, detectedCity, radius, setRadius } = useLocation();
   const routerLoc = useRouterLocation();
-  const [menuOpen, setMenuOpen] = useState(false);
+
+  const [menuOpen, setMenuOpen] = useState(false);     // mobile drawer
   const [cityOpen, setCityOpen] = useState(false);
   const [radiusOpen, setRadiusOpen] = useState(false);
-  const [commOpen, setCommOpen] = useState(false);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [acctOpen, setAcctOpen] = useState(false);
+  const [mobileGroup, setMobileGroup] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-
-  const radiusLabel = RADIUS_OPTIONS.find((o) => o.mi === radius)?.label
-    ?? (radius > 0 ? `${radius} miles` : 'This city');
-
-  // Does this user have a business? (pill flips Add Business → My Business)
   const [hasBusiness, setHasBusiness] = useState(false);
+
   useEffect(() => {
     if (!user) { setHasBusiness(false); return; }
     supabase.from('businesses').select('id').eq('owner_id', user.id).maybeSingle()
       .then(({ data }) => setHasBusiness(!!data), () => setHasBusiness(false));
   }, [user]);
 
-  const bizPill = hasBusiness
-    ? { to: '/my-business',  label: 'My Business' }
-    : { to: '/add-business', label: 'Add Business' };
+  // Close any open menu when the route changes
+  useEffect(() => {
+    setOpenGroup(null);
+    setAcctOpen(false);
+    setMenuOpen(false);
+  }, [routerLoc.pathname]);
 
-  // Primary pill-nav row — shown on every page (doubles as quick access + nav)
-  const pillLinks = [
-    { to: '/deals',       icon: '🏷️', label: 'Deals' },
-    { to: '/events',      icon: '🎉', label: 'Events' },
-    { to: '/search',      icon: '🔍', label: 'Businesses' },
-    { to: '/order',       icon: '🍛', label: 'Order Food' },
-    { to: '/marketplace', icon: '🛍️', label: 'Marketplace' },
-    { to: '/services',    icon: '🛠️', label: 'Bookings' },
-    { to: '/live',        icon: '🔴', label: 'Live' },
+  // ── The five categories ────────────────────────────────────────────────────
+  const GROUPS: NavGroup[] = [
+    { id: 'deals', label: 'Deals', to: '/deals' },
+    {
+      id: 'market', label: 'Marketplace',
+      items: [
+        { to: '/order',       label: '🍛 Order Food' },
+        { to: '/marketplace', label: '🛍️ Buy & Sell' },
+        { to: '/roommates',   label: '🏘️ Rooms' },
+        { to: '/search',      label: '🔍 Business directory' },
+      ],
+    },
+    { id: 'services', label: 'Services', to: '/services' },
+    {
+      id: 'whatson', label: "What's On",
+      items: [
+        { to: '/events', label: '🎉 Events & tickets' },
+        { to: '/live',   label: '🔴 Live streams' },
+        { to: '/movies', label: '🎬 Desi movies' },
+        { to: '/radio',  label: '📻 Radio' },
+      ],
+    },
+    {
+      id: 'community', label: 'Community',
+      items: [
+        { to: '/adda',        label: '💬 Ask the community' },
+        { to: '/connections', label: '🤝 Organizations' },
+        { to: '/local-info',  label: '🏛️ Local info' },
+      ],
+    },
   ];
 
-  // Secondary links grouped under the "More" dropdown
-  const moreLinks = [
-    { to: '/movies',      label: '🎬 Desi Movies' },
-    { to: '/roommates',   label: '🏘️ Rooms' },
-    { to: '/adda',        label: '💬 Community' },
-    { to: '/connections', label: '🤝 Organizations' },
-    { to: '/local-info',  label: '🏛️ Local Info' },
-    { to: '/radio',       label: '📻 Radio' },
-  ];
-
-  // Mobile hamburger holds only the secondary links (pills are visible on mobile too)
-  const navLinks = [
-    ...moreLinks,
-    ...(user ? [{ to: '/messages', label: '💬 Messages' }] : []),
-    ...(user ? [{ to: '/profile', label: '👤 My Profile' }] : []),
-    ...(isAdmin ? [{ to: '/admin', label: '🔐 Admin' }] : []),
-  ];
+  const groupActive = (g: NavGroup) =>
+    g.to ? routerLoc.pathname === g.to : !!g.items?.some((i) => i.to === routerLoc.pathname);
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Account';
+  const initial = displayName.charAt(0).toUpperCase();
   const isGPS = !!(detectedCity && city === detectedCity);
-  const moreActive = moreLinks.some((l) => l.to === routerLoc.pathname);
+  const radiusLabel = RADIUS_OPTIONS.find((o) => o.mi === radius)?.label
+    ?? (radius > 0 ? `${radius} miles` : 'This city');
+
+  const bizLink = hasBusiness
+    ? { to: '/my-business',  label: '🏪 My Business' }
+    : { to: '/add-business', label: '🏪 List your business' };
 
   return (
     <>
@@ -75,8 +92,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
         .nav-city-pill {
           display: flex; align-items: center; gap: 6px;
           height: 30px; padding: 0 11px; border-radius: 20px; cursor: pointer;
-          font-size: 12px; font-weight: 600; white-space: nowrap;
-          transition: opacity 0.15s; flex-shrink: 0;
+          font-size: 12px; font-weight: 600; white-space: nowrap; flex-shrink: 0;
         }
         .nav-city-pill.gps  { background: #fff3e0; color: #b84d00; border: 1px solid #e07820; }
         .nav-city-pill.manual { background: white; color: var(--text); border: 1px solid var(--border); }
@@ -84,133 +100,121 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
         .city-dropdown {
           position: absolute; top: calc(100% + 8px); right: 0;
           background: white; border: 1px solid var(--border);
-          border-radius: 12px; padding: 6px; z-index: 50;
+          border-radius: 12px; padding: 6px; z-index: 60;
           box-shadow: 0 8px 24px rgba(28,35,64,0.12); min-width: 210px;
         }
-        .city-opt {
-          display: flex; align-items: center; gap: 8px;
-          padding: 8px 10px; font-size: 13px; border-radius: 8px; cursor: pointer;
-        }
+        .city-opt { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 13px; border-radius: 8px; cursor: pointer; }
         .city-opt:hover { background: #f5f5f5; }
         .city-opt.active { background: #fff3e0; color: #b84d00; font-weight: 700; }
-        .gps-badge {
-          margin-left: auto; font-size: 9px; font-weight: 700; padding: 2px 6px;
-          border-radius: 10px; background: #dcfce7; color: #166534; text-transform: uppercase; letter-spacing: 0.04em;
-        }
+        .gps-badge { margin-left: auto; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 10px; background: #dcfce7; color: #166534; text-transform: uppercase; }
         .dd-div { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
-        @keyframes navLivePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-        @media (min-width: 769px) { .show-mobile { display: none !important; } }
-        @media (max-width: 768px) {
+
+        /* Top-level category links */
+        .cat {
+          position: relative; display: inline-flex; align-items: center; gap: 4px;
+          font-size: 13.5px; font-weight: 600; color: var(--text); cursor: pointer;
+          background: none; border: none; font-family: inherit; padding: 8px 2px;
+          text-decoration: none; white-space: nowrap;
+        }
+        .cat.active { color: var(--accent); }
+        .cat.active:after { content: ''; position: absolute; left: 2px; right: 2px; bottom: 2px; height: 2px; background: var(--accent); border-radius: 2px; }
+        .cat-pop {
+          position: absolute; top: calc(100% + 6px); left: 0; z-index: 60;
+          background: white; border: 1px solid var(--border); border-radius: 12px;
+          box-shadow: 0 12px 32px rgba(60,40,20,0.16); padding: 7px; min-width: 200px;
+        }
+        .cat-item { display: block; padding: 9px 12px; font-size: 13px; border-radius: 8px; text-decoration: none; color: var(--text); white-space: nowrap; }
+        .cat-item:hover { background: var(--bg); }
+        .cat-item.on { background: var(--accent-soft); color: var(--accent-text); font-weight: 700; }
+
+        .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; cursor: pointer; border: 2px solid #fac775; flex-shrink: 0; }
+
+        @media (min-width: 981px) { .show-mobile { display: none !important; } }
+        @media (max-width: 980px) {
           .hidden-mobile { display: none !important; }
-          /* Search drops to its own full-width line under the logo */
+          .nav-row { padding: 10px 14px !important; gap: 9px !important; }
           .nav-search { order: 10; flex: 1 1 100% !important; max-width: none !important; }
-          /* Pill nav stays visible on mobile, slightly tighter */
-          .nav-pills { padding: 0 14px 8px !important; gap: 5px !important; }
-          .nav-pills a, .nav-pills button { padding: 5px 10px !important; font-size: 11.5px !important; }
-          .nav-row1 { padding: 10px 14px !important; }
         }
       `}</style>
 
       <header style={{
-        display: 'flex', flexDirection: 'column',
-        borderBottom: '1px solid var(--border)',
-        background: 'white', position: 'sticky', top: 0, zIndex: 30,
+        borderBottom: '1px solid var(--border)', background: 'white',
+        position: 'sticky', top: 0, zIndex: 50,
       }}>
-        {/* ── Row 1: utility (logo · search · city · messages · auth) ── */}
-        <div className="nav-row1" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 24px', flexWrap: 'wrap' }}>
+        <div className="nav-row" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '11px 24px', flexWrap: 'wrap' }}>
           {/* Logo */}
-          <Link to="/" style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 22, color: 'var(--text)', textDecoration: 'none', flexShrink: 0 }}>
+          <Link to="/" style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 21, color: 'var(--text)', textDecoration: 'none', flexShrink: 0, letterSpacing: '-0.3px' }}>
             Desi<span style={{ color: 'var(--accent)' }}>Zoom</span>
           </Link>
 
-          {/* Search — wider, primary (full-width line on mobile) */}
-          <div className="nav-search" style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, maxWidth: 360, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 9, padding: '0 13px', height: 36 }}>
-            <span style={{ fontSize: 14, color: 'var(--muted)' }}>🔍</span>
+          {/* Search */}
+          <div className="nav-search" style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 1 230px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 20, padding: '0 13px', height: 34 }}>
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>🔍</span>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') onSearch(search); }}
-              placeholder="Search deals, food, businesses…"
-              style={{ flex: 1, minWidth: 0, height: '100%', border: 'none', background: 'transparent', fontSize: 13, outline: 'none', color: 'var(--text)' }}
+              placeholder="Search deals, food…"
+              style={{ flex: 1, minWidth: 0, height: '100%', border: 'none', background: 'transparent', fontSize: 12.5, outline: 'none', color: 'var(--text)' }}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', flexWrap: 'nowrap' }}>
-            {/* Messages icon (compact) */}
-            {user && (
-              <Link
-                to="/messages"
-                className="hidden-mobile"
-                title="Messages"
-                aria-label="Messages"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  width: 32, height: 32, borderRadius: 8, textDecoration: 'none', fontSize: 16,
-                  border: '1px solid var(--border)',
-                  background: routerLoc.pathname === '/messages' ? 'var(--accent-soft)' : 'white',
-                }}
-              >💬</Link>
-            )}
-
-            {/* City picker */}
-            <div style={{ position: 'relative' }}>
-              <button
-                className={`nav-city-pill ${isGPS ? 'gps' : 'manual'}`}
-                onClick={() => setCityOpen((o) => !o)}
-              >
-                {isGPS ? <><span className="gps-dot" />{city} ▾</> : <>📍 {city} ▾</>}
-              </button>
-
-              {cityOpen && (
-                <div className="city-dropdown">
-                  {detectedCity && (
+          {/* Categories (desktop) */}
+          <nav className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+            {GROUPS.map((g) => (
+              g.to ? (
+                <Link key={g.id} to={g.to} className={`cat ${groupActive(g) ? 'active' : ''}`}>{g.label}</Link>
+              ) : (
+                <div key={g.id} style={{ position: 'relative' }}>
+                  <button
+                    className={`cat ${groupActive(g) ? 'active' : ''}`}
+                    onClick={() => setOpenGroup(openGroup === g.id ? null : g.id)}
+                  >
+                    {g.label} <span style={{ fontSize: 9, opacity: 0.7 }}>{openGroup === g.id ? '▲' : '▼'}</span>
+                  </button>
+                  {openGroup === g.id && (
                     <>
-                      <div
-                        className={`city-opt ${city === detectedCity ? 'active' : ''}`}
-                        onClick={() => { setCity(detectedCity); setCityOpen(false); }}
-                      >
-                        <span className="gps-dot" />
-                        {detectedCity}
-                        <span className="gps-badge">GPS</span>
+                      <div onClick={() => setOpenGroup(null)} style={{ position: 'fixed', inset: 0, zIndex: 55 }} />
+                      <div className="cat-pop">
+                        {g.items!.map((i) => (
+                          <Link
+                            key={i.to} to={i.to}
+                            onClick={() => setOpenGroup(null)}
+                            className={`cat-item ${routerLoc.pathname === i.to ? 'on' : ''}`}
+                          >
+                            {i.label}
+                          </Link>
+                        ))}
                       </div>
-                      <div className="dd-div" />
                     </>
                   )}
-                  {CITIES.map((c) => (
-                    <div
-                      key={c}
-                      className={`city-opt ${c === city && c !== detectedCity ? 'active' : ''}`}
-                      onClick={() => { setCity(c); setCityOpen(false); }}
-                    >
-                      {c}
-                      {c === city && c !== detectedCity && <span style={{ marginLeft: 'auto', fontSize: 11 }}>✓</span>}
-                    </div>
-                  ))}
                 </div>
-              )}
-            </div>
+              )
+            ))}
+          </nav>
 
-            {/* Radius picker */}
-            <div className="hidden-mobile" style={{ position: 'relative' }}>
-              <button
-                className="nav-city-pill manual"
-                onClick={() => setRadiusOpen((o) => !o)}
-                title="How far to search"
-              >
-                🔘 {radiusLabel} ▾
+          {/* Right controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+            {/* City */}
+            <div style={{ position: 'relative' }}>
+              <button className={`nav-city-pill ${isGPS ? 'gps' : 'manual'}`} onClick={() => setCityOpen((o) => !o)}>
+                {isGPS ? <><span className="gps-dot" />{city} ▾</> : <>📍 {city} ▾</>}
               </button>
-              {radiusOpen && (
+              {cityOpen && (
                 <>
-                  <div onClick={() => setRadiusOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 29 }} />
-                  <div className="city-dropdown" style={{ minWidth: 150 }}>
-                    {RADIUS_OPTIONS.map((o) => (
-                      <div
-                        key={o.mi}
-                        className={`city-opt ${o.mi === radius ? 'active' : ''}`}
-                        onClick={() => { setRadius(o.mi); setRadiusOpen(false); }}
-                      >
-                        {o.label}
-                        {o.mi === radius && <span style={{ marginLeft: 'auto', fontSize: 11 }}>✓</span>}
+                  <div onClick={() => setCityOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 55 }} />
+                  <div className="city-dropdown">
+                    {detectedCity && (
+                      <>
+                        <div className={`city-opt ${city === detectedCity ? 'active' : ''}`} onClick={() => { setCity(detectedCity); setCityOpen(false); }}>
+                          <span className="gps-dot" />{detectedCity}<span className="gps-badge">GPS</span>
+                        </div>
+                        <div className="dd-div" />
+                      </>
+                    )}
+                    {CITIES.map((c) => (
+                      <div key={c} className={`city-opt ${c === city && c !== detectedCity ? 'active' : ''}`} onClick={() => { setCity(c); setCityOpen(false); }}>
+                        {c}{c === city && c !== detectedCity && <span style={{ marginLeft: 'auto', fontSize: 11 }}>✓</span>}
                       </div>
                     ))}
                   </div>
@@ -218,156 +222,116 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
               )}
             </div>
 
-            {/* Auth */}
+            {/* Radius */}
+            <div className="hidden-mobile" style={{ position: 'relative' }}>
+              <button className="nav-city-pill manual" onClick={() => setRadiusOpen((o) => !o)} title="How far to search">
+                🔘 {radiusLabel} ▾
+              </button>
+              {radiusOpen && (
+                <>
+                  <div onClick={() => setRadiusOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 55 }} />
+                  <div className="city-dropdown" style={{ minWidth: 150 }}>
+                    {RADIUS_OPTIONS.map((o) => (
+                      <div key={o.mi} className={`city-opt ${o.mi === radius ? 'active' : ''}`} onClick={() => { setRadius(o.mi); setRadiusOpen(false); }}>
+                        {o.label}{o.mi === radius && <span style={{ marginLeft: 'auto', fontSize: 11 }}>✓</span>}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Messages */}
+            {user && (
+              <Link to="/messages" className="hidden-mobile" title="Messages" aria-label="Messages"
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, textDecoration: 'none', fontSize: 15, border: '1px solid var(--border)', background: routerLoc.pathname === '/messages' ? 'var(--accent-soft)' : 'white', flexShrink: 0 }}
+              >💬</Link>
+            )}
+
+            {/* Account */}
             {user ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Link to="/profile" className="hidden-mobile" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', textDecoration: 'none' }}>👋 {displayName}</Link>
-                <button className="btn-ghost hidden-mobile" onClick={signOut} style={{ border: '1px solid var(--border)', fontSize: 12 }}>Sign out</button>
+              <div style={{ position: 'relative' }}>
+                <button className="avatar" onClick={() => setAcctOpen((o) => !o)} title={displayName} aria-label="Account menu">{initial}</button>
+                {acctOpen && (
+                  <>
+                    <div onClick={() => setAcctOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 55 }} />
+                    <div className="city-dropdown" style={{ minWidth: 205, padding: 7 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.06em', padding: '4px 10px 5px', textTransform: 'uppercase' }}>{displayName}</div>
+                      <Link to="/profile" onClick={() => setAcctOpen(false)} className="cat-item">👤 My profile</Link>
+                      <Link to={bizLink.to} onClick={() => setAcctOpen(false)} className="cat-item" style={{ background: 'var(--accent-soft)', color: 'var(--accent-text)', fontWeight: 700 }}>{bizLink.label}</Link>
+                      <Link to="/messages" onClick={() => setAcctOpen(false)} className="cat-item">💬 Messages</Link>
+                      {isAdmin && <Link to="/admin" onClick={() => setAcctOpen(false)} className="cat-item">🔐 Admin</Link>}
+                      <div className="dd-div" />
+                      <button onClick={() => { signOut(); setAcctOpen(false); }} className="cat-item" style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--muted)' }}>Sign out</button>
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <button className="btn-ghost hidden-mobile" onClick={onAuthOpen} style={{ border: '1px solid var(--border)', fontSize: 12 }}>Sign in</button>
             )}
 
             {/* Hamburger */}
-            <button
-              className="show-mobile"
-              onClick={() => setMenuOpen((o) => !o)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: '0 2px' }}
-              aria-label="Menu"
-            >
-              {menuOpen ? '✕' : '☰'}
-            </button>
+            <button className="show-mobile" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 21, padding: '0 2px' }}
+            >{menuOpen ? '✕' : '☰'}</button>
           </div>
         </div>
 
-        {/* ── Row 2: pill nav (all screen sizes) ── */}
-        <div className="nav-pills" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 24px 9px', flexWrap: 'wrap' }}>
-          {pillLinks.map((l) => {
-            const active = routerLoc.pathname === l.to;
-            const isLive = l.to === '/live';
-            return (
-              <Link
-                key={l.to} to={l.to}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '6px 13px', borderRadius: 20, fontSize: 12.5,
-                  fontWeight: active ? 700 : 600, textDecoration: 'none', whiteSpace: 'nowrap',
-                  background: active ? 'var(--accent)' : 'white',
-                  color: active ? 'white' : 'var(--text)',
-                  border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
-                }}
-              >
-                {isLive
-                  ? <span style={{ width: 8, height: 8, borderRadius: '50%', background: active ? 'white' : '#dc2626', display: 'inline-block', animation: 'navLivePulse 1.5s infinite' }} />
-                  : <span style={{ fontSize: 14 }}>{l.icon}</span>}
-                {l.label}
-              </Link>
-            );
-          })}
-
-          {/* Add Business / My Business (state-aware, accent-outlined) */}
-          <Link
-            to={bizPill.to}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '6px 13px', borderRadius: 20, fontSize: 12.5,
-              fontWeight: routerLoc.pathname === bizPill.to ? 700 : 600,
-              textDecoration: 'none', whiteSpace: 'nowrap',
-              background: routerLoc.pathname === bizPill.to ? 'var(--accent)' : 'var(--accent-soft)',
-              color: routerLoc.pathname === bizPill.to ? 'white' : 'var(--accent-text)',
-              border: '1px solid var(--accent)',
-            }}
-          >
-            <span style={{ fontSize: 14 }}>🏪</span>{bizPill.label}
-          </Link>
-
-          {/* More dropdown */}
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setCommOpen((o) => !o)}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer',
-                padding: '6px 13px', borderRadius: 20, fontSize: 12.5, fontFamily: 'inherit',
-                fontWeight: moreActive ? 700 : 600, whiteSpace: 'nowrap',
-                background: moreActive ? 'var(--accent-soft)' : 'white',
-                color: moreActive ? 'var(--accent-text)' : 'var(--text-secondary)',
-                border: `1px solid ${moreActive ? 'var(--accent)' : 'var(--border)'}`,
-              }}
-            >
-              More {commOpen ? '▴' : '▾'}
-            </button>
-            {commOpen && (
-              <>
-                <div onClick={() => setCommOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 29 }} />
-                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: 'white', border: '1px solid var(--border)', borderRadius: 12, padding: 6, zIndex: 50, boxShadow: '0 8px 24px rgba(60,40,20,0.14)', minWidth: 200 }}>
-                  {moreLinks.map((l) => (
-                    <Link
-                      key={l.to} to={l.to}
-                      onClick={() => setCommOpen(false)}
-                      style={{
-                        display: 'block', padding: '9px 12px', fontSize: 13, borderRadius: 8, textDecoration: 'none',
-                        color: routerLoc.pathname === l.to ? 'var(--accent-text)' : 'var(--text)',
-                        background: routerLoc.pathname === l.to ? 'var(--accent-soft)' : 'transparent',
-                        fontWeight: routerLoc.pathname === l.to ? 700 : 500,
-                      }}
-                    >
-                      {l.label}
-                    </Link>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* ── Mobile menu ── */}
+        {/* ── Mobile drawer ── */}
         {menuOpen && (
-          <div className="show-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 2, borderTop: '1px solid var(--border)', padding: '10px 20px 14px' }}>
-            {navLinks.map((l) => (
-              <Link
-                key={l.to} to={l.to}
-                onClick={() => setMenuOpen(false)}
-                style={{
-                  padding: '11px 10px', fontSize: 14, fontWeight: 500, display: 'block',
-                  color: routerLoc.pathname === l.to ? 'var(--accent)' : 'var(--text)',
-                  borderRadius: 8, textDecoration: 'none',
-                  background: routerLoc.pathname === l.to ? 'var(--accent-soft)' : 'transparent',
-                }}
-              >
-                {l.label}
-              </Link>
+          <div className="show-mobile" style={{ borderTop: '1px solid var(--border)', padding: '10px 16px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {GROUPS.map((g) => (
+              g.to ? (
+                <Link key={g.id} to={g.to} onClick={() => setMenuOpen(false)}
+                  style={{ padding: '11px 12px', fontSize: 14.5, fontWeight: 700, borderRadius: 10, textDecoration: 'none', border: '1px solid var(--border)', color: groupActive(g) ? 'var(--accent-text)' : 'var(--text)', background: groupActive(g) ? 'var(--accent-soft)' : 'white' }}
+                >{g.label}</Link>
+              ) : (
+                <div key={g.id}>
+                  <button
+                    onClick={() => setMobileGroup(mobileGroup === g.id ? null : g.id)}
+                    style={{ width: '100%', textAlign: 'left', padding: '11px 12px', fontSize: 14.5, fontWeight: 700, borderRadius: 10, border: '1px solid var(--border)', background: mobileGroup === g.id ? 'var(--bg)' : 'white', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text)' }}
+                  >
+                    {g.label}<span style={{ float: 'right', fontSize: 11, color: 'var(--muted)' }}>{mobileGroup === g.id ? '▲' : '▼'}</span>
+                  </button>
+                  {mobileGroup === g.id && (
+                    <div style={{ padding: '4px 0 4px 12px' }}>
+                      {g.items!.map((i) => (
+                        <Link key={i.to} to={i.to} onClick={() => setMenuOpen(false)}
+                          style={{ display: 'block', padding: '9px 12px', fontSize: 13.5, borderRadius: 8, textDecoration: 'none', color: routerLoc.pathname === i.to ? 'var(--accent)' : 'var(--text)' }}
+                        >{i.label}</Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
             ))}
 
-            {/* Auth in mobile menu */}
-            <div style={{ marginTop: 8, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-              {user ? (
-                <button className="btn-ghost" onClick={() => { signOut(); setMenuOpen(false); }} style={{ border: '1px solid var(--border)', fontSize: 13, width: '100%' }}>Sign out</button>
-              ) : (
-                <button className="btn-ghost" onClick={() => { onAuthOpen(); setMenuOpen(false); }} style={{ border: '1px solid var(--border)', fontSize: 13, width: '100%' }}>Sign in</button>
-              )}
+            <div className="dd-div" style={{ margin: '8px 0 4px' }} />
+            <Link to={bizLink.to} onClick={() => setMenuOpen(false)}
+              style={{ padding: '11px 12px', fontSize: 14, fontWeight: 700, borderRadius: 10, textDecoration: 'none', border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent-text)' }}
+            >{bizLink.label}</Link>
+            {user && <Link to="/profile" onClick={() => setMenuOpen(false)} style={{ padding: '11px 12px', fontSize: 14, borderRadius: 10, textDecoration: 'none', color: 'var(--text)' }}>👤 My profile</Link>}
+            {user && <Link to="/messages" onClick={() => setMenuOpen(false)} style={{ padding: '11px 12px', fontSize: 14, borderRadius: 10, textDecoration: 'none', color: 'var(--text)' }}>💬 Messages</Link>}
+            {isAdmin && <Link to="/admin" onClick={() => setMenuOpen(false)} style={{ padding: '11px 12px', fontSize: 14, borderRadius: 10, textDecoration: 'none', color: 'var(--text)' }}>🔐 Admin</Link>}
+
+            {/* Radius on mobile */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+              {RADIUS_OPTIONS.map((o) => (
+                <span key={o.mi} onClick={() => setRadius(o.mi)}
+                  style={{ fontSize: 11.5, padding: '5px 11px', borderRadius: 20, cursor: 'pointer', border: `1px solid ${o.mi === radius ? 'var(--accent)' : 'var(--border)'}`, background: o.mi === radius ? 'var(--accent-soft)' : 'white', color: o.mi === radius ? 'var(--accent-text)' : 'var(--text)', fontWeight: o.mi === radius ? 700 : 500 }}
+                >{o.label}</span>
+              ))}
             </div>
 
-            {/* GPS status */}
-            {detectedCity && (
-              <div style={{ marginTop: 8, padding: '8px 10px', background: '#f0fdf4', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                <span className="gps-dot" />
-                <span style={{ color: '#166534' }}>GPS: <strong>{detectedCity}</strong></span>
-                {city !== detectedCity && (
-                  <span
-                    onClick={() => { setCity(detectedCity); setMenuOpen(false); }}
-                    style={{ marginLeft: 'auto', color: '#e07820', fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    Use this
-                  </span>
-                )}
-              </div>
-            )}
+            <div style={{ marginTop: 10 }}>
+              {user
+                ? <button className="btn-ghost" onClick={() => { signOut(); setMenuOpen(false); }} style={{ border: '1px solid var(--border)', fontSize: 13, width: '100%' }}>Sign out</button>
+                : <button className="btn-ghost" onClick={() => { onAuthOpen(); setMenuOpen(false); }} style={{ border: '1px solid var(--border)', fontSize: 13, width: '100%' }}>Sign in</button>}
+            </div>
           </div>
         )}
       </header>
-
-      {/* Backdrop to close city dropdown */}
-      {cityOpen && <div onClick={() => setCityOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 29 }} />}
     </>
   );
 }

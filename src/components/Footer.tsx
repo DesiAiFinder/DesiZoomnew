@@ -44,10 +44,11 @@ export default function Footer() {
           <div style={{ flex: '0 0 140px' }}>
             <div style={{ fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'white', marginBottom: 12 }}>Community</div>
             {[
-              { to: '/local-info',  label: 'Local Info' },
-              { to: '/adda',        label: 'Community' },
-              { to: '/connections', label: 'Organizations' },
-              { to: '/live',        label: 'Live & Streams' },
+              { to: '/local-info',   label: 'Local Info' },
+              { to: '/adda',         label: 'Community' },
+              { to: '/connections',  label: 'Organizations' },
+              { to: '/live',         label: 'Live & Streams' },
+              { to: '/add-business', label: '🏪 List your business' },
             ].map((l) => (
               <div key={l.to} style={{ marginBottom: 8 }}>
                 <Link to={l.to} style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', textDecoration: 'none' }}
