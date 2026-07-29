@@ -65,6 +65,7 @@ export default function Profile() {
   const [qrCodes, setQrCodes] = useState<Record<string, string>>({});
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [alerts, setAlerts] = useState<AlertRow[]>([]);
+  const [notices, setNotices] = useState<{ id: string; title: string; body?: string; created_at: string }[]>([]);
   const [aKeyword, setAKeyword] = useState('');
   const [aType, setAType] = useState('');
 
@@ -87,7 +88,7 @@ export default function Profile() {
     setBookings((books as BookingRow[]) ?? []);
     setReviewedIds(await fetchReviewedBookingIds(user.id));
 
-    const [tix, favs, als, { data: fo }] = await Promise.all([
+    const [tix, favs, als, { data: fo }, { data: notes }] = await Promise.all([
       fetchMyTickets(user.id).catch(() => []),
       fetchFavoritePosts(user.id).catch(() => []),
       fetchMyAlerts(user.id).catch(() => []),
@@ -98,7 +99,14 @@ export default function Profile() {
         .neq('status', 'pending')
         .order('created_at', { ascending: false })
         .limit(15),
+      supabase
+        .from('notifications')
+        .select('id, title, body, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10),
     ]);
+    setNotices(notes ?? []);
     setFoodOrders((fo as typeof foodOrders) ?? []);
     setTickets(tix as TicketRow[]);
     setSavedPosts(favs as unknown as Post[]);
@@ -390,6 +398,19 @@ export default function Profile() {
         /* ── ALERTS ── */
         ) : tab === 'alerts' ? (
           <div style={{ maxWidth: 560 }}>
+            {/* Messages from DesiZoom (refunds, cancellations…) */}
+            {notices.length > 0 && (
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 14, padding: 16, marginBottom: 18 }}>
+                <h3 style={{ fontSize: 14.5, marginBottom: 10 }}>📬 Recent updates</h3>
+                {notices.map((n) => (
+                  <div key={n.id} style={{ padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700 }}>{n.title}</div>
+                    {n.body && <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 2 }}>{n.body}</div>}
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>{new Date(n.created_at).toLocaleString()}</div>
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 14, padding: 16, marginBottom: 18 }}>
               <h3 style={{ fontSize: 14.5, marginBottom: 4 }}>🔔 Get notified for new posts in {city}</h3>
               <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 12px' }}>

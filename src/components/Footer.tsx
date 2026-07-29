@@ -14,7 +14,7 @@ export default function Footer() {
               Desi<span style={{ color: 'var(--accent)' }}>Zoom</span>
             </div>
             <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
-              Everything Desi in one place: deals, businesses, events, rooms & radio for the South Asian community.
+              Everything Desi in one place: food, deals, services, events &amp; more for your desi community.
             </p>
           </div>
 

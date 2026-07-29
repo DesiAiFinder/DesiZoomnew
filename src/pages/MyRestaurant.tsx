@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
-import { supabase } from '../services/supabase';
+import { supabase, refundPayment } from '../services/supabase';
 import SellerOnboard from '../components/SellerOnboard';
 import { CITIES } from '../config/env';
 
@@ -16,6 +16,7 @@ interface MenuItem {
 interface Order {
   id: string; customer_name?: string; customer_phone?: string; pickup_time?: string;
   note?: string; subtotal_cents: number; status: string; created_at: string;
+  stripe_session_id?: string;
   order_items?: { item_name: string; quantity: number }[];
 }
 
@@ -32,6 +33,7 @@ export default function MyRestaurant() {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState<string | null>(null);
 
   // Create restaurant form
   const [rName, setRName] = useState('');
@@ -111,6 +113,26 @@ export default function MyRestaurant() {
     load();
   };
 
+  // Can't fulfil an order? Cancel it and send the customer their money back.
+  const cancelOrder = async (o: Order) => {
+    if (!window.confirm(
+      `Cancel this order and refund $${(o.subtotal_cents / 100).toFixed(2)} to ${o.customer_name || 'the customer'}?\n\n` +
+      `Please call them first on ${o.customer_phone || 'their number'} to let them know. This cannot be undone.`
+    )) return;
+    setCancelling(o.id);
+    try {
+      if (o.stripe_session_id) {
+        await refundPayment(o.stripe_session_id, 'requested_by_customer');
+      } else {
+        // No payment recorded (shouldn't happen) — just close the order out
+        await supabase.from('orders').update({ status: 'cancelled' }).eq('id', o.id);
+      }
+      load();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Could not refund this order. Try again, or refund from Stripe.');
+    } finally { setCancelling(null); }
+  };
+
   if (!user) return <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--muted)' }}><div style={{ fontSize: 48 }}>🍛</div><p>Sign in to manage your restaurant.</p></div>;
 
   const activeOrders = orders.filter((o) => ['paid', 'preparing', 'ready'].includes(o.status));
@@ -166,9 +188,18 @@ export default function MyRestaurant() {
                         {(o.order_items ?? []).map((it) => `${it.quantity}× ${it.item_name}`).join(', ')} · ${(o.subtotal_cents / 100).toFixed(2)}
                         {o.note ? ` · "${o.note}"` : ''}
                       </div>
-                      {ORDER_FLOW[o.status] && (
-                        <button onClick={() => advanceOrder(o)} className="btn-primary" style={{ fontSize: 12, padding: '5px 14px' }}>{ORDER_LABEL[o.status]}</button>
-                      )}
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        {ORDER_FLOW[o.status] && (
+                          <button onClick={() => advanceOrder(o)} className="btn-primary" style={{ fontSize: 12, padding: '5px 14px' }}>{ORDER_LABEL[o.status]}</button>
+                        )}
+                        <button
+                          onClick={() => cancelOrder(o)}
+                          disabled={cancelling === o.id}
+                          style={{ fontSize: 11.5, padding: '5px 12px', borderRadius: 7, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: cancelling === o.id ? 'wait' : 'pointer' }}
+                        >
+                          {cancelling === o.id ? 'Refunding…' : '✕ Cancel & refund'}
+                        </button>
+                      </div>
                     </div>
                   ))
               }

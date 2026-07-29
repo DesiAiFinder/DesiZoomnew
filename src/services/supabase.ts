@@ -472,6 +472,16 @@ export async function adminFetchPayments() {
   return data ?? [];
 }
 
+// ── Refunds ───────────────────────────────────────────────────────────────────
+/** Refund a payment by its Stripe checkout session id. Admin or seller only. */
+export async function refundPayment(sessionId: string, reason?: string) {
+  const { data, error } = await supabase.functions.invoke('refund-payment', {
+    body: { session_id: sessionId, reason },
+  });
+  if (error || data?.error) throw new Error(data?.error || error?.message || 'Refund failed');
+  return data as { ok: true; refund_id: string; amount_cents: number };
+}
+
 // ── Admin: restaurants ────────────────────────────────────────────────────────
 export async function adminFetchRestaurants() {
   const { data } = await supabase

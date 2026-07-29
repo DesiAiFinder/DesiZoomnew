@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
-import { supabase } from '../services/supabase';
+import { supabase, refundPayment } from '../services/supabase';
 import { embedAvailable, startCheckout } from '../services/stripeEmbed';
 import SellerOnboard from '../components/SellerOnboard';
 import StarRating from '../components/StarRating';
@@ -31,6 +31,7 @@ interface Booking {
   id: string; offering_id: string; provider_user_id: string; customer_id: string;
   requested_date: string; requested_time?: string; note?: string; customer_phone?: string;
   amount_cents: number; status: string; created_at: string;
+  stripe_session_id?: string;
   offering?: { title: string };
 }
 interface ServiceRequest {
@@ -81,6 +82,7 @@ export default function Services() {
   const [bPhone, setBPhone] = useState('');
   const [bNote, setBNote] = useState('');
   const [bBusy, setBBusy] = useState(false);
+  const [cancellingBooking, setCancellingBooking] = useState<string | null>(null);
   const [bErr, setBErr] = useState('');
 
   // Request form
@@ -269,6 +271,25 @@ export default function Services() {
   const toggleOffering = async (o: Offering) => {
     await supabase.from('service_offerings').update({ is_active: !o.is_active }).eq('id', o.id);
     load();
+  };
+
+  // Provider can't make it? Cancel and send the customer their money back.
+  const cancelBooking = async (b: Booking) => {
+    if (!window.confirm(
+      `Cancel this booking and refund $${(b.amount_cents / 100).toFixed(2)} to the customer?\n\n` +
+      `Please call them first on ${b.customer_phone || 'their number'} so they can make other plans. This cannot be undone.`
+    )) return;
+    setCancellingBooking(b.id);
+    try {
+      if (b.stripe_session_id) {
+        await refundPayment(b.stripe_session_id, 'requested_by_customer');
+      } else {
+        await supabase.from('service_bookings').update({ status: 'cancelled' }).eq('id', b.id);
+      }
+      load();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Could not refund this booking. Try again, or refund from Stripe.');
+    } finally { setCancellingBooking(null); }
   };
 
   const setBookingStatus = async (b: Booking, status: string) => {
@@ -528,10 +549,17 @@ export default function Services() {
                           </div>
                         )}
                         {b.status === 'paid' && (
-                          <button
-                            onClick={() => setBookingStatus(b, 'completed')}
-                            style={{ marginTop: 8, fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 7, border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#166534', cursor: 'pointer' }}
-                          >✓ Mark completed</button>
+                          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                            <button
+                              onClick={() => setBookingStatus(b, 'completed')}
+                              style={{ fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 7, border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#166534', cursor: 'pointer' }}
+                            >✓ Mark completed</button>
+                            <button
+                              onClick={() => cancelBooking(b)}
+                              disabled={cancellingBooking === b.id}
+                              style={{ fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 7, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: cancellingBooking === b.id ? 'wait' : 'pointer' }}
+                            >{cancellingBooking === b.id ? 'Refunding…' : '✕ Cancel & refund'}</button>
+                          </div>
                         )}
                       </div>
                     ))

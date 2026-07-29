@@ -8,6 +8,7 @@ import {
   adminFetchRestaurants, adminSetRestaurantActive, adminDeleteRestaurant,
   adminFetchOrders,
   adminFetchOrgs, adminSaveOrg, adminSetOrgActive, adminDeleteOrg,
+  refundPayment,
   supabase,
 } from '../services/supabase';
 import type { AdminStats, Post } from '../types';
@@ -59,6 +60,7 @@ interface PaymentRow {
   commission_cents: number;
   status: string;
   kind?: string;
+  stripe_session_id?: string;
   created_at: string;
   post?: { title: string };
 }
@@ -136,6 +138,20 @@ export default function Admin() {
     if (!window.confirm(`Permanently delete "${r.name}" and its menu & orders? This cannot be undone.`)) return;
     await adminDeleteRestaurant(r.id).catch(() => {});
     setRestaurants((prev) => prev.filter((x) => x.id !== r.id));
+  };
+
+  const [refunding, setRefunding] = useState<string | null>(null);
+  const doRefund = async (p: PaymentRow) => {
+    if (!p.stripe_session_id) { alert('This payment has no Stripe session recorded, so it must be refunded from the Stripe dashboard.'); return; }
+    const amount = `$${(p.amount_cents / 100).toFixed(2)}`;
+    if (!window.confirm(`Refund ${amount} to the customer?\n\nThe money is pulled back from the seller and your commission is returned too. This cannot be undone.`)) return;
+    setRefunding(p.id);
+    try {
+      await refundPayment(p.stripe_session_id, 'requested_by_customer');
+      setPayments((prev) => prev.map((x) => x.id === p.id ? { ...x, status: 'refunded' } : x));
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Refund failed');
+    } finally { setRefunding(null); }
   };
 
   const removeStream = async (s: StreamRow) => {
@@ -333,7 +349,7 @@ export default function Admin() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: 'var(--bg)' }}>
-                        {['Type', 'Item', 'Amount', 'Your Cut', 'Status', 'Date'].map((h) => (
+                        {['Type', 'Item', 'Amount', 'Your Cut', 'Status', 'Date', ''].map((h) => (
                           <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: 'var(--muted)', textTransform: 'uppercase' }}>{h}</th>
                         ))}
                       </tr>
@@ -355,6 +371,17 @@ export default function Admin() {
                             }}>{p.status}</span>
                           </td>
                           <td style={{ padding: '10px 14px', color: 'var(--muted)' }}>{new Date(p.created_at).toLocaleDateString()}</td>
+                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                            {p.status === 'completed' && (
+                              <button
+                                onClick={() => doRefund(p)}
+                                disabled={refunding === p.id}
+                                style={{ fontSize: 11.5, padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: refunding === p.id ? 'wait' : 'pointer' }}
+                              >
+                                {refunding === p.id ? 'Refunding…' : '↩️ Refund'}
+                              </button>
+                            )}
+                          </td>
                         </tr>
                         );
                       })}

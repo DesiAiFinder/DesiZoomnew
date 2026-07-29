@@ -144,29 +144,70 @@ Deno.serve(async (req) => {
   // Handle refunds
   if (event.type === 'charge.refunded') {
     const charge = event.data.object as Stripe.Charge;
-    const sessionId = typeof charge.payment_intent === 'string'
+    const paymentIntent = typeof charge.payment_intent === 'string'
       ? charge.payment_intent
       : charge.payment_intent?.id;
 
-    if (sessionId) {
-      // Find payment by session and mark refunded
-      const { data: payment } = await supabase
-        .from('payments')
-        .select('id, post_id')
-        .eq('stripe_session_id', sessionId)
-        .maybeSingle();
+    if (paymentIntent) {
+      // We store the CHECKOUT SESSION id (cs_…), but a refund only gives us the
+      // payment intent (pi_…). Ask Stripe which session that intent belongs to.
+      let sessionId: string | undefined;
+      try {
+        const sessions = await stripe.checkout.sessions.list({ payment_intent: paymentIntent, limit: 1 });
+        sessionId = sessions.data[0]?.id;
+      } catch (e) {
+        console.error('Could not resolve session for refund', paymentIntent, e);
+      }
 
-      if (payment) {
-        await supabase
+      if (sessionId) {
+        const { data: payment } = await supabase
           .from('payments')
-          .update({ status: 'refunded' })
-          .eq('id', payment.id);
+          .select('id, post_id, kind')
+          .eq('stripe_session_id', sessionId)
+          .maybeSingle();
 
-        // Unmark as sold so it can be relisted
-        await supabase
-          .from('posts')
-          .update({ is_sold: false })
-          .eq('id', payment.post_id);
+        // Fully refunded, or only part of it?
+        const fully = charge.amount_refunded >= charge.amount;
+        const newStatus = fully ? 'refunded' : 'partially_refunded';
+
+        if (payment) {
+          await supabase.from('payments').update({ status: newStatus }).eq('id', payment.id);
+        }
+
+        // Roll back whatever this payment was for
+        const kind = payment?.kind ?? 'sale';
+
+        if (kind === 'sale' && payment?.post_id) {
+          // Relist the marketplace item
+          await supabase.from('posts').update({ is_sold: false }).eq('id', payment.post_id);
+        }
+
+        if (kind === 'order') {
+          await supabase.from('orders').update({ status: 'refunded' }).eq('stripe_session_id', sessionId);
+        }
+
+        if (kind === 'booking') {
+          await supabase.from('service_bookings').update({ status: 'refunded' }).eq('stripe_session_id', sessionId);
+        }
+
+        if (kind === 'ticket') {
+          const { data: t } = await supabase
+            .from('tickets').select('id, event_id, quantity').eq('stripe_session_id', sessionId).maybeSingle();
+          if (t) {
+            await supabase.from('tickets').update({ status: 'refunded' }).eq('id', t.id);
+            // Put the seats back on sale
+            const { data: ev } = await supabase.from('posts').select('tickets_sold').eq('id', t.event_id).single();
+            const back = Math.max(0, (ev?.tickets_sold ?? 0) - (t.quantity ?? 1));
+            await supabase.from('posts').update({ tickets_sold: back }).eq('id', t.event_id);
+          }
+        }
+
+        if (kind === 'boost' && payment?.post_id) {
+          // Cancel the boost immediately
+          await supabase.from('posts').update({ boosted_until: null }).eq('id', payment.post_id);
+        }
+
+        console.log(`↩️ Refund processed: kind=${kind} session=${sessionId} status=${newStatus}`);
       }
     }
   }
