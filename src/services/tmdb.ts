@@ -32,7 +32,7 @@ const LANG_LABEL: Record<string, string> = Object.fromEntries(
 );
 
 const IMG = 'https://image.tmdb.org/t/p/w342';
-const CACHE_KEY = 'dz_movies_v1';
+const CACHE_KEY = 'dz_movies_v2'; // bumped: v1 cached results from a looser query
 const CACHE_HOURS = 6;
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -60,11 +60,14 @@ export async function fetchDesiMovies(force = false): Promise<DesiMovie[]> {
 
   const results = await Promise.all(
     DESI_LANGUAGES.map(async (l) => {
+      // NOTE: with `region` set, TMDB filters on that region's dates only when
+      // you use release_date.* (primary_release_date.* ignores the region and
+      // lets in old films that merely had *some* release in the window).
       const url =
         `https://api.themoviedb.org/3/discover/movie?api_key=${env.tmdbKey}` +
-        `&with_original_language=${l.code}&region=US&with_release_type=2|3` +
-        `&primary_release_date.gte=${iso(from)}&primary_release_date.lte=${iso(to)}` +
-        `&sort_by=primary_release_date.desc&page=1`;
+        `&with_original_language=${l.code}&region=US&with_release_type=3|2` +
+        `&release_date.gte=${iso(from)}&release_date.lte=${iso(to)}` +
+        `&sort_by=release_date.desc&include_adult=false&page=1`;
       try {
         const res = await fetch(url);
         if (!res.ok) return [];
@@ -86,9 +89,12 @@ export async function fetchDesiMovies(force = false): Promise<DesiMovie[]> {
     })
   );
 
+  const fromISO = iso(from);
+  const toISO = iso(to);
   const list = results
     .flat()
-    .filter((m) => m.poster) // skip entries with no artwork
+    // Belt and braces: keep only films whose own release date is in the window
+    .filter((m) => m.poster && m.releaseDate && m.releaseDate >= fromISO && m.releaseDate <= toISO)
     .sort((a, b) => (b.releaseDate ?? '').localeCompare(a.releaseDate ?? ''));
 
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), list })); } catch { /* quota */ }
