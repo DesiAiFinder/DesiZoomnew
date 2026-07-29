@@ -49,7 +49,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
       items: [
         { to: '/order',       label: '🍛 Order Food' },
         { to: '/marketplace', label: '🛍️ Buy & Sell' },
-        { to: '/roommates',   label: '🏘️ Rooms' },
+        { to: '/roommates',   label: '🏘️ Accommodations' },
         { to: '/search',      label: '🔍 Business directory' },
       ],
     },

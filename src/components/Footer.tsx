@@ -28,7 +28,7 @@ export default function Footer() {
               { to: '/order',       label: 'Order Food' },
               { to: '/marketplace', label: 'Marketplace' },
               { to: '/services',    label: 'Bookings' },
-              { to: '/roommates',   label: 'Rooms' },
+              { to: '/roommates',   label: 'Accommodations' },
               { to: '/radio',       label: 'Radio' },
             ].map((l) => (
               <div key={l.to} style={{ marginBottom: 8 }}>

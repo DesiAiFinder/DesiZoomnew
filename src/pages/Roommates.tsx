@@ -55,7 +55,7 @@ export default function Roommates() {
   return (
     <>
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#0f1f3a,#081428)' }}>
-        <div className="eyebrow">🏘️ Rooms</div>
+        <div className="eyebrow">🏘️ Accommodations</div>
         <h1>Rooms, Roommates & Rentals</h1>
         <p>No broker fees. Rooms, apartments, homes & sublets, direct from the desi community in your city.</p>
       </div>
