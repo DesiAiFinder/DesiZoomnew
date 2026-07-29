@@ -49,6 +49,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
 
   // Secondary links grouped under the "More" dropdown
   const moreLinks = [
+    { to: '/movies',      label: '🎬 Desi Movies' },
     { to: '/roommates',   label: '🏘️ Rooms' },
     { to: '/adda',        label: '💬 Community' },
     { to: '/connections', label: '🤝 Organizations' },

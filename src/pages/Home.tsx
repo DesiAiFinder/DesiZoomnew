@@ -7,6 +7,7 @@ import DealCard from '../components/DealCard';
 import WeatherWidget from '../components/WeatherWidget';
 import PostModal from '../components/PostModal';
 import DesiNews from '../components/DesiNews';
+import { fetchDesiMovies } from '../services/tmdb';
 import type { Post } from '../types';
 import { CITIES, DESI_FESTIVALS, RADIO_STATIONS } from '../config/env';
 
@@ -42,6 +43,7 @@ export default function Home() {
   const [playing, setPlaying] = useState<number | null>(null);
   const [feedFilter, setFeedFilter] = useState('all');
   const [today, setToday] = useState<Awaited<ReturnType<typeof fetchCityToday>> | null>(null);
+  const [movies, setMovies] = useState<{ title: string; languageLabel: string }[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
   const festival = getNextFestival();
 
@@ -66,6 +68,13 @@ export default function Home() {
   };
 
   useEffect(() => { load(); }, [nearbyCities]);
+
+  // Desi films currently in US theatres (cached, independent of city)
+  useEffect(() => {
+    fetchDesiMovies()
+      .then((m) => setMovies(m.slice(0, 5)))
+      .catch(() => setMovies([]));
+  }, []);
 
   const handleVote = (id: string) => {
     setVotedIds((prev) => {
@@ -102,6 +111,8 @@ export default function Home() {
     if (today.deals.length)
       todayCards.push({ key: 'deal', k: '🏷️ HOT DEAL', kc: '#93f0cb', t: today.deals[0].title, m: today.deals.length > 1 ? `+${today.deals.length - 1} more deals` : 'Grab it →', to: '/deals' });
   }
+  if (movies.length)
+    todayCards.push({ key: 'movie', k: '🎬 IN THEATRES', kc: '#e2b8ff', t: movies[0].title, m: movies.length > 1 ? `${movies[0].languageLabel} · +${movies.length - 1} more films` : movies[0].languageLabel, to: '/movies' });
   const hasToday = todayCards.length > 0;
 
   return (

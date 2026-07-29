@@ -5,6 +5,7 @@ export const env = {
   openWeatherKey: import.meta.env.VITE_OPENWEATHER_API_KEY as string,
   adminPassword: import.meta.env.VITE_ADMIN_PASSWORD as string,
   stripePublishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string,
+  tmdbKey: import.meta.env.VITE_TMDB_API_KEY as string,
 };
 
 export const CITIES = [
