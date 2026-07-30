@@ -21,7 +21,10 @@ Deno.serve(async (req) => {
     event = await stripe.webhooks.constructEventAsync(body, sig, webhookSecret);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Webhook error';
-    console.error('Webhook signature failed:', message);
+    // If this ever fires again, check the secret's shape before anything else:
+    // STRIPE_WEBHOOK_SECRET must start "whsec_" and be ~38 chars. A truncated
+    // paste (right prefix, short length) caused a full day of silent failures.
+    console.error('Webhook signature failed:', message, `secretLen=${webhookSecret?.length ?? 0}`);
     return new Response(`Webhook Error: ${message}`, { status: 400 });
   }
 
