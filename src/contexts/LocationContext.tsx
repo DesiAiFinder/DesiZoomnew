@@ -29,11 +29,12 @@ declare const google: any;
  * Turn coordinates into "City, ST".
  *
  * Uses the Maps JavaScript API geocoder, NOT the REST endpoint at
- * maps.googleapis.com/maps/api/geocode/json. That REST endpoint is a
- * server-side web service: it returns no Access-Control-Allow-Origin header,
- * so a browser fetch() is blocked by CORS and always fails. The old code did
- * exactly that inside a bare `catch {}`, which is why city detection silently
- * never worked in production on any device.
+ * maps.googleapis.com/maps/api/geocode/json. Our API key is (correctly)
+ * HTTP-referrer-restricted, and Google's web-service endpoints reject such
+ * keys outright: REQUEST_DENIED, "API keys with referer restrictions cannot
+ * be used with this API." The JS API geocoder is built for referrer keys.
+ * The old fetch() version died this way inside a bare `catch {}`, so city
+ * detection failed silently on every device. Don't "simplify" back to fetch.
  */
 async function reverseGeocode(lat: number, lng: number, apiKey: string): Promise<string | null> {
   try {
