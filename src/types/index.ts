@@ -34,8 +34,18 @@ export interface Post {
   tickets_total?: number;
   tickets_sold?: number;
   venue?: string;
+  business_id?: string;       // set when the poster owns a business
+  business?: PostBusiness;    // joined; drives the byline and "View business" CTA
   created_at: string;
   updated_at: string;
+}
+
+/** The slice of `businesses` a post needs to show its byline. */
+export interface PostBusiness {
+  id: string;
+  name: string;
+  logo_url?: string;
+  business_type?: string;
 }
 
 export interface Comment {

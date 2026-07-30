@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
-import { createPost, supabase } from '../services/supabase';
+import { createPost, supabase, fetchMyBusiness } from '../services/supabase';
 import { CITIES } from '../config/env';
 
 interface Props {
@@ -38,6 +38,14 @@ export default function PostModal({ onClose, defaultType = 'deal', prefill }: Pr
   const [ticketsTotal, setTicketsTotal] = useState('');
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // If this user owns a business, posts are attributed to it automatically —
+  // no need to retype the store name, and the listing gets a real byline.
+  const [myBusiness, setMyBusiness] = useState<{ id: string; name: string; logo_url?: string } | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    fetchMyBusiness(user.id).then(setMyBusiness).catch(() => setMyBusiness(null));
+  }, [user]);
 
   // Photos
   const [photos, setPhotos] = useState<File[]>([]);
@@ -116,8 +124,11 @@ export default function PostModal({ onClose, defaultType = 'deal', prefill }: Pr
         ticket_price_cents: type === 'event' && parseFloat(ticketPrice) > 0 ? Math.round(parseFloat(ticketPrice) * 100) : null,
         tickets_total: type === 'event' && parseInt(ticketsTotal) > 0 ? parseInt(ticketsTotal) : null,
         image_urls: imageUrls,
+        business_id: myBusiness?.id ?? null,
         details: {
-          ...(type === 'deal' && storeName ? { store_name: storeName } : {}),
+          // Business owners get their name from business_id; the free-text
+          // store name is only for individuals posting someone else's deal.
+          ...(type === 'deal' && !myBusiness && storeName ? { store_name: storeName } : {}),
           ...(type === 'deal' && expiry ? { expiry } : {}),
           ...(type === 'roommate' && rent ? { rent } : {}),
         },
@@ -187,7 +198,19 @@ export default function PostModal({ onClose, defaultType = 'deal', prefill }: Pr
 
         {type === 'deal' && (
           <>
-            <div className="field"><label>Store name</label><input value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="e.g. Patel Brothers" /></div>
+            {myBusiness ? (
+              <div className="field">
+                <label>Posting as</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--card, #fff7ed)', border: '1px solid var(--border)', borderRadius: 10 }}>
+                  {myBusiness.logo_url
+                    ? <img src={myBusiness.logo_url} alt="" style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover' }} />
+                    : <span style={{ fontSize: 22 }}>🏪</span>}
+                  <strong>{myBusiness.name}</strong>
+                </div>
+              </div>
+            ) : (
+              <div className="field"><label>Store name</label><input value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="e.g. Patel Brothers" /></div>
+            )}
             <div className="field"><label>Discount / Price</label><input value={price} onChange={(e) => setPrice(e.target.value)} placeholder='e.g. "20% OFF" or "$5.99"' /></div>
             <div className="field"><label>Valid until</label><input type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)} /></div>
           </>

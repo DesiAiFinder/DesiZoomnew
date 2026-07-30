@@ -143,6 +143,14 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
           )}
 
           <div style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+            {post.business && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700, color: 'var(--text)' }}>
+                {post.business.logo_url
+                  ? <img src={post.business.logo_url} alt="" style={{ width: 16, height: 16, borderRadius: 4, objectFit: 'cover' }} />
+                  : <span>🏪</span>}
+                {post.business.name}
+              </span>
+            )}
             <span>📍 {post.city}</span>
             <span>🕐 {timeAgo(post.created_at)}</span>
             <button
@@ -185,7 +193,8 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
           )}
 
           {/* Seller trust signals */}
-          <SellerInfo sellerId={post.user_id} />
+          {/* Business posts carry their own byline above; individuals get the seller panel */}
+          {!post.business && <SellerInfo sellerId={post.user_id} />}
 
           {/* Type-specific details */}
           {post.type === 'deal' && (

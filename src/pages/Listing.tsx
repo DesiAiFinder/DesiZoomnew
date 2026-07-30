@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchPostById, deleteMyPost } from '../services/supabase';
+import { fetchPostById, deleteMyPost, businessLink } from '../services/supabase';
 import BuyButton from '../components/BuyButton';
 import MessageButton from '../components/MessageButton';
 import SellerInfo from '../components/SellerInfo';
@@ -137,8 +137,29 @@ export default function Listing() {
             <p style={{ fontSize: 14.5, lineHeight: 1.65, color: 'var(--text)' }}>{post.description}</p>
           )}
 
+          {/* Posted by a business → name, logo, and a way to actually transact */}
+          {post.business && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'var(--card, #fff7ed)', border: '1px solid var(--border)', borderRadius: 12 }}>
+              {post.business.logo_url
+                ? <img src={post.business.logo_url} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover' }} />
+                : <span style={{ fontSize: 28 }}>🏪</span>}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.4 }}>Offered by</div>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>{post.business.name}</div>
+              </div>
+              <Link
+                to={businessLink(post.business.business_type)}
+                style={{ fontSize: 12, fontWeight: 700, padding: '8px 16px', background: 'var(--brand, #ea580c)', color: 'white', borderRadius: 20, textDecoration: 'none', whiteSpace: 'nowrap' }}
+              >
+                {post.business.business_type === 'restaurant' || post.business.business_type === 'grocery'
+                  ? '🍛 Order now'
+                  : '📅 Book now'}
+              </Link>
+            </div>
+          )}
+
           {/* Type-specific details */}
-          {post.type === 'deal' && details?.store_name && <div style={{ fontSize: 14 }}>🏪 <strong>Store:</strong> {details.store_name}</div>}
+          {post.type === 'deal' && !post.business && details?.store_name && <div style={{ fontSize: 14 }}>🏪 <strong>Store:</strong> {details.store_name}</div>}
           {post.type === 'deal' && details?.expiry && <div style={{ fontSize: 14 }}>📅 <strong>Valid until:</strong> {details.expiry}</div>}
           {post.type === 'roommate' && details?.rent && <div style={{ fontSize: 16, fontWeight: 700, color: '#166534' }}>💵 {details.rent}/month</div>}
           {post.type === 'event' && post.event_date && <div style={{ fontSize: 14 }}>📅 {fmtDateTime(post.event_date)}</div>}

@@ -47,10 +47,14 @@ function promotedSort<T extends { is_sponsored?: boolean; boosted_until?: string
   return [...rows].sort((a, b) => rank(b) - rank(a));
 }
 
+// Posts carry their business byline when the author owns one (migration_post_business.sql).
+// `business:businesses(...)` is a left join — posts by individuals simply get null.
+const POST_SELECT = '*, business:businesses(id,name,logo_url,business_type)';
+
 export async function fetchPosts(city: string | string[], type?: string, search?: string) {
   let q = supabase
     .from('posts')
-    .select('*')
+    .select(POST_SELECT)
     .in('city', cityList(city))
     .eq('is_active', true)
     .order('votes_count', { ascending: false });
@@ -64,7 +68,7 @@ export async function fetchPosts(city: string | string[], type?: string, search?
 export async function fetchForYou(city: string | string[], type?: string) {
   let q = supabase
     .from('posts')
-    .select('*')
+    .select(POST_SELECT)
     .in('city', cityList(city))
     .eq('is_active', true)
     .order('created_at', { ascending: false })
@@ -77,7 +81,7 @@ export async function fetchForYou(city: string | string[], type?: string) {
 export async function fetchPostById(id: string) {
   const { data } = await supabase
     .from('posts')
-    .select('*')
+    .select(POST_SELECT)
     .eq('id', id)
     .eq('is_active', true)
     .maybeSingle();
@@ -87,7 +91,7 @@ export async function fetchPostById(id: string) {
 export async function fetchEvents(city: string | string[]) {
   const { data } = await supabase
     .from('posts')
-    .select('*')
+    .select(POST_SELECT)
     .in('city', cityList(city))
     .eq('type', 'event')
     .eq('is_active', true)
@@ -99,7 +103,7 @@ export async function fetchEvents(city: string | string[]) {
 export async function fetchMarketplace(city: string | string[], category?: string) {
   let q = supabase
     .from('posts')
-    .select('*')
+    .select(POST_SELECT)
     .in('city', cityList(city))
     .eq('type', 'marketplace')
     .eq('is_active', true)
@@ -134,6 +138,24 @@ export async function fetchCityToday(city: string | string[]) {
     restaurants: (rests.data ?? []) as { id: string; name: string }[],
     deals: (deals.data ?? []) as { id: string; title: string }[],
   };
+}
+
+/**
+ * The business this user owns, if any. `businesses` has a unique index on
+ * owner_id, so this is at most one row. Used to attribute their posts.
+ */
+export async function fetchMyBusiness(userId: string) {
+  const { data } = await supabase
+    .from('businesses')
+    .select('id, name, logo_url, business_type')
+    .eq('owner_id', userId)
+    .maybeSingle();
+  return data as { id: string; name: string; logo_url?: string; business_type?: string } | null;
+}
+
+/** Where a business's "View business" CTA should send people to transact. */
+export function businessLink(businessType?: string): string {
+  return businessType === 'restaurant' || businessType === 'grocery' ? '/order' : '/services';
 }
 
 export async function createPost(payload: Record<string, unknown>) {
@@ -288,7 +310,7 @@ export async function fetchAllUsers() {
 export async function fetchMyPosts(userId: string) {
   const { data } = await supabase
     .from('posts')
-    .select('*')
+    .select(POST_SELECT)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   return data ?? [];
@@ -405,7 +427,7 @@ export async function fetchReviewedBookingIds(reviewerId: string) {
 export async function adminFetchAllPosts() {
   const { data } = await supabase
     .from('posts')
-    .select('*')
+    .select(POST_SELECT)
     .order('created_at', { ascending: false })
     .limit(200);
   return data ?? [];
