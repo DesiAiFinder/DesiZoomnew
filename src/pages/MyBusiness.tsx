@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
 import SellerOnboard from '../components/SellerOnboard';
+import BusinessOrderBar from '../components/BusinessOrderBar';
 import PostModal from '../components/PostModal';
 
 interface Business {
@@ -122,7 +123,8 @@ export default function MyBusiness() {
         <p>{meta.icon} {meta.label} · {biz.city}</p>
       </div>
 
-      <div style={{ padding: '24px 32px 48px', maxWidth: 860 }}>
+      <div style={{ padding: '24px 32px 48px', maxWidth: 1200, display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div style={{ flex: '1 1 560px', minWidth: 0, maxWidth: 860 }}>
         {/* Profile card */}
         <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 14, padding: 18, marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
@@ -243,6 +245,12 @@ export default function MyBusiness() {
         <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 14, padding: 18 }}>
           <div style={{ fontWeight: 700, fontSize: 14.5, marginBottom: 10 }}>🏦 Payouts</div>
           <SellerOnboard />
+        </div>
+      </div>
+
+        {/* Live orders — realtime, so a rush never needs a page refresh */}
+        <div style={{ flex: '0 0 300px', position: 'sticky', top: 80 }}>
+          <BusinessOrderBar />
         </div>
       </div>
 

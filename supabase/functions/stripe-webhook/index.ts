@@ -40,6 +40,31 @@ Deno.serve(async (req) => {
           amount_cents: o.subtotal_cents, commission_cents: o.commission_cents,
           stripe_session_id: session.id, status: 'completed', kind: 'order',
         });
+
+        // Tell the restaurant, immediately. This is the only alert that reaches
+        // them when the app isn't open, so it must not depend on the browser.
+        if (o.owner_id) {
+          const amount = `$${(o.subtotal_cents / 100).toFixed(2)}`;
+          const title = '🍛 New order';
+          const body = `${amount} order just came in. Tap to start preparing.`;
+
+          await supabase.from('notifications').insert({
+            user_id: o.owner_id, title, body, url: '/my-business',
+          }).then(() => {}, () => {}); // table is optional — ignore if absent
+
+          try {
+            await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-push`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              },
+              body: JSON.stringify({ user_id: o.owner_id, title, body, url: '/my-business' }),
+            });
+          } catch (e) {
+            console.error('new-order push failed (non-fatal)', e);
+          }
+        }
       }
       console.log(`🍛 Order paid: ${order_id}`);
     }

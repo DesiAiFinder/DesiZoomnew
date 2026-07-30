@@ -5,6 +5,7 @@ import { useLocation } from '../contexts/LocationContext';
 import { supabase } from '../services/supabase';
 import { geocodeCity, milesBetween } from '../services/geo';
 import { embedAvailable, startCheckout } from '../services/stripeEmbed';
+import OrderStatusCard from '../components/OrderStatusCard';
 
 const WARN_MILES = 10; // pickup distance beyond which we flag "are you sure?"
 
@@ -261,8 +262,9 @@ export default function Order() {
               ))}
             </div>
 
-            {/* Cart */}
-            <div style={{ flex: '0 0 280px', position: 'sticky', top: 80, background: 'white', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
+            {/* Cart + live status for any order already in flight */}
+            <div style={{ flex: '0 0 280px', position: 'sticky', top: 80 }}>
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 14, padding: 16 }}>
               <h3 style={{ fontSize: 15, marginBottom: 10 }}>🛒 Your order</h3>
               {cart.length === 0
                 ? <div style={{ fontSize: 13, color: 'var(--muted)' }}>Add items from the menu.</div>
@@ -292,6 +294,8 @@ export default function Order() {
                     </button>
                   </>
               }
+            </div>
+            <OrderStatusCard />
             </div>
           </div>
         )}
