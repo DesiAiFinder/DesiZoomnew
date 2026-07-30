@@ -184,9 +184,14 @@ export default function Order() {
       <div style={{ padding: '24px 32px 48px' }}>
         {new URLSearchParams(window.location.search).get('paid') === '1' && (
           <div style={{ padding: '12px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, marginBottom: 16, fontWeight: 600, color: '#166534' }}>
-            ✅ Order placed! The restaurant is preparing it. Check your profile for status.
+            ✅ Order placed! Track it below — it updates as the restaurant works on it.
           </div>
         )}
+
+        {/* Live status. Sits at page level, not in the cart sidebar: Stripe
+            returns to /order?paid=1, which shows the restaurant list, so a
+            sidebar-only card would never be seen after paying. */}
+        {!active && <div style={{ maxWidth: 420, marginBottom: 16 }}><OrderStatusCard /></div>}
 
         {/* ── Restaurant picker ── */}
         {!active ? (
