@@ -4,6 +4,7 @@ import Navigation from './Navigation';
 import Footer from './Footer';
 import AuthModal from './AuthModal';
 import NotificationPrompt from './NotificationPrompt';
+import NewOrderAlert from './NewOrderAlert';
 
 export default function Layout() {
   const [authOpen, setAuthOpen] = useState(false);
@@ -21,6 +22,9 @@ export default function Layout() {
         <Outlet context={{ onAuthOpen: () => setAuthOpen(true) }} />
       </main>
       <Footer />
+      {/* Sticky alert for business owners with unstarted orders. Renders null
+          for everyone else. Push covers the app-closed case. */}
+      <NewOrderAlert />
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </div>
   );
