@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import { supabase } from '../services/supabase';
@@ -13,6 +13,7 @@ interface OutletCtx { onAuthOpen: () => void; }
 interface Restaurant {
   id: string; owner_id: string; name: string; cuisine?: string; city: string;
   address?: string; phone?: string; logo_url?: string; pickup_note?: string; is_open: boolean;
+  business_id?: string;
   offers_pickup?: boolean; offers_delivery?: boolean; offers_shipping?: boolean;
   delivery_fee_cents?: number; delivery_minimum_cents?: number;
   delivery_radius_miles?: number; shipping_fee_cents?: number;
@@ -45,6 +46,7 @@ export default function Order() {
   const [err, setErr] = useState('');
   const [fulfillment, setFulfillment] = useState<'pickup' | 'delivery' | 'shipping'>('pickup');
   const [cAddress, setCAddress] = useState('');
+  const [params] = useSearchParams();
 
   useEffect(() => {
     setLoading(true);
@@ -60,6 +62,18 @@ export default function Order() {
         setLoading(false);
       });
   }, [city]);
+
+  // Deep link: /order?business=<businesses.id> opens that restaurant's menu
+  // directly, so a deal's "Order now" lands on the right place instead of the
+  // full list. Runs once the list is loaded; silently ignored if not found
+  // (e.g. the restaurant is in another city than the one currently selected).
+  useEffect(() => {
+    const wanted = params.get('business');
+    if (!wanted || active || !restaurants.length) return;
+    const match = restaurants.find((r) => r.business_id === wanted);
+    if (match) openRestaurant(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurants, params]);
 
   // Distance from the user (real GPS, else selected city) to each restaurant.
   useEffect(() => {

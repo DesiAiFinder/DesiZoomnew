@@ -148,7 +148,7 @@ export default function Listing() {
                 <div style={{ fontWeight: 700, fontSize: 15 }}>{post.business.name}</div>
               </div>
               <Link
-                to={businessLink(post.business.business_type)}
+                to={businessLink(post.business.business_type, post.business.id)}
                 style={{ fontSize: 12, fontWeight: 700, padding: '8px 16px', background: 'var(--brand, #ea580c)', color: 'white', borderRadius: 20, textDecoration: 'none', whiteSpace: 'nowrap' }}
               >
                 {post.business.business_type === 'restaurant' || post.business.business_type === 'grocery'

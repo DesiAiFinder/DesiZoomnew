@@ -153,9 +153,14 @@ export async function fetchMyBusiness(userId: string) {
   return data as { id: string; name: string; logo_url?: string; business_type?: string } | null;
 }
 
-/** Where a business's "View business" CTA should send people to transact. */
-export function businessLink(businessType?: string): string {
-  return businessType === 'restaurant' || businessType === 'grocery' ? '/order' : '/services';
+/**
+ * Where a business's CTA should send people to transact. Deep-links by
+ * business id so the destination opens that business directly rather than a
+ * list — both pages fall back to the list if the id isn't in the current city.
+ */
+export function businessLink(businessType?: string, businessId?: string): string {
+  const base = businessType === 'restaurant' || businessType === 'grocery' ? '/order' : '/services';
+  return businessId ? `${base}?business=${businessId}` : base;
 }
 
 export async function createPost(payload: Record<string, unknown>) {
