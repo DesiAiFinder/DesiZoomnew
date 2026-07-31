@@ -1,3 +1,16 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/listing/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|WhatsApp|Twitterbot|Slackbot|LinkedInBot|TelegramBot|Discordbot|Googlebot|bingbot|Applebot|Pinterest|redditbot|SkypeUriPreview|embedly|Iframely).*"
+        }
+      ],
+      "destination": "/api/preview?id=:id"
+    },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }

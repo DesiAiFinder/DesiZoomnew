@@ -10,13 +10,16 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
     <link rel="shortcut icon" href="/icons/icon-192.png" />
 
-    <!-- Open Graph (WhatsApp / social link previews) -->
+    <!-- Open Graph (WhatsApp / social link previews).
+         These are the defaults for the app shell. Individual listings get their
+         own title/description/image from api/preview.js — vercel.json routes
+         crawlers there so shared deals preview properly. -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="DesiZoom" />
     <meta property="og:title" content="DesiZoom — Everything Desi" />
     <meta property="og:description" content="Deals, accommodations, marketplace, events, community Q&A & live desi radio — your city, one app." />
-    <meta property="og:image" content="https://desizoomnew.vercel.app/icons/icon-512.png" />
-    <meta property="og:url" content="https://desizoomnew.vercel.app" />
+    <meta property="og:image" content="https://www.desizoom.com/icons/icon-512.png" />
+    <meta property="og:url" content="https://www.desizoom.com" />
     <meta name="twitter:card" content="summary" />
 
     <!-- PWA -->

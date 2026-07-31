@@ -7,3 +7,7 @@ sessions/
 # Local notes with secrets — never commit
 DesiZoom.txt
 supabase/.temp/
+
+# Database dumps — contain real customer data, never commit
+backups/
+backup_prelaunch.sql
