@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>DesiZoom — counter card (print me)</title>
+<!--
+  Table tent / counter card for a signed merchant.
+  Two per page. Print on card stock if you can, fold along the dashed line.
+
+  IMPORTANT: set the business below before printing.
+  Change BUSINESS_NAME, and BUSINESS_ID if you want the QR to open that
+  restaurant's menu directly instead of the order page.
+
+  Print settings: Letter, Portrait, Margins = None, Background graphics = ON.
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  @page { size: letter portrait; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; }
+  .sheet { width: 8.5in; height: 11in; padding: 0.4in; }
+  .card {
+    height: 4.9in; border: 2px solid #e7ded2; border-radius: 16px;
+    padding: 30px 34px; background: #fff7ed; margin-bottom: 0.2in;
+    display: flex; align-items: center; gap: 28px;
+  }
+  .cut { border-top: 2px dashed #c9bcab; margin: 0.1in 0; }
+  .left { flex: 1; }
+  .brand { font-size: 22px; font-weight: 800; color: #2a1500; letter-spacing: -0.3px; }
+  .brand span { color: #ea580c; }
+  h1 { font-size: 32px; line-height: 1.12; margin: 12px 0 10px; color: #2a1500; letter-spacing: -0.6px; }
+  h1 em { font-style: normal; color: #ea580c; }
+  p.sub { font-size: 15px; color: #5c4633; margin: 0 0 14px; line-height: 1.5; }
+  .biz { font-size: 13px; font-weight: 700; color: #92700c; text-transform: uppercase; letter-spacing: 1.2px; }
+  .steps { font-size: 13.5px; color: #5c4633; line-height: 1.7; }
+  .steps b { color: #2a1500; }
+  .qrwrap { text-align: center; }
+  .qr { width: 170px; height: 170px; background: #fff; padding: 10px; border-radius: 12px; border: 2px solid #e7ded2; }
+  .qr img, .qr canvas { width: 150px !important; height: 150px !important; }
+  .qrwrap .cap { font-size: 12.5px; color: #6b5a48; margin-top: 8px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="card">
+    <div class="left">
+      <div class="brand">Desi<span>Zoom</span></div>
+      <h1>Order pickup<br /><em>straight from us</em></h1>
+      <p class="sub">No delivery-app fees. No markup on our prices. Ready when you get here.</p>
+      <div class="steps">
+        <b>1.</b> Scan &nbsp;·&nbsp; <b>2.</b> Pick your food &nbsp;·&nbsp; <b>3.</b> We'll text you when it's ready
+      </div>
+    </div>
+    <div class="qrwrap">
+      <div class="qr" id="qr1"></div>
+      <div class="cap" id="cap1">Scan to order</div>
+    </div>
+  </div>
+
+  <div class="cut"></div>
+
+  <div class="card">
+    <div class="left">
+      <div class="brand">Desi<span>Zoom</span></div>
+      <h1>Order pickup<br /><em>straight from us</em></h1>
+      <p class="sub">No delivery-app fees. No markup on our prices. Ready when you get here.</p>
+      <div class="steps">
+        <b>1.</b> Scan &nbsp;·&nbsp; <b>2.</b> Pick your food &nbsp;·&nbsp; <b>3.</b> We'll text you when it's ready
+      </div>
+    </div>
+    <div class="qrwrap">
+      <div class="qr" id="qr2"></div>
+      <div class="cap" id="cap2">Scan to order</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── EDIT THESE TWO LINES PER MERCHANT ────────────────────────────────────
+  const BUSINESS_NAME = '';   // e.g. 'Desi Bandhu' — blank keeps it generic
+  const BUSINESS_ID   = '';   // businesses.id — opens their menu directly
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const url = BUSINESS_ID
+    ? 'https://www.desizoom.com/order?business=' + BUSINESS_ID
+    : 'https://www.desizoom.com/order';
+
+  ['qr1', 'qr2'].forEach(function (id) {
+    new QRCode(document.getElementById(id), {
+      text: url, width: 300, height: 300,
+      colorDark: '#2a1500', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  });
+
+  if (BUSINESS_NAME) {
+    ['cap1', 'cap2'].forEach(function (id) {
+      document.getElementById(id).textContent = 'Order from ' + BUSINESS_NAME;
+    });
+  }
+</script>
+</body>
+</html>

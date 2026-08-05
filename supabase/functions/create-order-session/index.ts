@@ -14,7 +14,20 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const COMMISSION_RATE = 0.06; // 6% — far below DoorDash's ~30%
+const COMMISSION_RATE = 0.06; // 6% — matches DoorDash pickup, far below their 15–30% delivery
+
+// Flat customer-side service fee, charged on every order regardless of size.
+//
+// Why it exists: these are Stripe destination charges, so DesiZoom pays the
+// processing fee (2.9% + $0.30) out of its own commission. Without this, any
+// order under about $9.70 loses money — 6% of a $5 order is $0.30 against
+// $0.45 of Stripe cost. Growth in small orders would have made losses bigger,
+// not smaller.
+//
+// Every delivery platform recovers processing from the customer side this way;
+// DoorDash's small-order fee alone is $2.50. This is flat and deliberately
+// small, and the restaurant's 6% is untouched by it.
+const SERVICE_FEE_CENTS = 99;
 
 interface CartItem { id: string; name: string; price_cents: number; quantity: number; }
 
@@ -77,6 +90,11 @@ Deno.serve(async (req) => {
     // Commission applies to the items only — the business keeps 100% of the
     // delivery/shipping fee since they're doing that work themselves.
     const commission = Math.round(subtotal * COMMISSION_RATE);
+
+    // The service fee is ours, not the restaurant's, so it's added to the
+    // application fee rather than the transfer. The restaurant's payout is
+    // exactly items + delivery fee - 6%, whether or not this exists.
+    const platformFee = commission + SERVICE_FEE_CENTS;
 
     // Create pending order + items
     const { data: order, error: oErr } = await supabase

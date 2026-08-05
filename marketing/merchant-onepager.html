@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>DesiZoom — merchant one-pager (print me)</title>
+<!--
+  Open this file in a browser and press Ctrl+P.
+  Set: Letter, Portrait, Margins = None, "Background graphics" = ON.
+  Prints as a single page. Save as PDF to send over WhatsApp instead.
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  @page { size: letter portrait; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "Segoe UI", system-ui, sans-serif;
+    color: #2a1500; background: #fff;
+  }
+  .page {
+    width: 8.5in; height: 11in; padding: 0.5in 0.6in;
+    display: flex; flex-direction: column;
+  }
+  .brand { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; }
+  .brand span { color: #ea580c; }
+  .kicker { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #92700c; margin-top: 4px; }
+  h1 { font-size: 40px; line-height: 1.08; margin: 18px 0 8px; letter-spacing: -1px; }
+  h1 em { font-style: normal; color: #ea580c; }
+  .sub { font-size: 15px; color: #5c4633; margin: 0 0 20px; }
+
+  .compare { display: flex; gap: 12px; margin-bottom: 20px; }
+  .card {
+    flex: 1; border: 2px solid #e7ded2; border-radius: 14px; padding: 14px 16px;
+  }
+  .card.win { border-color: #ea580c; background: #fff7ed; }
+  .card .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #8a7a68; }
+  .card .big { font-size: 34px; font-weight: 800; line-height: 1.1; margin: 4px 0 2px; }
+  .card.win .big { color: #ea580c; }
+  .card .note { font-size: 12px; color: #6b5a48; }
+
+  .keep {
+    background: #2a1500; color: #fff; border-radius: 14px;
+    padding: 14px 18px; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .keep b { font-size: 22px; }
+  .keep span { font-size: 13px; opacity: 0.85; }
+
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 1.5px; color: #92700c; margin: 0 0 10px; }
+  ul { margin: 0 0 18px; padding: 0; list-style: none; }
+  li { font-size: 14.5px; line-height: 1.55; padding-left: 22px; position: relative; margin-bottom: 7px; }
+  li:before { content: "✓"; position: absolute; left: 0; color: #128c4b; font-weight: 800; }
+  li b { font-weight: 700; }
+
+  .offer {
+    border: 2px dashed #ea580c; border-radius: 14px; padding: 12px 16px;
+    background: #fff7ed; margin-bottom: 18px;
+  }
+  .offer b { font-size: 16px; color: #ea580c; }
+  .offer p { margin: 3px 0 0; font-size: 13.5px; color: #5c4633; }
+
+  .foot { margin-top: auto; display: flex; align-items: center; gap: 18px;
+          border-top: 2px solid #e7ded2; padding-top: 16px; }
+  #qr { width: 108px; height: 108px; flex: 0 0 108px; }
+  #qr img, #qr canvas { width: 108px !important; height: 108px !important; }
+  .foot .cta b { font-size: 17px; display: block; }
+  .foot .cta p { margin: 4px 0 0; font-size: 13.5px; color: #5c4633; line-height: 1.5; }
+  .foot .cta .site { font-size: 15px; font-weight: 700; color: #ea580c; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="brand">Desi<span>Zoom</span></div>
+  <div class="kicker">For desi restaurants &amp; stores</div>
+
+  <h1>Keep <em>94%</em> of every order.<br />Not 70%.</h1>
+  <p class="sub">Pickup and delivery orders from desi families in your area — without the delivery-app commission.</p>
+
+  <div class="compare">
+    <div class="card">
+      <div class="lbl">Delivery apps</div>
+      <div class="big">~30%</div>
+      <div class="note">Plus fees your customers pay on top</div>
+    </div>
+    <div class="card win">
+      <div class="lbl">DesiZoom</div>
+      <div class="big">6%</div>
+      <div class="note">That's it. No monthly fee, no hardware</div>
+    </div>
+  </div>
+
+  <div class="keep">
+    <b>On $5,000 of orders</b>
+    <span>Delivery app keeps ~$1,500. DesiZoom keeps $300. You keep the difference.</span>
+  </div>
+
+  <h2>What you get</h2>
+  <ul>
+    <li><b>We build your menu for you.</b> Send a photo of it on WhatsApp — you'll be live tomorrow.</li>
+    <li><b>Orders ring on your phone</b> like a text. Tap once to accept, tap again when it's ready.</li>
+    <li><b>Money goes straight to your bank</b> through Stripe. Not held, not delayed.</li>
+    <li><b>Post deals free</b> — they show to every desi family searching in your city.</li>
+    <li><b>Your customers stay yours.</b> They see your name, your logo, your prices.</li>
+    <li><b>Nothing to install.</b> No tablet, no contract, no minimum.</li>
+  </ul>
+
+  <div class="offer">
+    <b>Launch offer — free setup, free promotion</b>
+    <p>We build your menu, photograph your dishes and post your first deals — no charge. Diwali is coming; be listed before the rush.</p>
+  </div>
+
+  <div class="foot">
+    <div id="qr"></div>
+    <div class="cta">
+      <b>Get listed in 5 minutes</b>
+      <p>Scan the code, or just hand me your menu and I'll do the rest.</p>
+      <p class="site">desizoom.com</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  new QRCode(document.getElementById('qr'), {
+    text: 'https://www.desizoom.com/add-business',
+    width: 216, height: 216,
+    colorDark: '#2a1500', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+</script>
+</body>
+</html>

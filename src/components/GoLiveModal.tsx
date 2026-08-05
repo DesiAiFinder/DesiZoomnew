@@ -63,6 +63,16 @@ export default function GoLiveModal({ onClose }: Props) {
       if (!videoFile) return setMsg({ text: 'Choose a video to upload.', ok: false });
       source = 'upload'; plat = 'upload';
     } else {
+      // rtmp:// is the ingest endpoint an encoder pushes to — it's write-only
+      // and usually paired with a secret stream key. People copy it from
+      // YouTube Studio by mistake, so name the problem instead of just
+      // rejecting the format.
+      if (/^rtmps?:\/\//i.test(streamUrl)) {
+        return setMsg({
+          text: 'That\'s the RTMP address your encoder streams to, not a link people can watch. Paste the public watch link instead — in YouTube Studio use Share, and it looks like https://youtube.com/live/…',
+          ok: false,
+        });
+      }
       if (!streamUrl || !/^https?:\/\//.test(streamUrl)) {
         return setMsg({ text: 'Enter a valid link (starts with https://).', ok: false });
       }
@@ -174,7 +184,13 @@ export default function GoLiveModal({ onClose }: Props) {
                 <option value="other">Other</option>
               </select>
             </div>
-            <div className="field"><label>Stream link *</label><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" /></div>
+            <div className="field">
+              <label>Stream link *</label>
+              <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… the link viewers open to watch" />
+              <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 4 }}>
+                The public watch link, not the RTMP address from your encoder settings.
+              </div>
+            </div>
           </>
         )}
         {mode === 'upload' && (

@@ -5,6 +5,7 @@ import Footer from './Footer';
 import AuthModal from './AuthModal';
 import NotificationPrompt from './NotificationPrompt';
 import NewOrderAlert from './NewOrderAlert';
+import InstallPrompt from './InstallPrompt';
 
 export default function Layout() {
   const [authOpen, setAuthOpen] = useState(false);
@@ -25,6 +26,9 @@ export default function Layout() {
       {/* Sticky alert for business owners with unstarted orders. Renders null
           for everyone else. Push covers the app-closed case. */}
       <NewOrderAlert />
+      {/* Add-to-home-screen invite. Renders null if already installed,
+          recently dismissed, or the platform can't install. */}
+      <InstallPrompt />
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </div>
   );

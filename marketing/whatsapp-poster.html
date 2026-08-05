@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>DesiZoom — WhatsApp posters</title>
+<!--
+  Two share-ready posters, 1080x1080 (the size WhatsApp handles best for both
+  chats and Status). Open this file in a browser and click Download.
+
+  How to use them:
+   - Send the IMAGE and the TEXT as separate messages. WhatsApp won't make a
+     link tappable if it's only inside the picture.
+   - The QR is for when someone sees the poster on a printout or on another
+     person's screen. In a chat, people tap the link instead.
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  body { margin:0; padding:28px; background:#f4f1ea; font-family:"Segoe UI",system-ui,sans-serif; color:#2a1500; }
+  h2 { font-size:17px; font-weight:600; margin:0 0 10px; }
+  .row { display:flex; gap:34px; flex-wrap:wrap; }
+  .col { width:420px; }
+
+  /* Rendered at 1080 then scaled down for preview */
+  .poster {
+    width:1080px; height:1080px; transform:scale(0.3889); transform-origin:top left;
+    display:flex; flex-direction:column; justify-content:space-between;
+    padding:86px 80px; box-sizing:border-box;
+  }
+  .shell { width:420px; height:420px; overflow:hidden; border-radius:14px; border:1px solid #ddd6c9; background:#fff; }
+
+  .cust { background:#2a1500; color:#fff; }
+  .biz  { background:#fff7ed; color:#2a1500; }
+
+  .brand { font-size:52px; font-weight:800; letter-spacing:-1px; }
+  .brand span { color:#f5a04a; }
+  .biz .brand span { color:#ea580c; }
+
+  .head { font-size:92px; line-height:1.04; font-weight:800; letter-spacing:-2.5px; margin:34px 0 26px; }
+  .head em { font-style:normal; color:#f5a04a; }
+  .biz .head em { color:#ea580c; }
+
+  .lines { font-size:37px; line-height:1.62; opacity:.92; }
+  .lines b { font-weight:700; }
+
+  .foot { display:flex; align-items:center; gap:34px; }
+  .qrbox { background:#fff; padding:18px; border-radius:20px; }
+  .qrbox img, .qrbox canvas { display:block; width:180px !important; height:180px !important; }
+  .site { font-size:46px; font-weight:800; letter-spacing:-0.5px; }
+  .cap { font-size:27px; opacity:.75; margin-top:8px; }
+  .cities { font-size:29px; opacity:.7; margin-top:6px; }
+
+  .compare { display:flex; gap:22px; margin:30px 0 10px; }
+  .cbox { flex:1; border:4px solid #e7ded2; border-radius:26px; padding:26px 30px; }
+  .cbox.win { border-color:#ea580c; background:#fff; }
+  .cbox .l { font-size:26px; letter-spacing:2px; text-transform:uppercase; opacity:.6; }
+  .cbox .n { font-size:76px; font-weight:800; line-height:1.1; }
+  .cbox.win .n { color:#ea580c; }
+
+  button { font-family:inherit; font-size:14px; padding:9px 18px; border-radius:8px;
+           border:1px solid #c9bcab; background:#fff; cursor:pointer; margin-top:12px; }
+  button:hover { background:#f4f1ea; }
+  textarea { width:100%; height:150px; font-family:inherit; font-size:12.5px; line-height:1.6;
+             padding:12px; border:1px solid #ddd6c9; border-radius:10px; margin-top:12px;
+             box-sizing:border-box; resize:vertical; color:#2a1500; }
+  .hint { font-size:12.5px; color:#6b5a48; margin-top:8px; line-height:1.55; }
+</style>
+</head>
+<body>
+
+<div class="row">
+
+  <div class="col">
+    <h2>For customers</h2>
+    <div class="shell">
+      <div class="poster cust" id="p1">
+        <div>
+          <div class="brand">Desi<span>Zoom</span></div>
+          <div class="head">Everything desi.<br /><em>One app.</em></div>
+          <div class="lines">
+            🍛 &nbsp;Order pickup from desi restaurants<br />
+            🏷️ &nbsp;Local deals &amp; offers<br />
+            🕉️ &nbsp;Priests, caterers, mehndi<br />
+            🎉 &nbsp;Events, garba &amp; movie nights
+          </div>
+        </div>
+        <div class="foot">
+          <div class="qrbox" id="qr1"></div>
+          <div>
+            <div class="site">desizoom.com</div>
+            <div class="cap">Free · no app to install</div>
+            <div class="cities">Little Elm · Frisco · Plano</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button onclick="save('p1','desizoom-customers.png')">Download PNG</button>
+    <textarea id="t1">Sharing something I've been building for our community 🙏
+
+DesiZoom — order pickup from local desi restaurants, find deals, events, priests and caterers. All for Little Elm / Frisco / Plano.
+
+It's new and I'm adding businesses every week. Have a look and tell me what's missing!
+
+www.desizoom.com</textarea>
+    <div class="hint">Send the image first, then this text as a separate message so the link stays tappable.</div>
+  </div>
+
+  <div class="col">
+    <h2>For business owners</h2>
+    <div class="shell">
+      <div class="poster biz" id="p2">
+        <div>
+          <div class="brand">Desi<span>Zoom</span></div>
+          <div class="head">Keep <em>94%</em><br />of every order.</div>
+          <div class="compare">
+            <div class="cbox">
+              <div class="l">Delivery apps</div>
+              <div class="n">~30%</div>
+            </div>
+            <div class="cbox win">
+              <div class="l">DesiZoom</div>
+              <div class="n">6%</div>
+            </div>
+          </div>
+          <div class="lines">
+            <b>We build your menu for you.</b> Free.<br />
+            No monthly fee · no tablet · no contract
+          </div>
+        </div>
+        <div class="foot">
+          <div class="qrbox" id="qr2"></div>
+          <div>
+            <div class="site">desizoom.com</div>
+            <div class="cap">Listed in 5 minutes</div>
+            <div class="cities">Desi restaurants · sweets · catering</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button onclick="save('p2','desizoom-business.png')">Download PNG</button>
+    <textarea id="t2">Restaurant &amp; catering owners 👇
+
+If you're taking pickup orders through the delivery apps, they take a big cut — and they keep your customer list.
+
+DesiZoom is 6%, no monthly fee, no tablet, no contract. Orders come to your phone, money goes straight to your bank.
+
+And I'll set up your menu for you — just send me a photo of it.
+
+Happy to show anyone how it works: www.desizoom.com</textarea>
+    <div class="hint">Post this in business-owner groups, or send directly after a walk-in.</div>
+  </div>
+
+</div>
+
+<script>
+  new QRCode(document.getElementById('qr1'), {
+    text: 'https://www.desizoom.com', width: 360, height: 360,
+    colorDark: '#2a1500', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M
+  });
+  new QRCode(document.getElementById('qr2'), {
+    text: 'https://www.desizoom.com/add-business', width: 360, height: 360,
+    colorDark: '#2a1500', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M
+  });
+
+  function save(id, filename) {
+    var el = document.getElementById(id);
+    var prev = el.style.transform;
+    el.style.transform = 'none';               // render at full 1080
+    html2canvas(el, { scale: 1, backgroundColor: null, logging: false }).then(function (canvas) {
+      el.style.transform = prev;
+      var a = document.createElement('a');
+      a.download = filename;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }).catch(function () { el.style.transform = prev; });
+  }
+</script>
+</body>
+</html>
