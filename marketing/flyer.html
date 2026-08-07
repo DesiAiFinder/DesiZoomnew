@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>DesiZoom — flyer (print me)</title>
+<!--
+  One-page flyer for community events, temple noticeboards, grocery counters.
+
+  BEFORE PRINTING:
+    Save Shreyan's photo into this same folder as  shreyan.jpg
+    (portrait crop, roughly head-and-shoulders, works best)
+
+  PRINT: Ctrl+P · Letter · Portrait · Margins = None · Background graphics = ON
+  Or "Save as PDF" to send on WhatsApp.
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  @page { size: letter portrait; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; color:#2a1500; background:#fff; }
+  .page { width:8.5in; height:11in; padding:0.55in 0.6in; display:flex; flex-direction:column; }
+
+  .top { display:flex; align-items:baseline; gap:12px; border-bottom:3px solid #ea580c; padding-bottom:12px; }
+  .brand { font-size:34px; font-weight:800; letter-spacing:-0.8px; }
+  .brand span { color:#ea580c; }
+  .tag { font-size:14px; color:#6b5a48; }
+
+  .story { display:flex; gap:22px; margin:22px 0 6px; }
+  .photo { flex:0 0 1.5in; }
+  .photo img { width:1.5in; height:1.9in; object-fit:cover; border-radius:10px; border:1px solid #e7ded2; display:block; }
+  .photo .name { font-size:12px; font-weight:700; margin-top:7px; line-height:1.35; }
+  .photo .grade { font-size:11.5px; color:#6b5a48; line-height:1.35; }
+
+  h1 { font-size:27px; line-height:1.15; margin:0 0 10px; letter-spacing:-0.6px; }
+  h1 em { font-style:normal; color:#ea580c; }
+  .story p { font-size:13.5px; line-height:1.65; color:#4a3a2a; margin:0 0 9px; }
+
+  .cols { display:flex; gap:16px; margin:20px 0 0; }
+  .card { flex:1; background:#fff7ed; border-radius:14px; padding:16px 18px; }
+  .card.biz { background:#f4f1ea; }
+  .card h2 { font-size:12px; text-transform:uppercase; letter-spacing:1.4px; color:#92700c; margin:0 0 11px; }
+  .card.biz h2 { color:#6b5a48; }
+  .card li { list-style:none; font-size:13px; line-height:1.5; margin-bottom:9px; padding-left:22px; position:relative; }
+  .card li:before { content:"›"; position:absolute; left:6px; color:#ea580c; font-weight:800; font-size:15px; line-height:1.35; }
+  .card ul { margin:0; padding:0; }
+  .card li b { font-weight:700; }
+
+  .foot { margin-top:auto; display:flex; align-items:center; gap:20px; border-top:2px solid #e7ded2; padding-top:16px; }
+  #qr { width:104px; height:104px; flex:0 0 104px; }
+  #qr img, #qr canvas { width:104px !important; height:104px !important; }
+  .site { font-size:25px; font-weight:800; color:#ea580c; letter-spacing:-0.4px; }
+  .foot p { margin:4px 0 0; font-size:13px; color:#4a3a2a; line-height:1.5; }
+  .made { font-size:11.5px; color:#8a7a68; margin-top:7px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="top">
+    <div class="brand">Desi<span>Zoom</span></div>
+    <div class="tag">Everything desi, for your city</div>
+  </div>
+
+  <div class="story">
+    <div class="photo">
+      <img src="shreyan.jpg" alt="Shreyan Jamalpur" />
+      <div class="name">Shreyan Jamalpur</div>
+      <div class="grade">12th grade · Little Elm, TX</div>
+    </div>
+    <div>
+      <h1>Move somewhere new, and <em>everything desi</em> starts from scratch.</h1>
+      <p>
+        Which grocery carries the right masala. Where the temple is. Who caters,
+        who does mehndi, when the Diwali mela is on. Every family arriving in a
+        new city goes hunting for the same answers — scattered across searches,
+        WhatsApp groups and word of mouth.
+      </p>
+      <p>
+        Shreyan Jamalpur, a 12th grader in Little Elm, thought all of it belonged
+        in one place. So he built it with his dad. DesiZoom went live this summer,
+        and local desi businesses are on it today.
+      </p>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="card">
+      <h2>For families</h2>
+      <ul>
+        <li>Order <b>pickup from desi restaurants</b> — no delivery-app fees, no marked-up prices</li>
+        <li>Local <b>deals, sweets and catering</b> for every festival</li>
+        <li>Book <b>priests, caterers, mehndi artists</b> and photographers for any occasion</li>
+        <li><b>Temple events, garba nights</b> and which desi films are in theatres</li>
+      </ul>
+    </div>
+    <div class="card biz">
+      <h2>For businesses</h2>
+      <ul>
+        <li><b>Keep 94% of every order</b> — 6%, not the ~30% the delivery apps take</li>
+        <li><b>Orders ring on your phone.</b> Tap once to accept, once when ready</li>
+        <li><b>Money goes straight to your bank</b> — no monthly fee, no tablet, no contract</li>
+        <li><b>Send us a photo of your menu</b> and we'll set the whole thing up, free</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div id="qr"></div>
+    <div>
+      <div class="site">desizoom.com</div>
+      <p>Free, and nothing to install. Scan the code or just type the address.</p>
+      <div class="made">Built in Little Elm, Texas by a father and son</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  new QRCode(document.getElementById('qr'), {
+    text: 'https://www.desizoom.com',
+    width: 208, height: 208,
+    colorDark: '#2a1500', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+</script>
+</body>
+</html>

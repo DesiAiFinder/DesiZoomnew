@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import { supabase, refundPayment } from '../services/supabase';
 import SellerOnboard from '../components/SellerOnboard';
+import MenuUpload from '../components/MenuUpload';
 import { CITIES } from '../config/env';
 
 interface Restaurant {
@@ -208,6 +209,12 @@ export default function MyRestaurant() {
             {/* Menu management */}
             <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 14, padding: 18 }}>
               <h3 style={{ fontSize: 15, marginBottom: 10 }}>🍽️ Menu ({menu.length})</h3>
+
+              {/* Shortcut for the first bulk load. The add-item form and the
+                  list below are unchanged — that's still how you add a dish,
+                  change a price or mark something sold out. */}
+              <MenuUpload restaurantId={restaurant.id} onSaved={load} />
+
               {menu.map((m) => (
                 <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', opacity: m.is_available ? 1 : 0.5 }}>
                   <span style={{ fontSize: 13.5, flex: 1 }}>{m.is_veg ? '🟢' : '🔴'} {m.name} <span style={{ color: 'var(--muted)', fontSize: 12 }}>· {m.category}</span></span>
