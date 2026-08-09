@@ -2,6 +2,7 @@
 // City names are geocoded once via Google and cached in localStorage, so we can
 // compute distances between free-form city strings without a DB migration.
 import { env } from '../config/env';
+import { loadGoogleMaps } from './googlePlaces';
 
 export type LatLng = { lat: number; lng: number };
 
@@ -14,22 +15,49 @@ function saveCache(c: Record<string, LatLng | null>) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(c)); } catch { /* ignore */ }
 }
 
-// Geocode a city string ("Little Elm, TX") → coordinates, cached forever.
+/* eslint-disable @typescript-eslint/no-explicit-any */
+declare const google: any;
+
+/**
+ * Geocode a city string ("Little Elm, TX") → coordinates. Cached in
+ * localStorage forever, so it's one Google call per city per browser.
+ *
+ * Uses the Maps JavaScript API geocoder, NOT maps/api/geocode/json. Our key is
+ * HTTP-referrer-restricted, and Google's web-service endpoints reject such keys
+ * outright — REQUEST_DENIED, "API keys with referer restrictions cannot be used
+ * with this API." The old fetch() version failed on every call inside a silent
+ * catch, which meant fetchNearbyCities only ever returned the user's own city
+ * and the radius selector did nothing at all.
+ *
+ * Same fix as reverseGeocode in LocationContext. Don't "simplify" back to fetch.
+ */
 export async function geocodeCity(city: string): Promise<LatLng | null> {
   if (!city) return null;
   const cache = loadCache();
   if (city in cache) return cache[city];
+
   let result: LatLng | null = null;
   try {
     if (env.googlePlacesKey) {
-      const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city)}&key=${env.googlePlacesKey}`
-      );
-      const data = await res.json();
-      const loc = data.results?.[0]?.geometry?.location;
-      if (loc && typeof loc.lat === 'number') result = { lat: loc.lat, lng: loc.lng };
+      await loadGoogleMaps(env.googlePlacesKey);
+      const loc: LatLng | null = await new Promise((resolve) => {
+        new google.maps.Geocoder().geocode({ address: city }, (res: any[], status: string) => {
+          if (status === 'OK' && res?.[0]?.geometry?.location) {
+            const l = res[0].geometry.location;
+            resolve({ lat: l.lat(), lng: l.lng() });
+          } else {
+            console.warn('[geo] geocode failed for', city, status);
+            resolve(null);
+          }
+        });
+      });
+      result = loc;
     }
-  } catch { /* ignore network / quota errors */ }
+  } catch (e) {
+    console.warn('[geo] geocode error for', city, e);
+  }
+
+  // Cache negatives too, so a genuinely unknown city isn't retried endlessly.
   cache[city] = result;
   saveCache(cache);
   return result;
