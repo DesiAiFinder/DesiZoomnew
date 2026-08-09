@@ -220,6 +220,9 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ url: session.url, client_secret: session.client_secret }), { headers: { ...cors, 'Content-Type': 'application/json' } });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
+    // Log it. Supabase's client only surfaces "non-2xx status code" to the
+    // browser, so without this the reason never reaches anyone.
+    console.error('failed:', message);
     return new Response(JSON.stringify({ error: message }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
   }
 });

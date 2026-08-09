@@ -379,7 +379,7 @@ export default function Order() {
             </div>
             <div className="field"><label>Note to kitchen</label><textarea value={cNote} onChange={(e) => setCNote(e.target.value)} placeholder="Spice level, allergies…" /></div>
             <button className="btn-primary" onClick={placeOrder} disabled={busy}>
-              {busy ? 'Opening checkout…' : `Pay $${((subtotal + feeFor(active, fulfillment)) / 100).toFixed(2)} & Order`}
+              {busy ? 'Opening checkout…' : `Pay $${((subtotal + feeFor(active, fulfillment) + svcFee) / 100).toFixed(2)} & Order`}
             </button>
             {err && <div style={{ fontSize: 13, marginTop: 8, color: '#dc2626' }}>{err}</div>}
           </div>
