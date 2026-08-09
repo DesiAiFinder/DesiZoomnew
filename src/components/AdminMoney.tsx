@@ -52,9 +52,10 @@ export default function AdminMoney() {
 
   const gross = completed.reduce((s, p) => s + p.amount_cents, 0);
   const commission = completed.reduce((s, p) => s + (p.commission_cents ?? 0), 0);
+  const serviceFees = ords.reduce((s, o) => s + (o.service_fee_cents ?? 0), 0);
   const toMerchants = gross - commission;
   const stripeCost = completed.reduce((s, p) => s + stripeFee(p.amount_cents), 0);
-  const net = commission - stripeCost;
+  const net = commission + serviceFees - stripeCost;
   const refundedAmt = refunded.reduce((s, p) => s + p.amount_cents, 0);
 
   const taxCollected = ords.reduce((s, o) => s + (o.tax_cents ?? 0), 0);
@@ -122,9 +123,11 @@ export default function AdminMoney() {
           <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>Direct to their bank via Stripe</div>
         </div>
         <div style={card}>
-          <div style={label}>Our commission</div>
-          <div style={big}>{money(commission)}</div>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>Gross revenue</div>
+          <div style={label}>Our revenue</div>
+          <div style={big}>{money(commission + serviceFees)}</div>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
+            {money(commission)} commission + {money(serviceFees)} service fees
+          </div>
         </div>
         <div style={{ ...card, borderColor: '#ea580c', background: '#fff7ed' }}>
           <div style={label}>Net after Stripe</div>
@@ -209,6 +212,81 @@ export default function AdminMoney() {
             <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>No completed payments in this period.</div>
           )}
         </div>
+      </div>
+
+      {/* ── Every order, fully broken down ──────────────────────────────── */}
+      <div style={{ ...card, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+          <strong style={{ fontSize: 14.5 }}>Orders</strong>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+            What came in, what the restaurant got, what we kept, what's owed
+          </span>
+        </div>
+
+        {ords.length === 0 ? (
+          <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8 }}>No orders in this period.</div>
+        ) : (
+          <div style={{ overflowX: 'auto', marginTop: 8 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 620 }}>
+              <thead>
+                <tr style={{ fontSize: 10.5, color: 'var(--muted)', textAlign: 'left' }}>
+                  <th style={{ padding: '0 8px 6px 0' }}>Date</th>
+                  <th style={{ padding: '0 8px 6px 0' }}>Restaurant</th>
+                  <th style={{ padding: '0 8px 6px 0', textAlign: 'right' }}>Food</th>
+                  <th style={{ padding: '0 8px 6px 0', textAlign: 'right' }}>Fee</th>
+                  <th style={{ padding: '0 8px 6px 0', textAlign: 'right' }}>Tax</th>
+                  <th style={{ padding: '0 8px 6px 0', textAlign: 'right' }}>Customer paid</th>
+                  <th style={{ padding: '0 8px 6px 0', textAlign: 'right' }}>Restaurant</th>
+                  <th style={{ padding: '0 8px 6px 0', textAlign: 'right' }}>We keep</th>
+                  <th style={{ padding: '0 0 6px 0', textAlign: 'right' }}>Tax we owe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ords.slice(0, 100).map((o) => {
+                  const fee = o.service_fee_cents ?? 0;
+                  const comm = o.commission_cents ?? 0;
+                  const tax = o.tax_cents ?? 0;
+                  const delivery = o.delivery_fee_cents ?? 0;
+                  const paid = o.subtotal_cents + fee + tax + delivery;
+                  // The restaurant's payout includes the tax when they're the
+                  // one filing it.
+                  const toRest = o.subtotal_cents - comm + delivery + (o.tax_remitted_by === 'merchant' ? tax : 0);
+                  const weOwe = o.tax_remitted_by === 'platform' ? tax : 0;
+                  const weKeep = comm + fee - stripeFee(paid);
+
+                  return (
+                    <tr key={o.id} style={{ borderTop: '1px solid var(--border)' }}>
+                      <td style={{ padding: '6px 8px 6px 0', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                        {new Date(o.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </td>
+                      <td style={{ padding: '6px 8px 6px 0', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {o.restaurant?.name || '—'}
+                      </td>
+                      <td style={{ padding: '6px 8px 6px 0', textAlign: 'right' }}>{money(o.subtotal_cents)}</td>
+                      <td style={{ padding: '6px 8px 6px 0', textAlign: 'right', color: 'var(--muted)' }}>{money(fee)}</td>
+                      <td style={{ padding: '6px 8px 6px 0', textAlign: 'right', color: 'var(--muted)' }}>
+                        {tax ? money(tax) : '—'}
+                      </td>
+                      <td style={{ padding: '6px 8px 6px 0', textAlign: 'right', fontWeight: 700 }}>{money(paid)}</td>
+                      <td style={{ padding: '6px 8px 6px 0', textAlign: 'right', color: '#0f6e56' }}>{money(toRest)}</td>
+                      <td style={{ padding: '6px 8px 6px 0', textAlign: 'right', fontWeight: 700, color: weKeep >= 0 ? '#b84d00' : '#dc2626' }}>
+                        {money(weKeep)}
+                      </td>
+                      <td style={{ padding: '6px 0', textAlign: 'right', color: weOwe ? '#dc2626' : 'var(--muted)', fontWeight: weOwe ? 700 : 400 }}>
+                        {weOwe ? money(weOwe) : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {ords.length > 100 && (
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
+                Showing the 100 most recent of {ords.length}.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Day by day ──────────────────────────────────────────────────── */}

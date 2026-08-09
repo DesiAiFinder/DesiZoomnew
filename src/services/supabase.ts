@@ -510,7 +510,7 @@ export async function adminFetchFinance() {
       .order('created_at', { ascending: false })
       .limit(5000),
     supabase.from('orders')
-      .select('tax_cents, tax_jurisdiction, tax_remitted_by, subtotal_cents, status, created_at')
+      .select('id, tax_cents, tax_jurisdiction, tax_remitted_by, subtotal_cents, service_fee_cents, commission_cents, delivery_fee_cents, status, created_at, customer_name, restaurant:restaurants(name)')
       .neq('status', 'pending')
       .limit(5000),
     supabase.from('tax_jurisdictions').select('code, name, we_remit, registered, accepting'),
@@ -530,9 +530,14 @@ export interface PaymentRow {
   post?: { title?: string } | null;
 }
 export interface OrderTaxRow {
+  id: string;
   tax_cents: number | null; tax_jurisdiction: string | null;
   tax_remitted_by: string | null; subtotal_cents: number;
+  service_fee_cents: number | null; commission_cents: number | null;
+  delivery_fee_cents: number | null;
   status: string; created_at: string;
+  customer_name?: string | null;
+  restaurant?: { name?: string } | null;
 }
 export interface Jurisdiction {
   code: string; name: string; we_remit: boolean; registered: boolean; accepting: boolean;

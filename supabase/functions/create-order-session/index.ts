@@ -28,6 +28,28 @@ function corsFor(req: Request) {
 
 const COMMISSION_RATE = 0.06; // 6% — matches DoorDash pickup, far below their 15–30% delivery
 
+// Customer-side service fee (option C): 2% + $0.69, capped at $1.99.
+//
+// These are Stripe destination charges, so DesiZoom pays the processing fee
+// (2.9% + $0.30) out of its own commission. Without this, 6% of a $5 order is
+// $0.30 against $0.45 of Stripe cost — every small order lost money, and more
+// of them made it worse. Capped so large catering orders are never penalised.
+// The restaurant's 6% is untouched by any of this.
+const SERVICE_FEE_BPS = 200;        // 2%
+const SERVICE_FEE_FLAT_CENTS = 69;
+const SERVICE_FEE_MAX_CENTS = 199;
+
+function serviceFee(subtotalCents: number): number {
+  const raw = Math.round(subtotalCents * SERVICE_FEE_BPS / 10000) + SERVICE_FEE_FLAT_CENTS;
+  return Math.min(raw, SERVICE_FEE_MAX_CENTS);
+}
+
+/** 'TX' from 'Little Elm, TX'. Null if the city isn't in that shape. */
+function stateOf(city: string | null | undefined): string | null {
+  const part = (city ?? '').split(',')[1]?.trim().toUpperCase();
+  return part && part.length === 2 ? part : null;
+}
+
 
 interface CartItem { id: string; name: string; price_cents: number; quantity: number; }
 
@@ -52,7 +74,7 @@ Deno.serve(async (req) => {
 
     const { data: restaurant } = await supabase
       .from('restaurants')
-      .select('id, name, owner_id, is_open, is_active, offers_pickup, offers_delivery, offers_shipping, delivery_fee_cents, delivery_minimum_cents, shipping_fee_cents')
+      .select('id, name, city, owner_id, is_open, is_active, offers_pickup, offers_delivery, offers_shipping, delivery_fee_cents, delivery_minimum_cents, shipping_fee_cents')
       .eq('id', restaurant_id)
       .single();
     if (!restaurant || !restaurant.is_active) throw new Error('Restaurant not found');
@@ -100,6 +122,38 @@ Deno.serve(async (req) => {
     // Commission applies to the items only — the business keeps 100% of the
     // delivery/shipping fee since they're doing that work themselves.
     const commission = Math.round(subtotal * COMMISSION_RATE);
+    const serviceFeeCents = serviceFee(subtotal);
+
+    // ── Sales tax ────────────────────────────────────────────────────────────
+    // Collected only where we are registered. Charging tax you have no permit
+    // to charge is its own offence, so an unregistered state collects nothing.
+    // Whether we then keep it or pass it to the merchant is `we_remit`.
+    const stateCode = stateOf(restaurant.city);
+    let taxCents = 0;
+    let taxJurisdiction: string | null = null;
+    let taxRemittedBy: string | null = null;
+
+    if (stateCode) {
+      const { data: juris } = await supabase
+        .from('tax_jurisdictions')
+        .select('code, rate_bps, registered, we_remit')
+        .eq('code', stateCode)
+        .maybeSingle();
+
+      if (juris?.registered && juris.rate_bps > 0) {
+        // Tax the food only. Whether the service fee is also taxable is a
+        // live question for the CPA — see TAX_COMPLIANCE.md — so it is
+        // deliberately excluded until that's answered.
+        taxCents = Math.round(subtotal * juris.rate_bps / 10000);
+        taxJurisdiction = juris.code;
+        taxRemittedBy = juris.we_remit ? 'platform' : 'merchant';
+      }
+    }
+
+    // What DesiZoom retains from the charge. The service fee is ours. Tax is
+    // ours to hold only when we're the one filing it — otherwise it rides
+    // through to the merchant in their payout and they remit.
+    const platformFee = commission + serviceFeeCents + (taxRemittedBy === 'platform' ? taxCents : 0);
 
     // Create pending order + items
     const { data: order, error: oErr } = await supabase
@@ -112,6 +166,8 @@ Deno.serve(async (req) => {
         delivery_address: method === 'pickup' ? null : delivery_address,
         delivery_fee_cents: fulfillmentFee,
         subtotal_cents: subtotal, commission_cents: commission, status: 'pending',
+        service_fee_cents: serviceFeeCents,
+        tax_cents: taxCents, tax_jurisdiction: taxJurisdiction, tax_remitted_by: taxRemittedBy,
       })
       .select().single();
     if (oErr) throw oErr;
@@ -134,9 +190,23 @@ Deno.serve(async (req) => {
           },
           quantity: 1,
         }] : []),
+        {
+          price_data: {
+            currency: 'usd', unit_amount: serviceFeeCents,
+            product_data: { name: 'Service fee' },
+          },
+          quantity: 1,
+        },
+        ...(taxCents > 0 ? [{
+          price_data: {
+            currency: 'usd', unit_amount: taxCents,
+            product_data: { name: 'Sales tax' },
+          },
+          quantity: 1,
+        }] : []),
       ],
       payment_intent_data: {
-        application_fee_amount: commission,
+        application_fee_amount: platformFee,
         transfer_data: { destination: profile.stripe_account_id },
       },
       metadata: { kind: 'order', order_id: order.id },

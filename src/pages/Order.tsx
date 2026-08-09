@@ -9,6 +9,12 @@ import OrderStatusCard from '../components/OrderStatusCard';
 
 const WARN_MILES = 10; // pickup distance beyond which we flag "are you sure?"
 
+// Mirrors serviceFee() in create-order-session. Kept in sync deliberately:
+// the cart must show the same number Stripe will charge, or the customer
+// arrives at checkout to a surprise.
+const serviceFee = (subtotalCents: number) =>
+  Math.min(Math.round(subtotalCents * 0.02) + 69, 199);
+
 interface OutletCtx { onAuthOpen: () => void; }
 
 interface Restaurant {
@@ -128,6 +134,7 @@ export default function Order() {
   };
 
   const subtotal = cart.reduce((s, c) => s + c.price_cents * c.quantity, 0);
+  const svcFee = cart.length ? serviceFee(subtotal) : 0;
 
   const placeOrder = async () => {
     if (!user) return onAuthOpen();
@@ -291,11 +298,15 @@ export default function Order() {
                         <span>${(feeFor(active, fulfillment) / 100).toFixed(2)}</span>
                       </div>
                     )}
-                    <div style={{ borderTop: '1px solid var(--border)', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15 }}>
-                      <span>Total</span><span>${((subtotal + feeFor(active, fulfillment)) / 100).toFixed(2)}</span>
+                    <div style={{ borderTop: '1px solid var(--border)', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--muted)' }}>
+                      <span>Service fee</span><span>${(svcFee / 100).toFixed(2)}</span>
                     </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15, marginTop: 6 }}>
+                      <span>Total</span><span>${((subtotal + feeFor(active, fulfillment) + svcFee) / 100).toFixed(2)}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>Sales tax added at checkout where it applies.</div>
                     <button className="btn-primary" style={{ width: '100%', marginTop: 12 }} onClick={() => user ? setCheckout(true) : onAuthOpen()}>
-                      Checkout · ${((subtotal + feeFor(active, fulfillment)) / 100).toFixed(2)}
+                      Checkout · ${((subtotal + feeFor(active, fulfillment) + svcFee) / 100).toFixed(2)}
                     </button>
                   </>
               }
