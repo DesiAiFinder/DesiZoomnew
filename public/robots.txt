@@ -1,0 +1,9 @@
+# DesiZoom
+User-agent: *
+Allow: /
+
+# Link-preview renderer — crawlers reach it through the /listing/ rewrite,
+# there's nothing to index at the raw path.
+Disallow: /api/
+
+Sitemap: https://www.desizoom.com/sitemap.xml
