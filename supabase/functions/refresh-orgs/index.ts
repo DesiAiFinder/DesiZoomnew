@@ -8,10 +8,22 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Only our own front-ends may call this. A wildcard let any site on the
+// internet invoke these endpoints with a visitor's session.
+const ALLOWED_ORIGINS = [
+  'https://www.desizoom.com',
+  'https://desizoom.com',
+  'https://desizoomnew.vercel.app',
+  'http://localhost:5173',
+];
+function corsFor(req: Request) {
+  const origin = req.headers.get('origin') ?? '';
+  return {
+    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin',
+  };
+}
 
 function extractMeta(html: string, prop: string): string | null {
   const patterns = [
@@ -39,6 +51,7 @@ function findLeadershipUrl(html: string, baseUrl: string): string | null {
 }
 
 Deno.serve(async (req) => {
+  const cors = corsFor(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   const { data: orgs } = await supabase

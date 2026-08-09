@@ -12,8 +12,9 @@ import {
   supabase,
 } from '../services/supabase';
 import type { AdminStats, Post } from '../types';
+import AdminMoney from '../components/AdminMoney';
 
-type Tab = 'overview' | 'posts' | 'reports' | 'streams' | 'news' | 'restaurants' | 'orders' | 'orgs' | 'users';
+type Tab = 'overview' | 'money' | 'posts' | 'reports' | 'streams' | 'news' | 'restaurants' | 'orders' | 'orgs' | 'users';
 
 // Revenue-stream labels for payments
 const KIND_META: Record<string, { icon: string; label: string }> = {
@@ -244,6 +245,7 @@ export default function Admin() {
     { id: 'orders',      label: `📦 Orders (${orders.length})` },
     { id: 'orgs',        label: `🏛️ Orgs (${orgs.length})` },
     { id: 'users',       label: `👥 Users (${users.length})` },
+    { id: 'money',       label: '💰 Money' },
   ];
 
   const handleNews = async (n: NewsRow, status: 'approved' | 'rejected') => {
@@ -393,6 +395,8 @@ export default function Admin() {
           </div>
 
         /* ── POSTS MODERATION ─────────────────────────────────── */
+        ) : activeTab === 'money' ? (
+          <AdminMoney />
         ) : activeTab === 'posts' ? (
           <div>
             <input

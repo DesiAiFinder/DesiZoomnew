@@ -493,6 +493,51 @@ export async function adminSetStreamStatus(streamId: string, status: 'approved' 
 }
 
 // ── Admin: revenue ────────────────────────────────────────────────────────────
+/**
+ * Everything the Money tab needs: what came in, what went to merchants, what
+ * we kept, and what is owed to a tax authority.
+ *
+ * Stripe's processing fee isn't stored anywhere, so it's estimated at
+ * 2.9% + 30c per completed transaction. That's the published US card rate and
+ * it's what these destination charges cost us — but it is an estimate, and the
+ * UI says so. Stripe's own dashboard is the source of truth for the exact
+ * figure at month end.
+ */
+export async function adminFetchFinance() {
+  const [{ data: pays }, { data: ords }, { data: juris }] = await Promise.all([
+    supabase.from('payments')
+      .select('id, amount_cents, commission_cents, status, kind, created_at, stripe_session_id, post:posts(title)')
+      .order('created_at', { ascending: false })
+      .limit(5000),
+    supabase.from('orders')
+      .select('tax_cents, tax_jurisdiction, tax_remitted_by, subtotal_cents, status, created_at')
+      .neq('status', 'pending')
+      .limit(5000),
+    supabase.from('tax_jurisdictions').select('code, name, we_remit, registered, accepting'),
+  ]);
+  return {
+    payments: (pays ?? []) as PaymentRow[],
+    orders: (ords ?? []) as OrderTaxRow[],
+    jurisdictions: (juris ?? []) as Jurisdiction[],
+  };
+}
+
+export interface PaymentRow {
+  id: string;
+  amount_cents: number; commission_cents: number | null;
+  status: string; kind: string | null; created_at: string;
+  stripe_session_id?: string | null;
+  post?: { title?: string } | null;
+}
+export interface OrderTaxRow {
+  tax_cents: number | null; tax_jurisdiction: string | null;
+  tax_remitted_by: string | null; subtotal_cents: number;
+  status: string; created_at: string;
+}
+export interface Jurisdiction {
+  code: string; name: string; we_remit: boolean; registered: boolean; accepting: boolean;
+}
+
 export async function adminFetchPayments() {
   const { data } = await supabase
     .from('payments')

@@ -9,18 +9,40 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Only our own front-ends may call this. A wildcard let any site on the
+// internet invoke these endpoints with a visitor's session.
+const ALLOWED_ORIGINS = [
+  'https://www.desizoom.com',
+  'https://desizoom.com',
+  'https://desizoomnew.vercel.app',
+  'http://localhost:5173',
+];
+function corsFor(req: Request) {
+  const origin = req.headers.get('origin') ?? '';
+  return {
+    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin',
+  };
+}
 
 Deno.serve(async (req) => {
+  const cors = corsFor(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
-    const { event_id, buyer_id, quantity, success_url, cancel_url, embedded } = await req.json();
+    const { event_id, quantity, success_url, cancel_url, embedded } = await req.json();
+
+    // Identify the buyer from the JWT, never from the request body. A body
+    // value can be set to anyone's id by whoever calls this endpoint, which
+    // would attribute a purchase — and the resulting ticket/order/booking — to
+    // another account. refund-payment already did this correctly; these didn't.
+    const jwt = (req.headers.get('Authorization') ?? '').replace('Bearer ', '');
+    const { data: { user: authUser } } = await supabase.auth.getUser(jwt);
+    if (!authUser) throw new Error('You must be signed in.');
+    const buyer_id = authUser.id;
     const qty = Math.max(1, parseInt(quantity) || 1);
-    if (!event_id || !buyer_id) throw new Error('event_id and buyer_id required');
+    if (!event_id) throw new Error('event_id required');
 
     const { data: event } = await supabase
       .from('posts')

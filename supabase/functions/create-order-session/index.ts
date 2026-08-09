@@ -9,35 +9,45 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Only our own front-ends may call this. A wildcard let any site on the
+// internet invoke these endpoints with a visitor's session.
+const ALLOWED_ORIGINS = [
+  'https://www.desizoom.com',
+  'https://desizoom.com',
+  'https://desizoomnew.vercel.app',
+  'http://localhost:5173',
+];
+function corsFor(req: Request) {
+  const origin = req.headers.get('origin') ?? '';
+  return {
+    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin',
+  };
+}
 
 const COMMISSION_RATE = 0.06; // 6% — matches DoorDash pickup, far below their 15–30% delivery
 
-// Flat customer-side service fee, charged on every order regardless of size.
-//
-// Why it exists: these are Stripe destination charges, so DesiZoom pays the
-// processing fee (2.9% + $0.30) out of its own commission. Without this, any
-// order under about $9.70 loses money — 6% of a $5 order is $0.30 against
-// $0.45 of Stripe cost. Growth in small orders would have made losses bigger,
-// not smaller.
-//
-// Every delivery platform recovers processing from the customer side this way;
-// DoorDash's small-order fee alone is $2.50. This is flat and deliberately
-// small, and the restaurant's 6% is untouched by it.
-const SERVICE_FEE_CENTS = 99;
 
 interface CartItem { id: string; name: string; price_cents: number; quantity: number; }
 
 Deno.serve(async (req) => {
+  const cors = corsFor(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
-    const { restaurant_id, customer_id, items, customer_name, customer_phone, pickup_time, note, fulfillment_type, delivery_address, success_url, cancel_url, embedded } = await req.json();
-    if (!restaurant_id || !customer_id || !Array.isArray(items) || items.length === 0) {
-      throw new Error('restaurant_id, customer_id and items required');
+    const { restaurant_id, items, customer_name, customer_phone, pickup_time, note, fulfillment_type, delivery_address, success_url, cancel_url, embedded } = await req.json();
+
+    // Identify the buyer from the JWT, never from the request body. A body
+    // value can be set to anyone's id by whoever calls this endpoint, which
+    // would attribute a purchase — and the resulting ticket/order/booking — to
+    // another account. refund-payment already did this correctly; these didn't.
+    const jwt = (req.headers.get('Authorization') ?? '').replace('Bearer ', '');
+    const { data: { user: authUser } } = await supabase.auth.getUser(jwt);
+    if (!authUser) throw new Error('You must be signed in.');
+    const customer_id = authUser.id;
+    if (!restaurant_id || !Array.isArray(items) || items.length === 0) {
+      throw new Error('restaurant_id and items required');
     }
 
     const { data: restaurant } = await supabase
@@ -90,11 +100,6 @@ Deno.serve(async (req) => {
     // Commission applies to the items only — the business keeps 100% of the
     // delivery/shipping fee since they're doing that work themselves.
     const commission = Math.round(subtotal * COMMISSION_RATE);
-
-    // The service fee is ours, not the restaurant's, so it's added to the
-    // application fee rather than the transfer. The restaurant's payout is
-    // exactly items + delivery fee - 6%, whether or not this exists.
-    const platformFee = commission + SERVICE_FEE_CENTS;
 
     // Create pending order + items
     const { data: order, error: oErr } = await supabase
