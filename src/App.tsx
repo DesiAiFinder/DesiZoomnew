@@ -23,6 +23,7 @@ import AddBusiness from './pages/AddBusiness';
 import Movies from './pages/Movies';
 import MyBusiness from './pages/MyBusiness';
 import LocalInfo from './pages/LocalInfo';
+import Legal from './pages/Legal';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -58,6 +59,10 @@ export default function App() {
             <Route path="add-business" element={<AddBusiness />} />
             <Route path="my-business" element={<MyBusiness />} />
             <Route path="local-info" element={<LocalInfo />} />
+            {/* Terms, privacy and refunds. Stripe asks for these at activation. */}
+            <Route path="terms" element={<Legal />} />
+            <Route path="privacy" element={<Legal />} />
+            <Route path="refunds" element={<Legal />} />
             <Route
               path="admin"
               element={

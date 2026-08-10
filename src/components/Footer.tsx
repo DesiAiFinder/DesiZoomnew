@@ -61,7 +61,24 @@ export default function Footer() {
         </div>
 
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-          <span style={{ fontSize: 12 }}>© {new Date().getFullYear()} DesiZoom. All rights reserved. Your desi community, all in one place.</span>
+          <div>
+            <span style={{ fontSize: 12, display: 'block' }}>
+              © {new Date().getFullYear()} DesiZoom. Built in Little Elm, Texas by a father and son.
+            </span>
+            {/* Stripe looks for these during account activation, and a stated
+                refund policy is what makes a chargeback defensible. */}
+            <div style={{ display: 'flex', gap: 14, marginTop: 6, flexWrap: 'wrap' }}>
+              {[
+                { to: '/terms',   label: 'Terms' },
+                { to: '/privacy', label: 'Privacy' },
+                { to: '/refunds', label: 'Refunds' },
+              ].map((l) => (
+                <Link key={l.to} to={l.to} style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}>
+                  {l.label}
+                </Link>
+              ))}
+            </div>
+          </div>
           <a href="mailto:info@desizoom.com" style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}>info@desizoom.com</a>
         </div>
       </div>
