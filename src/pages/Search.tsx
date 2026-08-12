@@ -102,6 +102,12 @@ export default function Search() {
     setGroups(found.filter((g) => g.results.length > 0));
   };
 
+  /**
+   * @param categoryQuery Set ONLY when a category chip was tapped. Its presence
+   *   is what tells us this isn't free text, so occasion detection is skipped.
+   *   Never pass the typed query here — that silently disables the wedding /
+   *   pooja / griha pravesh fan-out, which is the most distinctive thing we do.
+   */
   const doSearch = async (categoryQuery?: string) => {
     const loc = await getLocation();
     if (!loc) { setError(`Couldn't work out where ${city} is. Try picking a different city.`); setLoading(false); return; }
@@ -130,7 +136,7 @@ export default function Search() {
   useEffect(() => {
     if (!mapsReady) return;
     if (activeCategory) doSearch(activeCategory.query);
-    else if (query) doSearch(query);
+    else if (query) doSearch();   // no arg: let detectOccasion see it
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapsReady, geoLocation, activeCategory, city]);
 
@@ -150,11 +156,11 @@ export default function Search() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { setActiveCategory(null); doSearch(query); } }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { setActiveCategory(null); doSearch(); } }}
             placeholder='Try "wedding", "birthday party", "griha pravesh", or "patel brothers"…'
             style={{ flex: 1, minWidth: 200, height: 44, border: '1px solid var(--border)', borderRadius: 10, padding: '0 16px', fontSize: 14 }}
           />
-          <button className="btn-primary" style={{ padding: '0 24px', height: 44, fontSize: 14 }} onClick={() => { setActiveCategory(null); doSearch(query); }}>
+          <button className="btn-primary" style={{ padding: '0 24px', height: 44, fontSize: 14 }} onClick={() => { setActiveCategory(null); doSearch(); }}>
             Search
           </button>
         </div>
