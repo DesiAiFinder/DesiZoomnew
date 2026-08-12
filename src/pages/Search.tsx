@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useLocation } from '../contexts/LocationContext';
 import { loadGoogleMaps, searchNearbyPlaces } from '../services/googlePlaces';
+import { geocodeCity } from '../services/geo';
 import { supabase } from '../services/supabase';
 import PlaceCard from '../components/PlaceCard';
 import type { Business, Location } from '../types';
@@ -58,7 +59,20 @@ export default function Search() {
       .catch(() => setError('Google Maps failed to load. Check your API key.'));
   }, []);
 
-  const getLocation = (): Location | null => geoLocation || CITY_COORDS[city] || null;
+  /**
+   * Centre point for a Places search.
+   *
+   * Was `geoLocation || CITY_COORDS[city]` — and CITY_COORDS only ever held the
+   * eight cities from the original hardcoded list. Once GPS detection started
+   * putting people in their real city (Little Elm, Frisco, The Colony…), there
+   * was no centre point, so no search ran and occasion results came back empty.
+   *
+   * Now falls through to geocodeCity, which handles any city and caches the
+   * answer in localStorage. CITY_COORDS stays only as an instant-answer cache
+   * for the common cases.
+   */
+  const getLocation = async (): Promise<Location | null> =>
+    geoLocation || CITY_COORDS[city] || (await geocodeCity(city));
 
   const clearAll = () => { setResults([]); setGroups([]); setOccasion(null); setDzBusinesses([]); };
 
@@ -89,8 +103,8 @@ export default function Search() {
   };
 
   const doSearch = async (categoryQuery?: string) => {
-    const loc = getLocation();
-    if (!loc) { setError('Location not available.'); return; }
+    const loc = await getLocation();
+    if (!loc) { setError(`Couldn't work out where ${city} is. Try picking a different city.`); setLoading(false); return; }
     if (!mapsReady) { setError('Maps API not ready.'); return; }
     setLoading(true);
     setError('');
