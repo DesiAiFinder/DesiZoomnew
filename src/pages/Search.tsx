@@ -108,7 +108,7 @@ export default function Search() {
    *   Never pass the typed query here — that silently disables the wedding /
    *   pooja / griha pravesh fan-out, which is the most distinctive thing we do.
    */
-  const doSearch = async (categoryQuery?: string) => {
+  const doSearch = async (categoryQuery?: string, textOverride?: string) => {
     const loc = await getLocation();
     if (!loc) { setError(`Couldn't work out where ${city} is. Try picking a different city.`); setLoading(false); return; }
     if (!mapsReady) { setError('Maps API not ready.'); return; }
@@ -116,7 +116,7 @@ export default function Search() {
     setError('');
     clearAll();
     try {
-      const q = categoryQuery || query || activeCategory?.query || BUSINESS_CATEGORIES[0].query;
+      const q = categoryQuery || textOverride || query || activeCategory?.query || BUSINESS_CATEGORIES[0].query;
 
       // Only free-text searches (not category chips) can be an occasion
       const occ = categoryQuery ? null : detectOccasion(q);
@@ -133,12 +133,22 @@ export default function Search() {
     setLoading(false);
   };
 
+  // Follow the URL. The header search box navigates to /search?q=… and when we
+  // are already on this page React Router reuses the component — the URL
+  // changes but our state wouldn't, so the header box appeared to do nothing.
+  useEffect(() => {
+    setQuery(urlQuery);
+    setActiveCategory(urlQuery ? null : BUSINESS_CATEGORIES[0]);
+  }, [urlQuery]);
+
   useEffect(() => {
     if (!mapsReady) return;
     if (activeCategory) doSearch(activeCategory.query);
-    else if (query) doSearch();   // no arg: let detectOccasion see it
+    // Pass urlQuery explicitly: on the render where the URL just changed, the
+    // `query` state hasn't caught up yet.
+    else if (urlQuery || query) doSearch(undefined, urlQuery || query);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapsReady, geoLocation, activeCategory, city]);
+  }, [mapsReady, geoLocation, activeCategory, city, urlQuery]);
 
   const runQuery = (q: string) => { setQuery(q); setActiveCategory(null); doSearch(q); };
   const hasOccasionResults = occasion && (groups.length > 0 || dzBusinesses.length > 0);
