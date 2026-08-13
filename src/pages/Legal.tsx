@@ -14,7 +14,7 @@ import { useLocation } from 'react-router-dom';
  */
 
 const UPDATED = 'August 2026';
-const CONTACT = 'support@desizoom.com';   // ← set a real inbox you monitor
+const CONTACT = 'info@desizoom.com';   // the one inbox, same as the footer
 
 type Doc = { title: string; blocks: (string | { h: string })[] };
 

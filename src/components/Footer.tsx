@@ -49,6 +49,7 @@ export default function Footer() {
               { to: '/connections',  label: 'Organizations' },
               { to: '/live',         label: 'Live & Streams' },
               { to: '/add-business', label: '🏪 List your business' },
+              { to: '/about',        label: 'Our Story' },
             ].map((l) => (
               <div key={l.to} style={{ marginBottom: 8 }}>
                 <Link to={l.to} style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', textDecoration: 'none' }}
@@ -69,7 +70,8 @@ export default function Footer() {
                 refund policy is what makes a chargeback defensible. */}
             <div style={{ display: 'flex', gap: 14, marginTop: 6, flexWrap: 'wrap' }}>
               {[
-                { to: '/terms',   label: 'Terms' },
+                { to: '/about',   label: 'Our Story' },
+              { to: '/terms',   label: 'Terms' },
                 { to: '/privacy', label: 'Privacy' },
                 { to: '/refunds', label: 'Refunds' },
               ].map((l) => (
