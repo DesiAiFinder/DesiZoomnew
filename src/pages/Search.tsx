@@ -6,20 +6,8 @@ import { geocodeCity } from '../services/geo';
 import { supabase } from '../services/supabase';
 import PlaceCard from '../components/PlaceCard';
 import type { Business, Location } from '../types';
-import { env, BUSINESS_CATEGORIES, OCCASIONS, detectOccasion } from '../config/env';
+import { env, CITY_COORDS, BUSINESS_CATEGORIES, OCCASIONS, detectOccasion } from '../config/env';
 import type { Occasion } from '../config/env';
-
-// Fallback city coordinates when browser geolocation is denied
-const CITY_COORDS: Record<string, Location> = {
-  'Edison, NJ':       { lat: 40.5187, lng: -74.4121 },
-  'Jersey City, NJ':  { lat: 40.7178, lng: -74.0431 },
-  'Fremont, CA':      { lat: 37.5485, lng: -121.9886 },
-  'Chicago, IL':      { lat: 41.8781, lng: -87.6298 },
-  'Houston, TX':      { lat: 29.7604, lng: -95.3698 },
-  'Atlanta, GA':      { lat: 33.7490, lng: -84.3880 },
-  'Dallas, TX':       { lat: 32.7767, lng: -96.7970 },
-  'Los Angeles, CA':  { lat: 34.0522, lng: -118.2437 },
-};
 
 interface VendorGroup { icon: string; label: string; results: Business[]; }
 

@@ -8,16 +8,58 @@ export const env = {
   tmdbKey: import.meta.env.VITE_TMDB_API_KEY as string,
 };
 
+/**
+ * Cities offered in the picker. CITIES[0] is the fallback for a visitor who
+ * blocks location — it used to be Edison, NJ, which sent every first-time
+ * Texas visitor to New Jersey. GPS still overrides this whenever it's allowed.
+ *
+ * Not a coverage claim; the app geocodes whatever city is detected. This list
+ * exists so there's something to pick from before GPS answers.
+ */
 export const CITIES = [
+  // ── DFW — where we're launching ──────────────────────────────────────────
+  'Little Elm, TX',
+  'Frisco, TX',
+  'Plano, TX',
+  'The Colony, TX',
+  'Denton, TX',
+  'Dallas, TX',
+  // ── Other large desi communities ─────────────────────────────────────────
+  'Houston, TX',
   'Edison, NJ',
   'Jersey City, NJ',
   'Fremont, CA',
   'Chicago, IL',
-  'Houston, TX',
   'Atlanta, GA',
-  'Dallas, TX',
   'Los Angeles, CA',
 ];
+
+/**
+ * Instant-answer coordinates for the picker cities.
+ *
+ * Purely a cache to avoid a geocode round-trip on first paint — anything not
+ * listed falls through to geocodeCity(), which handles any city and caches to
+ * localStorage. Missing entries are a small delay, never a failure.
+ *
+ * Previously duplicated verbatim in Deals.tsx, Search.tsx and LocalInfo.tsx,
+ * all covering only the original eight cities, so a Little Elm user had no
+ * centre point on any of the three pages.
+ */
+export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
+  'Little Elm, TX':  { lat: 33.1626, lng: -96.9375 },
+  'Frisco, TX':      { lat: 33.1507, lng: -96.8236 },
+  'Plano, TX':       { lat: 33.0198, lng: -96.6989 },
+  'The Colony, TX':  { lat: 33.0890, lng: -96.8861 },
+  'Denton, TX':      { lat: 33.2148, lng: -97.1331 },
+  'Dallas, TX':      { lat: 32.7767, lng: -96.7970 },
+  'Houston, TX':     { lat: 29.7604, lng: -95.3698 },
+  'Edison, NJ':      { lat: 40.5187, lng: -74.4121 },
+  'Jersey City, NJ': { lat: 40.7178, lng: -74.0431 },
+  'Fremont, CA':     { lat: 37.5485, lng: -121.9886 },
+  'Chicago, IL':     { lat: 41.8781, lng: -87.6298 },
+  'Atlanta, GA':     { lat: 33.7490, lng: -84.3880 },
+  'Los Angeles, CA': { lat: 34.0522, lng: -118.2437 },
+};
 
 export const RADIO_STATIONS = [
   // ── DFW ──────────────────────────────────────────────────────────────────

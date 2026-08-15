@@ -9,20 +9,9 @@ import DealCard from '../components/DealCard';
 import PlaceCard from '../components/PlaceCard';
 import PostModal from '../components/PostModal';
 import type { Post, Business, Location } from '../types';
-import { CITIES, env } from '../config/env';
+import { CITIES, CITY_COORDS, env } from '../config/env';
 
 interface OutletCtx { onAuthOpen: () => void; }
-
-const CITY_COORDS: Record<string, Location> = {
-  'Edison, NJ':       { lat: 40.5187, lng: -74.4121 },
-  'Jersey City, NJ':  { lat: 40.7178, lng: -74.0431 },
-  'Fremont, CA':      { lat: 37.5485, lng: -121.9886 },
-  'Chicago, IL':      { lat: 41.8781, lng: -87.6298 },
-  'Houston, TX':      { lat: 29.7604, lng: -95.3698 },
-  'Atlanta, GA':      { lat: 33.7490, lng: -84.3880 },
-  'Dallas, TX':       { lat: 32.7767, lng: -96.7970 },
-  'Los Angeles, CA':  { lat: 34.0522, lng: -118.2437 },
-};
 
 const DEAL_CATS = ['All', 'Food', 'Travel', 'Shopping', 'Services', 'Entertainment'];
 
