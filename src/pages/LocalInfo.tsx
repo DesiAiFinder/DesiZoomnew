@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLocation } from '../contexts/LocationContext';
 import { fetchLocalInfo, supabase } from '../services/supabase';
 import { loadGoogleMaps, searchNearbyPlaces } from '../services/googlePlaces';
+import { geocodeCity } from '../services/geo';
 import PlaceCard from '../components/PlaceCard';
 import { env } from '../config/env';
 import type { LocalInfo, Business, Location } from '../types';
@@ -48,7 +49,7 @@ const CITY_COORDS: Record<string, Location> = {
 };
 
 export default function LocalInfoPage() {
-  const { city, geoLocation } = useLocation();
+  const { city, geoLocation, detectedCity } = useLocation();
   const [info, setInfo] = useState<LocalInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeType, setActiveType] = useState<string>('all');
@@ -82,32 +83,60 @@ export default function LocalInfoPage() {
     loadGoogleMaps(env.googlePlacesKey).then(() => setMapsReady(true)).catch(() => {});
   }, []);
 
-  // Admin-curated entries — re-fetch whenever city changes
+  // Admin-curated entries — re-fetch whenever city changes.
+  // The catch used to be empty, so a failing query rendered as "no entries yet"
+  // and the real fault stayed invisible for weeks. Say so instead.
+  const [infoError, setInfoError] = useState('');
   useEffect(() => {
     setLoading(true);
     setInfo([]);
+    setInfoError('');
     fetchLocalInfo(city)
       .then((d) => setInfo(d as LocalInfo[]))
-      .catch(() => {})
+      .catch((e) => {
+        console.error('local_info', e);
+        setInfoError("Couldn't load the community directory.");
+      })
       .finally(() => setLoading(false));
   }, [city]);
 
   // Reset cached results when city changes
   useEffect(() => { setAutoResults({}); }, [city]);
 
-  // Auto-populate services near GPS (or city center)
-  const loc = geoLocation || CITY_COORDS[city];
+  // ── Which point do we search around? ────────────────────────────────────────
+  // GPS used to win unconditionally, so choosing "Atlanta, GA" from the picker
+  // still returned Frisco and Denton results to someone sitting in Little Elm.
+  // An explicit choice has to beat an inferred one: if the selected city isn't
+  // the city GPS detected, the user picked it deliberately and means it.
+  const usingGps = !!geoLocation && (!detectedCity || city === detectedCity);
+
+  const [loc, setLoc] = useState<Location | null>(null);
+  useEffect(() => {
+    if (usingGps) { setLoc(geoLocation); return; }
+    // Show the preset coords immediately where we have them, then refine by
+    // geocoding — CITY_COORDS only covers the original eight cities, so
+    // anywhere else would otherwise have no centre at all.
+    let cancelled = false;
+    setLoc(CITY_COORDS[city] ?? null);
+    geocodeCity(city)
+      .then((c) => { if (!cancelled && c) setLoc(c); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [city, geoLocation, usingGps]);
+
+  // Auto-populate civic services around that point
   useEffect(() => {
     if (!mapsReady || !loc) return;
-    const key = activeService.query;
-    if (autoResults[key]) return; // cached
+    // Key the cache by city too, or switching cities re-serves the old results.
+    const key = `${city}|${activeService.query}`;
+    if (autoResults[key]) return;
     setAutoLoading(true);
-    searchNearbyPlaces(loc, key, 12000)
+    searchNearbyPlaces(loc, activeService.query, 12000)
       .then((results) => setAutoResults((prev) => ({ ...prev, [key]: results.slice(0, 4) })))
       .catch(() => {})
       .finally(() => setAutoLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapsReady, activeService, city, geoLocation]);
+  }, [mapsReady, activeService, city, loc]);
 
   const types = ['all', ...Object.keys(TYPE_META)];
   const filtered = activeType === 'all' ? info : info.filter((i) => i.type === activeType);
@@ -116,7 +145,7 @@ export default function LocalInfoPage() {
     return acc;
   }, {});
 
-  const currentAuto = autoResults[activeService.query] || [];
+  const currentAuto = autoResults[`${city}|${activeService.query}`] || [];
 
   return (
     <>
@@ -133,7 +162,9 @@ export default function LocalInfoPage() {
           <div style={{ marginBottom: 36 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
               <h2 style={{ fontSize: 18 }}>📍 Services Near You</h2>
-              {geoLocation && (
+              {/* Only claim GPS when we're actually searching around it. The
+                  badge stayed lit while showing a hand-picked city's results. */}
+              {usingGps && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: '#166534', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '2px 9px', borderRadius: 20 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
                   GPS
@@ -141,7 +172,7 @@ export default function LocalInfoPage() {
               )}
             </div>
             <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '0 0 12px' }}>
-              Live results near {geoLocation ? 'your current location' : city}. Expand a card for phone & directions.
+              Live results near {usingGps ? 'your current location' : city}. Expand a card for phone & directions.
             </p>
 
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -233,6 +264,12 @@ export default function LocalInfoPage() {
           ))}
         </div>
 
+        {infoError && (
+          <div style={{ padding: '14px 16px', border: '1px solid #fecaca', background: '#fef2f2', color: '#991b1b', borderRadius: 10, fontSize: 13.5, marginBottom: 16 }}>
+            {infoError} Please try again shortly.
+          </div>
+        )}
+
         {loading
           ? Array.from({ length: 3 }).map((_, i) => (
               <div key={i} style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 10, marginBottom: 10 }}>
@@ -240,7 +277,9 @@ export default function LocalInfoPage() {
                 <div className="skeleton" style={{ height: 12, width: '60%' }} />
               </div>
             ))
-          : Object.entries(grouped).length === 0
+          : infoError
+            ? null
+            : Object.entries(grouped).length === 0
             ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted)', border: '1px dashed var(--border)', borderRadius: 12 }}>
                 <div style={{ fontSize: 40, marginBottom: 10 }}>🏛️</div>

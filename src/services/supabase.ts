@@ -278,13 +278,25 @@ export async function fetchSellerStats(sellerId: string) {
 }
 
 // ── Local Info ────────────────────────────────────────────────────────────────
+/**
+ * Curated civic info for a city, plus anything marked as applying everywhere
+ * (city is null — 911, national hotlines).
+ *
+ * Throws on failure instead of returning []. The previous version discarded
+ * `error`, so when this queried a `city` column that didn't exist the page
+ * showed "No curated entries yet" forever and nobody knew why. An empty result
+ * and a broken query must not look the same.
+ */
 export async function fetchLocalInfo(city: string) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('local_info')
     .select('*')
-    .eq('city', city)
+    // The value MUST be quoted: PostgREST splits or() on commas, and every
+    // city here is "Little Elm, TX" — unquoted it parses as two conditions.
+    .or(`city.eq."${city.replace(/"/g, '')}",city.is.null`)
     .eq('is_active', true)
     .order('type');
+  if (error) throw error;
   return data ?? [];
 }
 

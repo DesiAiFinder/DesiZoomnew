@@ -38,7 +38,7 @@ const TYPE_ICON: Record<string, string> = {
 
 export default function Search() {
   const [params] = useSearchParams();
-  const { geoLocation, city, nearbyCities } = useLocation();
+  const { geoLocation, city, usingGps, nearbyCities } = useLocation();
   const urlQuery = params.get('q') || '';
   const [query, setQuery] = useState(urlQuery);
   const [activeCategory, setActiveCategory] = useState<typeof BUSINESS_CATEGORIES[0] | null>(
@@ -70,9 +70,12 @@ export default function Search() {
    * Now falls through to geocodeCity, which handles any city and caches the
    * answer in localStorage. CITY_COORDS stays only as an instant-answer cache
    * for the common cases.
+   *
+   * GPS is only the centre while the user hasn't hand-picked a city. It used
+   * to win outright, so choosing another city searched around you anyway.
    */
   const getLocation = async (): Promise<Location | null> =>
-    geoLocation || CITY_COORDS[city] || (await geocodeCity(city));
+    (usingGps ? geoLocation : null) || CITY_COORDS[city] || (await geocodeCity(city));
 
   const clearAll = () => { setResults([]); setGroups([]); setOccasion(null); setDzBusinesses([]); };
 

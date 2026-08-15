@@ -11,6 +11,16 @@ interface LocationState {
   geoLocation: Location | null;
   geoLoading: boolean;
   detectedCity: string | null;
+  /**
+   * True when `city` is still the city GPS detected, i.e. nothing has been
+   * hand-picked. Pages should search around `geoLocation` only in that case.
+   *
+   * Every page used to write `geoLocation || CITY_COORDS[city]`, which meant
+   * GPS beat an explicit choice: selecting "Atlanta, GA" while sitting in
+   * Little Elm returned Frisco and Denton. An explicit choice must win over an
+   * inferred one.
+   */
+  usingGps: boolean;
   radius: number;
   setRadius: (r: number) => void;
   /** Selected city plus every nearby city within the chosen radius. */
@@ -19,7 +29,7 @@ interface LocationState {
 
 const LocationContext = createContext<LocationState>({
   city: CITIES[0], setCity: () => {}, geoLocation: null, geoLoading: false, detectedCity: null,
-  radius: DEFAULT_RADIUS, setRadius: () => {}, nearbyCities: [CITIES[0]],
+  usingGps: false, radius: DEFAULT_RADIUS, setRadius: () => {}, nearbyCities: [CITIES[0]],
 });
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -138,7 +148,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <LocationContext.Provider value={{ city, setCity: handleSetCity, geoLocation, geoLoading, detectedCity, radius, setRadius, nearbyCities }}>
+    <LocationContext.Provider value={{ city, setCity: handleSetCity, geoLocation, geoLoading, detectedCity, usingGps: !!geoLocation && (!detectedCity || city === detectedCity), radius, setRadius, nearbyCities }}>
       {children}
     </LocationContext.Provider>
   );

@@ -96,6 +96,10 @@ create table if not exists public.comments (
 create table if not exists public.local_info (
   id          uuid primary key default uuid_generate_v4(),
   type        text not null check (type in ('utility','emergency','government','trash_recycling','city_info')),
+  -- 'City, ST', matching profiles/posts. NULL means the row shows everywhere
+  -- (911, national hotlines). The code always filtered on this; the column was
+  -- missing in production until migration_local_info_city.sql.
+  city        text,
   name        text not null,
   description text,
   phone       text,

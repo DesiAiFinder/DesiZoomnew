@@ -4,6 +4,7 @@ import { useLocation } from '../contexts/LocationContext';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchPosts } from '../services/supabase';
 import { loadGoogleMaps, searchNearbyPlaces } from '../services/googlePlaces';
+import { geocodeCity } from '../services/geo';
 import DealCard from '../components/DealCard';
 import PlaceCard from '../components/PlaceCard';
 import PostModal from '../components/PostModal';
@@ -34,7 +35,7 @@ const NEARBY_QUERIES = [
 
 export default function Deals() {
   const { onAuthOpen } = useOutletContext<OutletCtx>();
-  const { city, setCity, detectedCity, geoLocation, nearbyCities } = useLocation();
+  const { city, setCity, detectedCity, geoLocation, usingGps, nearbyCities } = useLocation();
   const { user } = useAuth();
 
   const [posts, setPosts] = useState<Post[]>([]);
@@ -68,9 +69,16 @@ export default function Deals() {
 
   useEffect(() => {
     if (!mapsReady) return;
-    const loc = geoLocation || CITY_COORDS[city];
-    if (loc) loadNearby(activeQuery.query, loc);
-  }, [mapsReady, geoLocation, activeQuery, city]);
+    // A hand-picked city beats GPS; otherwise selecting another city still
+    // searched around wherever the phone actually was.
+    let cancelled = false;
+    (async () => {
+      const loc = (usingGps ? geoLocation : null) || CITY_COORDS[city] || (await geocodeCity(city));
+      if (loc && !cancelled) loadNearby(activeQuery.query, loc);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapsReady, geoLocation, usingGps, activeQuery, city]);
 
   const loadNearby = async (query: string, loc: Location) => {
     setNearbyLoading(true);

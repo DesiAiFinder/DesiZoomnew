@@ -34,7 +34,7 @@ interface CartLine { id: string; name: string; price_cents: number; quantity: nu
 export default function Order() {
   const { onAuthOpen } = useOutletContext<OutletCtx>();
   const { user } = useAuth();
-  const { city, geoLocation } = useLocation();
+  const { city, geoLocation, usingGps } = useLocation();
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [active, setActive] = useState<Restaurant | null>(null);
@@ -87,7 +87,7 @@ export default function Order() {
     let cancelled = false;
     (async () => {
       if (!restaurants.length) return;
-      const center = geoLocation ?? await geocodeCity(city);
+      const center = (usingGps ? geoLocation : null) ?? await geocodeCity(city);
       if (!center) return;
       const out: Record<string, number> = {};
       for (const r of restaurants) {
