@@ -13,17 +13,37 @@ import { CITIES, DESI_FESTIVALS, RADIO_STATIONS } from '../config/env';
 
 interface OutletCtx { onAuthOpen: () => void; }
 
-function getNextFestival() {
-  const now = new Date();
-  const year = now.getFullYear();
-  for (const f of DESI_FESTIVALS) {
-    const d = new Date(year, f.month - 1, f.day);
-    const diff = Math.ceil((d.getTime() - now.getTime()) / 86400000);
-    if (diff >= 0) return { name: f.name, days: diff };
-  }
-  const f = DESI_FESTIVALS[0];
-  const d = new Date(year + 1, f.month - 1, f.day);
-  return { name: f.name, days: Math.ceil((d.getTime() - now.getTime()) / 86400000) };
+/**
+ * The soonest upcoming festival, or null if we've run out of dates.
+ *
+ * The old version returned the first entry in array order with a non-negative
+ * diff, and the array wasn't sorted by date — so which festival it announced
+ * depended on list position, not on which one was actually next. It also fell
+ * back to "same festival, next year" when nothing matched, guaranteeing a
+ * wrong date rather than no date.
+ *
+ * Returning null when the list is exhausted is deliberate: an absent banner is
+ * fine, a confidently wrong one is not. See DESI_FESTIVALS.
+ */
+function getNextFestival(): { name: string; days: number } | null {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const upcoming = DESI_FESTIVALS
+    .map((f) => {
+      // Parse as local midnight. new Date('2026-11-08') is parsed as UTC and
+      // lands on the 7th in US timezones — a day out on every festival.
+      const [y, m, d] = f.date.split('-').map(Number);
+      return { name: f.name, when: new Date(y, m - 1, d) };
+    })
+    .filter((f) => f.when >= startOfToday)
+    .sort((a, b) => a.when.getTime() - b.when.getTime())[0];
+
+  if (!upcoming) return null;
+  return {
+    name: upcoming.name,
+    days: Math.round((upcoming.when.getTime() - startOfToday.getTime()) / 86400000),
+  };
 }
 
 const STATION_COLORS = ['#3d0d7a','#0a3a7a','#7a2a0a','#0a5a2a','#6a1a50','#1a3a6a','#1a5a2a','#5a3a1a'];
@@ -155,10 +175,14 @@ export default function Home() {
         }
       `}</style>
 
-      {/* Festival strip */}
-      <div className="festival">
-        🪔 {festival.name} is in {festival.days} days. Get your listing posted before the rush!
-      </div>
+      {/* Festival strip — hidden entirely once DESI_FESTIVALS runs out */}
+      {festival && (
+        <div className="festival">
+          🪔 {festival.name} is{' '}
+          {festival.days === 0 ? 'today' : festival.days === 1 ? 'tomorrow' : `in ${festival.days} days`}
+          . Get your listing posted before the rush!
+        </div>
+      )}
 
       {/* Hero */}
       <div className="home-hero" style={{ display: 'flex', background: 'linear-gradient(135deg,#3d1509 55%,#5c2410)', minHeight: 210 }}>

@@ -194,11 +194,36 @@ export function detectOccasion(q: string): Occasion | null {
   return best?.occ ?? null;
 }
 
-export const DESI_FESTIVALS = [
-  { name: 'Diwali',     month: 9,  day: 20 },
-  { name: 'Holi',       month: 2,  day: 14 },
-  { name: 'Navratri',   month: 9,  day: 10 },
-  { name: 'Eid',        month: 3,  day: 31 },
-  { name: 'Dussehra',   month: 9,  day: 19 },
-  { name: 'Baisakhi',   month: 3,  day: 14 },
+/**
+ * Festival dates, as real dates.
+ *
+ * These were previously stored as bare month/day with no year — Diwali as
+ * "month: 9, day: 20", read by Home.tsx as `new Date(year, f.month - 1, ...)`,
+ * i.e. 20 September. Diwali 2026 is 8 November. The homepage banner was telling
+ * a desi audience the wrong Diwali date by seven weeks, which is precisely the
+ * kind of error this audience notices immediately.
+ *
+ * A fixed month/day cannot work: Diwali, Holi, Navratri, Dussehra and Eid all
+ * follow lunar calendars and move by weeks each year. Baisakhi is the only one
+ * that is genuinely fixed (13/14 April).
+ *
+ * ⚠️ THIS LIST NEEDS EXTENDING. It runs out after Diwali 2027 — after that the
+ * banner simply hides itself rather than showing something wrong. Add the next
+ * few years before then.
+ *
+ * Eid al-Fitr depends on moon sighting and can shift a day either way by
+ * region; treated as approximate on purpose.
+ */
+export const DESI_FESTIVALS: { name: string; date: string }[] = [
+  // 2026
+  { name: 'Navratri',  date: '2026-10-11' },
+  { name: 'Dussehra',  date: '2026-10-20' },
+  { name: 'Diwali',    date: '2026-11-08' },
+  // 2027
+  { name: 'Eid',       date: '2027-02-09' },   // approximate — moon sighting
+  { name: 'Holi',      date: '2027-03-22' },
+  { name: 'Baisakhi',  date: '2027-04-14' },
+  { name: 'Navratri',  date: '2027-10-02' },
+  { name: 'Dussehra',  date: '2027-10-11' },
+  { name: 'Diwali',    date: '2027-11-14' },
 ];

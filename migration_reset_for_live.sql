@@ -20,6 +20,7 @@ begin;
 truncate table
   public.order_items,
   public.orders,
+  public.payments,
   public.tickets,
   public.service_bookings,
   public.service_requests,
@@ -70,6 +71,7 @@ commit;
 -- ── Confirm ──────────────────────────────────────────────────────────────────
 -- Every count should be 0, and the last two rows are what we intended to keep.
 select 'orders' t, count(*) from public.orders
+union all select 'payments',     count(*) from public.payments
 union all select 'restaurants',  count(*) from public.restaurants
 union all select 'businesses',   count(*) from public.businesses
 union all select 'posts',        count(*) from public.posts

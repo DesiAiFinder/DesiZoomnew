@@ -90,8 +90,20 @@ export default function About() {
         </div>
 
         <div style={{ display: 'flex', gap: 11, flexWrap: 'wrap', marginBottom: 22 }}>
-          <Link to="/add-business" className="btn">List your business free</Link>
-          <Link to="/search" className="btn btn-ghost">Explore your city</Link>
+          {/* The class is btn-primary, not btn — there is no .btn in index.css,
+              so these rendered as bare text links on the first deploy. */}
+          <Link
+            to="/add-business" className="btn-primary"
+            style={{ fontSize: 14, padding: '11px 22px', textDecoration: 'none' }}
+          >
+            List your business free
+          </Link>
+          <Link
+            to="/search" className="btn-ghost"
+            style={{ fontSize: 14, padding: '10px 20px', border: '1px solid var(--border)', background: 'white', textDecoration: 'none' }}
+          >
+            Explore your city
+          </Link>
         </div>
 
         <div style={{

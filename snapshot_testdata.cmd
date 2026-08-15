@@ -49,7 +49,7 @@ if not exist backups mkdir backups
 
 echo Snapshotting test content ...
 pg_dump --data-only --no-owner --no-privileges --quote-all-identifiers ^
-  -t public.orders -t public.order_items -t public.tickets ^
+  -t public.orders -t public.order_items -t public.payments -t public.tickets ^
   -t public.service_bookings -t public.service_requests -t public.lead_unlocks ^
   -t public.menu_items -t public.restaurants -t public.businesses ^
   -t public.service_offerings -t public.service_providers ^
