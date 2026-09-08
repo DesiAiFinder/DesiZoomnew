@@ -148,7 +148,15 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
 
         .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; cursor: pointer; border: 2px solid #fac775; flex-shrink: 0; }
 
-        @media (min-width: 981px) { .show-mobile { display: none !important; } }
+        @media (min-width: 981px) {
+          .show-mobile { display: none !important; }
+          /* One row on desktop. flex-wrap decides by BASE size, not by whether
+             an item could shrink — so widening the search from 230 to 330 tipped
+             the sum over the container and dropped the city/radius/sign-in pills
+             onto a second line with a dead gap above them. nowrap makes the
+             search shrink to fit instead, which is what flex: 0 1 330px is for. */
+          .nav-row { flex-wrap: nowrap !important; gap: 14px !important; }
+        }
         @media (max-width: 980px) {
           .hidden-mobile { display: none !important; }
           .nav-row { padding: 10px 14px !important; gap: 9px !important; }
@@ -177,7 +185,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
           <div
             className="nav-search"
             style={{
-              display: 'flex', alignItems: 'stretch', flex: '0 1 330px',
+              display: 'flex', alignItems: 'stretch', flex: '0 1 330px', minWidth: 190,
               background: 'white', border: '2px solid var(--accent)',
               borderRadius: 10, height: 40, overflow: 'hidden',
             }}
@@ -206,7 +214,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
           </div>
 
           {/* Categories (desktop) */}
-          <nav className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          <nav className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: 18, flexShrink: 0 }}>
             {GROUPS.map((g) => (
               g.to ? (
                 <Link key={g.id} to={g.to} className={`cat ${groupActive(g) ? 'active' : ''}`}>{g.label}</Link>
@@ -240,7 +248,7 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
           </nav>
 
           {/* Right controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', flexShrink: 0 }}>
             {/* City */}
             <div style={{ position: 'relative' }}>
               <button className={`nav-city-pill ${isGPS ? 'gps' : 'manual'}`} onClick={() => setCityOpen((o) => !o)}>
