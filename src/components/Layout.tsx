@@ -11,8 +11,13 @@ export default function Layout() {
   const [authOpen, setAuthOpen] = useState(false);
   const navigate = useNavigate();
 
+  // An empty search used to do nothing at all. That was invisible when the
+  // only trigger was Enter; now there's a Search button, and a button that
+  // silently does nothing reads as broken. Send them to the search page,
+  // where the category chips give them somewhere to start.
   const handleSearch = (q: string) => {
-    if (q.trim()) navigate(`/search?q=${encodeURIComponent(q.trim())}`);
+    const term = q.trim();
+    navigate(term ? `/search?q=${encodeURIComponent(term)}` : '/search');
   };
 
   return (

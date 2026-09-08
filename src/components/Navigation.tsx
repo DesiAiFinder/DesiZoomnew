@@ -166,16 +166,43 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
             Desi<span style={{ color: 'var(--accent)' }}>Zoom</span>
           </Link>
 
-          {/* Search */}
-          <div className="nav-search" style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 1 230px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 20, padding: '0 13px', height: 34 }}>
-            <span style={{ fontSize: 13, color: 'var(--muted)' }}>🔍</span>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') onSearch(search); }}
-              placeholder="Search deals, food…"
-              style={{ flex: 1, minWidth: 0, height: '100%', border: 'none', background: 'transparent', fontSize: 12.5, outline: 'none', color: 'var(--text)' }}
-            />
+          {/* Search.
+              Search is the primary way into the site, but the old 230px grey
+              pill read as a minor filter and people missed it entirely. Wider
+              (330px), taller (40px), accent-bordered, and with a solid Search
+              button — the button is what the eye actually catches, more than
+              the width. Deliberately NOT flex:1: taking the whole row squeezes
+              the nav against the city and radius pills and turns a 330px box
+              into a mostly-empty 480px one. */}
+          <div
+            className="nav-search"
+            style={{
+              display: 'flex', alignItems: 'stretch', flex: '0 1 330px',
+              background: 'white', border: '2px solid var(--accent)',
+              borderRadius: 10, height: 40, overflow: 'hidden',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, padding: '0 13px' }}>
+              <span style={{ fontSize: 14, color: 'var(--accent)' }}>🔍</span>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') onSearch(search); }}
+                placeholder='Try "biryani", "wedding", "priest"…'
+                aria-label="Search DesiZoom"
+                style={{ flex: 1, minWidth: 0, height: '100%', border: 'none', background: 'transparent', fontSize: 13.5, outline: 'none', color: 'var(--text)' }}
+              />
+            </div>
+            <button
+              onClick={() => onSearch(search)}
+              style={{
+                background: 'var(--accent)', color: '#412402', border: 'none',
+                fontSize: 13, fontWeight: 700, padding: '0 20px',
+                cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
+              }}
+            >
+              Search
+            </button>
           </div>
 
           {/* Categories (desktop) */}
