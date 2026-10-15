@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import { supabase } from '../services/supabase';
 import SellerOnboard from '../components/SellerOnboard';
+import { MERCHANT_TERMS_VERSION } from './MerchantTerms';
 import { CITIES } from '../config/env';
 
 interface OutletCtx { onAuthOpen: () => void; }
@@ -36,6 +37,7 @@ export default function AddBusiness() {
 
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [err, setErr] = useState('');
 
   // Step 1
@@ -94,6 +96,7 @@ export default function AddBusiness() {
     if (!name.trim()) return setErr('Business name is required.');
     if (!city.trim()) return setErr('City is required.');
     if (!fPickup && !fDelivery && !fShipping) return setErr('Pick at least one way customers can get their order.');
+    if (!agreed) return setErr('Please read and accept the Merchant Agreement to continue.');
     setBusy(true); setErr('');
     const dollars = (v: string) => Math.round((parseFloat(v) || 0) * 100);
     const fulfillment = {
@@ -107,6 +110,8 @@ export default function AddBusiness() {
         owner_id: user.id, name: name.trim(), business_type: type, city: city.trim(),
         address: address.trim() || null, phone: phone.trim() || null, description: desc.trim() || null,
         logo_url: logoUrl, ...fulfillment,
+        terms_accepted_at: new Date().toISOString(),
+        terms_accepted_version: MERCHANT_TERMS_VERSION,
       }).select().single();
       if (bErr) throw bErr;
       setBizId(biz.id);
@@ -293,6 +298,27 @@ export default function AddBusiness() {
                 <div className="field" style={{ maxWidth: 180, marginTop: 8 }}><label>Shipping fee $</label><input style={inputStyle} value={sFee} onChange={(e) => setSFee(e.target.value)} placeholder="8" inputMode="decimal" /></div>
               )}
             </div>
+
+            {/* Merchant agreement. The timestamp and version are written with
+                the business row — a tick nobody can prove is worth nothing. */}
+            <label style={{
+              display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 18,
+              padding: '12px 14px', border: '1px solid var(--border)',
+              borderRadius: 10, background: 'var(--bg)', cursor: 'pointer',
+            }}>
+              <input
+                type="checkbox" checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                style={{ marginTop: 2, width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text)' }}>
+                I'm authorised to list this business, and I agree to the{' '}
+                <a href="/merchant-terms" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700 }}>
+                  Merchant Agreement
+                </a>
+                . Listing is free — we take 6% on pickup orders, and nothing else.
+              </span>
+            </label>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14 }}>
               <button className="btn-ghost" style={{ border: '1px solid var(--border)' }} onClick={() => setStep(1)}>← Back</button>

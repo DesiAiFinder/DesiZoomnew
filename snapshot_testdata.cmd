@@ -56,7 +56,7 @@ pg_dump --data-only --no-owner --no-privileges --quote-all-identifiers ^
   -t public.organizations -t public.live_streams -t public.news_items ^
   -t public.votes -t public.comments -t public.posts -t public.favorites ^
   -t public.reviews -t public.reports -t public.messages -t public.conversations ^
-  -t public.alerts -t public.notifications ^
+  -t public.alerts -t public.notifications -t public.push_subscriptions ^
   -f "backups\testdata-%STAMP%.sql"
 if errorlevel 1 goto :failed
 

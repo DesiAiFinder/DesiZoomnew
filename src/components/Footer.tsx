@@ -74,6 +74,7 @@ export default function Footer() {
               { to: '/terms',   label: 'Terms' },
                 { to: '/privacy', label: 'Privacy' },
                 { to: '/refunds', label: 'Refunds' },
+                { to: '/merchant-terms', label: 'For businesses' },
               ].map((l) => (
                 <Link key={l.to} to={l.to} style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}>
                   {l.label}
