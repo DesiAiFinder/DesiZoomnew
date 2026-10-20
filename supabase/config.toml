@@ -1,0 +1,15 @@
+project_id = "rroyfpheqwalxylgeidu"
+
+# Stripe posts to this endpoint with a Stripe signature, not a Supabase JWT.
+# With JWT verification on, every delivery is rejected 401 before our code
+# runs — Stripe shows failures, the logs show nothing, and orders sit at
+# 'pending'. Exactly the shape of the July failure, by a different cause.
+#
+# This file exists mainly so `supabase functions deploy` can't quietly turn
+# verification back on. It was previously set by hand in the dashboard, which
+# survives only until someone redeploys without the --no-verify-jwt flag.
+#
+# Authenticity is enforced in the function itself, by verifying the Stripe
+# signature against STRIPE_WEBHOOK_SECRET. That is the correct check here.
+[functions.stripe-webhook]
+verify_jwt = false

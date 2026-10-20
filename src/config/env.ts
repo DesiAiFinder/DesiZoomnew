@@ -6,6 +6,9 @@ export const env = {
   adminPassword: import.meta.env.VITE_ADMIN_PASSWORD as string,
   stripePublishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string,
   tmdbKey: import.meta.env.VITE_TMDB_API_KEY as string,
+  // Ticketmaster Discovery (Consumer Key, not the secret). Public by nature —
+  // it ships in the bundle like every VITE_ value.
+  ticketmasterKey: import.meta.env.VITE_TICKETMASTER_API_KEY as string,
 };
 
 /**

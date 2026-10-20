@@ -9,16 +9,19 @@ function fmtDate(iso: string) {
 }
 
 export default function AutoEvents() {
-  const { city } = useLocation();
+  const { city, eventRadius } = useLocation();
   const [events, setEvents] = useState<ExternalEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
-    fetchExternalEvents(city)
-      .then(setEvents)
-      .finally(() => setLoading(false));
-  }, [city]);
+    // Same 50–100 mile net the posted events use.
+    fetchExternalEvents(city, { radiusMiles: eventRadius })
+      .then((e) => { if (!cancelled) setEvents(e); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [city, eventRadius]);
 
   if (!loading && events.length === 0) return null; // Hide section if nothing found
 

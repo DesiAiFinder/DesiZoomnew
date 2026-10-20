@@ -100,6 +100,32 @@ export async function fetchEvents(city: string | string[]) {
   return data ?? [];
 }
 
+/**
+ * Every upcoming event in a state, e.g. 'TX'.
+ *
+ * Events work differently from food: a Dallas family will happily drive to a
+ * big Diwali mela in Austin, and wants to know it exists. City-scoped lists
+ * hide exactly the events people most want to hear about, so the Events page
+ * fetches the whole state and groups it.
+ *
+ * Past events are excluded — a stale event list is worse than an empty one.
+ * Events with no date are kept, since "temple open house, ongoing" is real.
+ */
+export async function fetchEventsByState(state: string, limit = 200) {
+  const since = new Date(Date.now() - 12 * 3600_000).toISOString(); // today still counts
+  const { data, error } = await supabase
+    .from('posts')
+    .select(POST_SELECT)
+    .eq('type', 'event')
+    .eq('is_active', true)
+    .ilike('city', `%, ${state}`)
+    .or(`event_date.gte.${since},event_date.is.null`)
+    .order('event_date', { ascending: true, nullsFirst: false })
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function fetchMarketplace(city: string | string[], category?: string) {
   let q = supabase
     .from('posts')

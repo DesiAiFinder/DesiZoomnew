@@ -37,8 +37,27 @@ function categoryFromTypes(types: string[]): BusinessCategory {
   return 'services';
 }
 
-function metersToMiles(m: number): number {
-  return Math.round((m / 1609.34) * 10) / 10;
+/**
+ * Distance in miles between two points.
+ *
+ * Computed here rather than via google.maps.geometry.spherical, which the old
+ * code used — but the Maps script only loads `libraries=places`, so
+ * google.maps.geometry was always undefined. Every distance came back
+ * undefined, the sort compared 99 to 99 and did nothing, and results stayed in
+ * Google's relevance order. That's why "Services Near You" in Little Elm led
+ * with Dallas City Hall, 30 miles away.
+ *
+ * Plain haversine has no such dependency and can't silently stop working.
+ */
+function milesBetween(a: Location, b: { lat: number; lng: number }): number {
+  const R = 3958.8;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * R * Math.asin(Math.sqrt(h)) * 10) / 10;
 }
 
 export async function searchNearbyPlaces(
@@ -59,15 +78,9 @@ export async function searchNearbyPlaces(
         }
 
         const businesses: Business[] = results.slice(0, 20).map((r: any) => {
-          const dist = r.geometry?.location
-            ? google.maps.geometry
-              ? metersToMiles(
-                  google.maps.geometry.spherical.computeDistanceBetween(
-                    latLng,
-                    r.geometry.location
-                  )
-                )
-              : undefined
+          const loc = r.geometry?.location;
+          const dist = loc
+            ? milesBetween(location, { lat: loc.lat(), lng: loc.lng() })
             : undefined;
 
           return {
@@ -86,7 +99,15 @@ export async function searchNearbyPlaces(
           };
         });
 
-        resolve(businesses.sort((a, b) => (a.distance ?? 99) - (b.distance ?? 99)));
+        const sorted = businesses.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999));
+
+        // textSearch treats `radius` as a bias, not a filter — when few places
+        // match nearby it happily returns ones 30 miles away. Drop those, but
+        // never return nothing: an over-wide result beats an empty page, so if
+        // the filter would empty the list we keep the closest handful instead.
+        const limitMiles = (radius / 1609.34) * 1.25;
+        const withinRange = sorted.filter((b) => (b.distance ?? 9999) <= limitMiles);
+        resolve(withinRange.length ? withinRange : sorted.slice(0, 4));
       }
     );
   });

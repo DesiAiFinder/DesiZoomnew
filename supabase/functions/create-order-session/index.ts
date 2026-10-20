@@ -79,7 +79,10 @@ Deno.serve(async (req) => {
       .single();
     if (!restaurant || !restaurant.is_active) throw new Error('Restaurant not found');
     if (!restaurant.is_open) throw new Error('This restaurant is not accepting orders right now');
-    if (restaurant.owner_id === customer_id) throw new Error('You cannot order from your own restaurant');
+    // Owners MAY order from their own restaurant. A customer phones in and the
+    // owner enters it here, and it's how you test your own menu end to end.
+    // Nothing to game: the owner pays 6% plus Stripe's cut to receive their
+    // own money back, so a self-order always loses them money.
 
     // Re-fetch item prices from DB (never trust client prices)
     const ids = (items as CartItem[]).map((i) => i.id);

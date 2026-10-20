@@ -1,6 +1,13 @@
-// Auto-populated events via Ticketmaster Discovery API (free tier: 5000 calls/day)
-// Get a key at https://developer.ticketmaster.com — add VITE_TICKETMASTER_API_KEY to env
+// Nearby ticketed desi events via the Ticketmaster Discovery API.
+// Free tier: 5000 calls/day, ~5/sec. Key is the Consumer Key, not the secret.
+//
+// Scope check before you expect too much: Ticketmaster carries ticketed
+// commercial shows — a touring Bollywood singer at a big venue. It does NOT
+// carry temple Diwali melas, garba nights at community halls, or association
+// events. Those have no API anywhere and have to be posted or seeded.
 import { env } from '../config/env';
+import { CITY_COORDS } from '../config/env';
+import { geocodeCity } from './geo';
 
 export interface ExternalEvent {
   id: string;
@@ -13,35 +20,72 @@ export interface ExternalEvent {
   priceRange?: string;
 }
 
-const DESI_KEYWORDS = 'bollywood OR desi OR india OR hindi OR punjabi OR telugu OR tamil OR bhangra';
+// Ticketmaster's `keyword` is a plain search, not a boolean expression — the
+// old 'bollywood OR desi OR india OR …' string was matched literally and
+// found almost nothing. Several narrow queries, merged, works far better.
+const DESI_KEYWORDS = ['bollywood', 'indian', 'punjabi bhangra', 'telugu tamil'];
 
-export async function fetchExternalEvents(city: string, stateCode?: string): Promise<ExternalEvent[]> {
-  const key = (env as Record<string, string | undefined>).ticketmasterKey
-    || import.meta.env.VITE_TICKETMASTER_API_KEY;
-  if (!key) return [];
+interface Opts {
+  /** Miles. Events deserve a wide net; see eventRadiusFor in LocationContext. */
+  radiusMiles?: number;
+  limit?: number;
+}
 
-  // "Little Elm, TX" → city=Little Elm, state=TX
-  const [cityName, st] = city.split(',').map((s) => s.trim());
+/**
+ * Events near a city.
+ *
+ * Searches by coordinates, NOT by city name. The old version passed
+ * `city: 'Little Elm'`, and Ticketmaster matches that exactly against its own
+ * venue cities — there is no Ticketmaster venue in Little Elm, so it returned
+ * nothing no matter what radius was also supplied. Suburbs are the normal case
+ * for us, so city-name matching was never going to work.
+ */
+export async function fetchExternalEvents(
+  city: string,
+  { radiusMiles = 75, limit = 12 }: Opts = {}
+): Promise<ExternalEvent[]> {
+  const key = env.ticketmasterKey;
+  if (!key || !city) return [];
 
-  const params = new URLSearchParams({
+  const center = CITY_COORDS[city] ?? (await geocodeCity(city));
+  if (!center) return [];
+
+  const base = {
     apikey: key,
-    keyword: DESI_KEYWORDS,
-    city: cityName,
-    ...(st || stateCode ? { stateCode: st || stateCode! } : {}),
-    radius: '50',
+    latlong: `${center.lat},${center.lng}`,
+    radius: String(Math.round(radiusMiles)),
     unit: 'miles',
     sort: 'date,asc',
     size: '10',
-    classificationName: 'music,arts,family',
-  });
+    startDateTime: new Date().toISOString().slice(0, 19) + 'Z',
+  };
 
-  try {
-    const res = await fetch(`https://app.ticketmaster.com/discovery/v2/events.json?${params}`);
-    if (!res.ok) return [];
-    const json = await res.json();
-    const events = json._embedded?.events ?? [];
+  const results = await Promise.all(
+    DESI_KEYWORDS.map(async (keyword) => {
+      try {
+        const params = new URLSearchParams({ ...base, keyword });
+        const res = await fetch(`https://app.ticketmaster.com/discovery/v2/events.json?${params}`);
+        if (!res.ok) {
+          // 429 = quota. Worth seeing in the console rather than silently empty.
+          console.warn('ticketmaster', keyword, res.status);
+          return [];
+        }
+        const json = await res.json();
+        return (json._embedded?.events ?? []) as Record<string, any>[];
+      } catch (e) {
+        console.warn('ticketmaster fetch failed', keyword, e);
+        return [];
+      }
+    })
+  );
 
-    return events.map((e: Record<string, any>) => ({
+  // The keyword searches overlap, so dedupe on event id.
+  const seen = new Set<string>();
+  const merged: ExternalEvent[] = [];
+  for (const e of results.flat()) {
+    if (!e?.id || seen.has(e.id)) continue;
+    seen.add(e.id);
+    merged.push({
       id: e.id,
       name: e.name,
       url: e.url,
@@ -50,10 +94,12 @@ export async function fetchExternalEvents(city: string, stateCode?: string): Pro
       city: e._embedded?.venues?.[0]?.city?.name,
       image: e.images?.find((img: any) => img.width > 500)?.url || e.images?.[0]?.url,
       priceRange: e.priceRanges?.[0]
-        ? `$${e.priceRanges[0].min}–$${e.priceRanges[0].max}`
+        ? `$${Math.round(e.priceRanges[0].min)}–$${Math.round(e.priceRanges[0].max)}`
         : undefined,
-    }));
-  } catch {
-    return [];
+    });
   }
+
+  return merged
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+    .slice(0, limit);
 }

@@ -25,11 +25,28 @@ interface LocationState {
   setRadius: (r: number) => void;
   /** Selected city plus every nearby city within the chosen radius. */
   nearbyCities: string[];
+  /**
+   * Same, but for events — always 50–100 miles regardless of the picker.
+   *
+   * People will drive an hour for a Diwali mela or a garba night and won't
+   * drive twenty minutes for a biryani, so events deserve a wider net than
+   * food. Clamped rather than fixed: someone who has deliberately set "whole
+   * metro" gets 100, everyone else gets at least 50.
+   */
+  eventCities: string[];
+  /** The clamped radius in miles behind eventCities. */
+  eventRadius: number;
+}
+
+/** Events search 50 miles minimum, 100 maximum. */
+export function eventRadiusFor(radius: number): number {
+  return Math.min(100, Math.max(50, radius));
 }
 
 const LocationContext = createContext<LocationState>({
   city: CITIES[0], setCity: () => {}, geoLocation: null, geoLoading: false, detectedCity: null,
   usingGps: false, radius: DEFAULT_RADIUS, setRadius: () => {}, nearbyCities: [CITIES[0]],
+  eventCities: [CITIES[0]], eventRadius: eventRadiusFor(DEFAULT_RADIUS),
 });
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -85,6 +102,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     () => Number(localStorage.getItem('dz_radius') ?? DEFAULT_RADIUS)
   );
   const [nearbyCities, setNearbyCities] = useState<string[]>([city]);
+  const [eventCities, setEventCities] = useState<string[]>([city]);
+  const eventRadius = eventRadiusFor(radius);
 
   const setRadius = (r: number) => {
     setRadiusState(r);
@@ -95,9 +114,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     setNearbyCities([city]); // immediate fallback while geocoding resolves
+    setEventCities([city]);
     fetchNearbyCities(city, radius)
       .then((list) => { if (!cancelled) setNearbyCities(list.length ? list : [city]); })
       .catch(() => { if (!cancelled) setNearbyCities([city]); });
+    fetchNearbyCities(city, eventRadius)
+      .then((list) => { if (!cancelled) setEventCities(list.length ? list : [city]); })
+      .catch(() => { if (!cancelled) setEventCities([city]); });
     return () => { cancelled = true; };
   }, [city, radius]);
 
@@ -148,7 +171,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <LocationContext.Provider value={{ city, setCity: handleSetCity, geoLocation, geoLoading, detectedCity, usingGps: !!geoLocation && (!detectedCity || city === detectedCity), radius, setRadius, nearbyCities }}>
+    <LocationContext.Provider value={{ city, setCity: handleSetCity, geoLocation, geoLoading, detectedCity, usingGps: !!geoLocation && (!detectedCity || city === detectedCity), radius, setRadius, nearbyCities, eventCities, eventRadius }}>
       {children}
     </LocationContext.Provider>
   );
