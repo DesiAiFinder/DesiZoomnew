@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  robots.txt already pointed search engines at this file, and it didn't exist.
+  Static list of the pages worth indexing — listings and events are behind a
+  city picker and change constantly, so they're left out deliberately rather
+  than generated.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.desizoom.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://www.desizoom.com/order</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.desizoom.com/deals</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.desizoom.com/events</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.desizoom.com/services</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.desizoom.com/marketplace</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.desizoom.com/search</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.desizoom.com/roommates</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.desizoom.com/local-info</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.desizoom.com/adda</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.desizoom.com/connections</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.desizoom.com/live</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.desizoom.com/radio</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.desizoom.com/add-business</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.desizoom.com/about</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.desizoom.com/merchant-terms</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://www.desizoom.com/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://www.desizoom.com/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://www.desizoom.com/refunds</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+</urlset>

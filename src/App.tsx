@@ -26,6 +26,7 @@ import LocalInfo from './pages/LocalInfo';
 import Legal from './pages/Legal';
 import About from './pages/About';
 import MerchantTerms from './pages/MerchantTerms';
+import NotFound from './pages/NotFound';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -75,6 +76,8 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            {/* Catch-all. Without this an unknown path rendered a blank page. */}
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </LocationProvider>
