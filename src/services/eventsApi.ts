@@ -22,8 +22,21 @@ export interface ExternalEvent {
 
 // Ticketmaster's `keyword` is a plain search, not a boolean expression — the
 // old 'bollywood OR desi OR india OR …' string was matched literally and
-// found almost nothing. Several narrow queries, merged, works far better.
-const DESI_KEYWORDS = ['bollywood', 'indian', 'punjabi bhangra', 'telugu tamil'];
+// found almost nothing. Several narrow queries, merged, works better.
+//
+// Every term here must be UNAMBIGUOUSLY desi. 'indian' was in this list and
+// returned "Memphis Redbirds vs. Indianapolis Indians" and "Haskell Indian
+// Nations basketball" — minor-league baseball on a desi events page is worse
+// than an empty section. Don't re-add it, and don't add 'india' either.
+const DESI_KEYWORDS = ['bollywood', 'bhangra', 'punjabi', 'telugu', 'tamil', 'garba'];
+
+// Belt and braces: even a safe keyword can land on sport. Reject anything
+// Ticketmaster classifies as Sports, whatever matched it.
+function isSport(e: Record<string, any>): boolean {
+  return (e.classifications ?? []).some(
+    (c: any) => (c?.segment?.name ?? '').toLowerCase() === 'sports'
+  );
+}
 
 interface Opts {
   /** Miles. Events deserve a wide net; see eventRadiusFor in LocationContext. */
@@ -83,7 +96,7 @@ export async function fetchExternalEvents(
   const seen = new Set<string>();
   const merged: ExternalEvent[] = [];
   for (const e of results.flat()) {
-    if (!e?.id || seen.has(e.id)) continue;
+    if (!e?.id || seen.has(e.id) || isSport(e)) continue;
     seen.add(e.id);
     merged.push({
       id: e.id,
