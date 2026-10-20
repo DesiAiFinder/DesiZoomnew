@@ -53,9 +53,6 @@ Deno.serve(async (req) => {
     if (!event || !event.is_active) throw new Error('Event not found');
     if (!event.ticket_price_cents) throw new Error('This is a free event');
     if (event.user_id === buyer_id) throw new Error('You cannot buy tickets to your own event');
-    if (event.tickets_total && (event.tickets_sold + qty) > event.tickets_total) {
-      throw new Error('Not enough tickets remaining');
-    }
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -66,60 +63,92 @@ Deno.serve(async (req) => {
       throw new Error('The organizer has not set up payments yet.');
     }
 
-    const amount = event.ticket_price_cents * qty;
-    const commission = Math.round(amount * 0.05); // 5% platform fee
+    // ── Claim the seats BEFORE opening checkout ──────────────────────────────
+    // This used to be `if (tickets_sold + qty > tickets_total) throw` — a read,
+    // then a decision, with nothing holding the seats in between. Two people
+    // buying the last two seats at once both read the same count, both passed,
+    // and both paid. reserve_tickets does it in one conditional UPDATE, so
+    // Postgres serialises concurrent callers and the second one simply fails.
+    const { data: reserved, error: rErr } = await supabase
+      .rpc('reserve_tickets', { p_event_id: event.id, p_qty: qty });
+    if (rErr) throw rErr;
+    if (!reserved) throw new Error('Not enough tickets remaining');
 
-    const { data: ticket, error: tErr } = await supabase
-      .from('tickets')
-      .insert({
-        event_id: event.id,
-        buyer_id,
-        organizer_id: event.user_id,
-        quantity: qty,
-        amount_cents: amount,
-        commission_cents: commission,
-        status: 'pending',
-      })
-      .select()
-      .single();
-    if (tErr) throw tErr;
+    // From here on the seats are held. Every failure path must give them back,
+    // or an abandoned checkout silently shrinks the event.
+    const release = async () => {
+      await supabase.rpc('release_tickets', { p_event_id: event.id, p_qty: qty })
+        .then(() => {}, (e) => console.error('release_tickets failed', e));
+    };
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            unit_amount: event.ticket_price_cents,
-            product_data: {
-              name: `Ticket: ${event.title}`,
-              description: 'DesiZoom Events',
-            },
-          },
+    try {
+      const amount = event.ticket_price_cents * qty;
+      const commission = Math.round(amount * 0.05); // 5% platform fee
+
+      const { data: ticket, error: tErr } = await supabase
+        .from('tickets')
+        .insert({
+          event_id: event.id,
+          buyer_id,
+          organizer_id: event.user_id,
           quantity: qty,
+          amount_cents: amount,
+          commission_cents: commission,
+          status: 'pending',
+        })
+        .select()
+        .single();
+      if (tErr) throw tErr;
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              unit_amount: event.ticket_price_cents,
+              product_data: {
+                name: `Ticket: ${event.title}`,
+                description: 'DesiZoom Events',
+              },
+            },
+            quantity: qty,
+          },
+        ],
+        payment_intent_data: {
+          application_fee_amount: commission,
+          transfer_data: { destination: profile.stripe_account_id },
         },
-      ],
-      payment_intent_data: {
-        application_fee_amount: commission,
-        transfer_data: { destination: profile.stripe_account_id },
-      },
-      metadata: {
-        kind: 'ticket',
-        ticket_id: ticket.id,
-        event_id: event.id,
-        quantity: qty.toString(),
-      },
-      ...(embedded
-        ? { ui_mode: 'embedded' as const, redirect_on_completion: 'never' as const }
-        : { success_url, cancel_url }),
-    });
+        metadata: {
+          kind: 'ticket',
+          ticket_id: ticket.id,
+          event_id: event.id,
+          quantity: qty.toString(),
+        },
+        // Hold the seats ~31 minutes, not Stripe's default 24 hours. On expiry
+        // Stripe sends checkout.session.expired and the webhook puts them back.
+        // A sold-out event whose seats are stuck behind abandoned tabs until
+        // tomorrow is its own kind of broken. Stripe's minimum is exactly 30
+        // minutes and it rejects anything under, so don't trim this to 30 —
+        // a second of clock skew would fail the call.
+        expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
+        ...(embedded
+          ? { ui_mode: 'embedded' as const, redirect_on_completion: 'never' as const }
+          : { success_url, cancel_url }),
+      });
 
-    await supabase.from('tickets').update({ stripe_session_id: session.id }).eq('id', ticket.id);
+      await supabase.from('tickets').update({ stripe_session_id: session.id }).eq('id', ticket.id);
 
-    return new Response(
-      JSON.stringify({ url: session.url, client_secret: session.client_secret }),
-      { headers: { ...cors, 'Content-Type': 'application/json' } }
-    );
+      return new Response(
+        JSON.stringify({ url: session.url, client_secret: session.client_secret }),
+        { headers: { ...cors, 'Content-Type': 'application/json' } }
+      );
+    } catch (inner) {
+      // Stripe rejected the session, or the ticket row failed to write. The
+      // seats are already claimed, so hand them back before giving up.
+      await release();
+      throw inner;
+    }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     // Log it. Supabase's client only surfaces "non-2xx status code" to the

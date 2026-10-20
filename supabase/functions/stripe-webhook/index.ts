@@ -72,13 +72,16 @@ Deno.serve(async (req) => {
       console.log(`🍛 Order paid: ${order_id}`);
     }
 
-    // Ticket purchase paid → confirm, increment sold count, record revenue
+    // Ticket purchase paid → confirm and record revenue.
+    //
+    // Deliberately does NOT touch tickets_sold. The seats were claimed by
+    // reserve_tickets when checkout opened. Incrementing here as well would
+    // double-count every sale — and the old code did it with a read followed
+    // by a write, which also lost increments when two webhooks landed at once.
     if (session.payment_status === 'paid' && kind === 'ticket' && ticket_id) {
       await supabase.from('tickets').update({ status: 'paid' }).eq('id', ticket_id);
 
       const qty = parseInt(quantity ?? '1') || 1;
-      const { data: ev } = await supabase.from('posts').select('tickets_sold').eq('id', event_id).single();
-      await supabase.from('posts').update({ tickets_sold: (ev?.tickets_sold ?? 0) + qty }).eq('id', event_id);
 
       const { data: t } = await supabase
         .from('tickets').select('buyer_id, organizer_id, amount_cents, commission_cents').eq('id', ticket_id).single();
@@ -223,10 +226,11 @@ Deno.serve(async (req) => {
             .from('tickets').select('id, event_id, quantity').eq('stripe_session_id', sessionId).maybeSingle();
           if (t) {
             await supabase.from('tickets').update({ status: 'refunded' }).eq('id', t.id);
-            // Put the seats back on sale
-            const { data: ev } = await supabase.from('posts').select('tickets_sold').eq('id', t.event_id).single();
-            const back = Math.max(0, (ev?.tickets_sold ?? 0) - (t.quantity ?? 1));
-            await supabase.from('posts').update({ tickets_sold: back }).eq('id', t.event_id);
+            // Put the seats back on sale. Atomic, because read-then-write
+            // loses one of two concurrent refunds and leaves seats unsellable.
+            await supabase.rpc('release_tickets', {
+              p_event_id: t.event_id, p_qty: t.quantity ?? 1,
+            });
           }
         }
 
@@ -236,6 +240,36 @@ Deno.serve(async (req) => {
         }
 
         console.log(`↩️ Refund processed: kind=${kind} session=${sessionId} status=${newStatus}`);
+      }
+    }
+  }
+
+  // Abandoned ticket checkout → put the seats back on sale.
+  //
+  // Seats are claimed when checkout opens, so without this every abandoned
+  // tab permanently shrinks the event. Sessions are created with a 30-minute
+  // expiry; this is Stripe telling us one lapsed.
+  //
+  // ⚠️ Requires `checkout.session.expired` to be enabled on the webhook
+  // endpoint in the Stripe dashboard — it is NOT on by default, and in live
+  // mode it has to be ticked again on the new live endpoint.
+  if (event.type === 'checkout.session.expired') {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const { kind, ticket_id } = session.metadata ?? {};
+
+    if (kind === 'ticket' && ticket_id) {
+      // Read the quantity from our own row, not the metadata string.
+      const { data: t } = await supabase
+        .from('tickets').select('id, event_id, quantity, status').eq('id', ticket_id).maybeSingle();
+
+      // Only release a ticket still sitting at 'pending'. A paid or already
+      // expired one must not hand seats back a second time.
+      if (t && t.status === 'pending') {
+        await supabase.from('tickets').update({ status: 'expired' }).eq('id', t.id);
+        await supabase.rpc('release_tickets', {
+          p_event_id: t.event_id, p_qty: t.quantity ?? 1,
+        });
+        console.log(`⌛ Ticket checkout expired, seats released: ${t.id} x${t.quantity ?? 1}`);
       }
     }
   }

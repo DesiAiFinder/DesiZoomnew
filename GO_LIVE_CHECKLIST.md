@@ -24,6 +24,34 @@ Texas without deciding this first.
 
 ---
 
+## Order of operations
+
+Do these in order. Steps 1 and 2 don't depend on Stripe and can be done any
+time; 3 onwards must follow each other.
+
+1. **Database migrations** — in the Supabase SQL editor:
+   - `migration_merchant_agreement.sql` — acceptance columns on `businesses`
+   - `migration_ticket_inventory.sql` — `reserve_tickets` / `release_tickets`
+
+   The ticket migration must run BEFORE deploying `create-ticket-session`, or
+   the function calls an RPC that doesn't exist and ticket checkout 400s.
+
+2. **Push the front-end** — merchant agreement page, signup checkbox.
+
+3. **Swap the keys** (below).
+
+4. **New live webhook endpoint** (below). Not the test one.
+
+5. **Redeploy every Stripe function** (below).
+
+6. **`migration_reset_for_live.sql`** — only now. The site goes empty, and
+   every merchant's `stripe_account_id` is cleared so they reconnect against
+   the live platform.
+
+7. **Your own real order**, all ten checks, including the refund.
+
+---
+
 ## Before you flip anything
 
 These aren't Stripe requirements dressed up as caution. Each one is something
@@ -101,7 +129,13 @@ payments. Stripe → Webhooks → Add endpoint:
 https://rroyfpheqwalxylgeidu.supabase.co/functions/v1/stripe-webhook
 ```
 
-Events: `checkout.session.completed` and `charge.refunded`.
+Events — all three. The last one is new and easy to miss:
+
+- `checkout.session.completed`
+- `charge.refunded`
+- `checkout.session.expired` — releases held event-ticket seats when a
+  checkout is abandoned. Without it, every abandoned ticket checkout
+  permanently shrinks the event. Not enabled by default.
 
 Then reveal the **live** signing secret with the eye icon, copy the whole
 thing, and:
