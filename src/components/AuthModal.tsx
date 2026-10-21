@@ -54,6 +54,30 @@ export default function AuthModal({ onClose }: Props) {
     }
   };
 
+  /**
+   * Send a password reset link.
+   *
+   * This exists because a magic link can't work for the installed app. Email
+   * links always open in the phone's browser — iOS gives a home-screen PWA no
+   * way to claim them — so the session lands in the browser while the app
+   * still shows you as signed in and then fails at checkout with "You must be
+   * signed in". That happened in live testing.
+   *
+   * A reset link doesn't have that problem: it only sets a credential, which
+   * the user then types into the app. The link landing in the browser is fine
+   * because the app isn't depending on the session it creates.
+   */
+  const forgotPassword = async () => {
+    if (!email.trim()) return m('Enter your email first, then tap this again.', false);
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) return m(error.message, false);
+    m("Check your email for a link to set a new password. You'll come back here and sign in with it.", true);
+  };
+
   const magicLink = async () => {
     if (!email.trim()) return m('Enter your email first.', false);
     setLoading(true);
@@ -175,6 +199,17 @@ export default function AuthModal({ onClose }: Props) {
         </div>
 
         {msg && <div className={msg.ok ? 'ok' : 'err'} style={{ marginTop: 12 }}>{msg.text}</div>}
+
+        {/* Forgot password sits with the password form, where it's needed.
+            Offered before the magic-link option because a magic link signs
+            you in to the browser, not the installed app. */}
+        {method === 'password' && mode === 'signin' && (
+          <div style={{ textAlign: 'center', marginTop: 12 }}>
+            <button style={linkStyle} onClick={forgotPassword} disabled={loading}>
+              Forgot your password?
+            </button>
+          </div>
+        )}
 
         <div style={{ textAlign: 'center', marginTop: 14 }}>
           {method === 'password' ? (

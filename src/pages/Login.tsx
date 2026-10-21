@@ -17,6 +17,19 @@ export default function Login() {
     navigate('/');
   };
 
+  // This page was password-only with no recovery path at all — anyone who
+  // landed here having forgotten their password was simply stuck.
+  const forgotPassword = async () => {
+    if (!email.trim()) return setMsg({ text: 'Enter your email first, then tap this again.', ok: false });
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) return setMsg({ text: error.message, ok: false });
+    setMsg({ text: 'Check your email for a link to set a new password.', ok: true });
+  };
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 20 }}>
       <div style={{ background: 'white', borderRadius: 16, padding: 32, width: '100%', maxWidth: 380, boxShadow: '0 8px 32px rgba(28,35,64,0.1)' }}>
@@ -32,6 +45,14 @@ export default function Login() {
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
           {msg && <div className={msg.ok ? 'ok' : 'err'}>{msg.text}</div>}
+          <div style={{ textAlign: 'center' }}>
+            <button
+              onClick={forgotPassword} disabled={loading}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: 'var(--accent-text)', fontWeight: 600 }}
+            >
+              Forgot your password?
+            </button>
+          </div>
           <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
             Don't have an account? <Link to="/register" style={{ color: 'var(--accent-text)', fontWeight: 600 }}>Register</Link>
           </div>
