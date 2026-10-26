@@ -315,6 +315,9 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
                       <Link to={bizLink.to} onClick={() => setAcctOpen(false)} className="cat-item" style={{ background: 'var(--accent-soft)', color: 'var(--accent-text)', fontWeight: 700 }}>{bizLink.label}</Link>
                       <Link to="/messages" onClick={() => setAcctOpen(false)} className="cat-item">💬 Messages</Link>
                       {isAdmin && <Link to="/admin" onClick={() => setAcctOpen(false)} className="cat-item">🔐 Admin</Link>}
+                      {/* Help lives here too, not only in the footer — a stuck
+                          merchant is in this menu, not scrolling to the bottom. */}
+                      <Link to="/help" onClick={() => setAcctOpen(false)} className="cat-item">❓ Help &amp; FAQ</Link>
                       <div className="dd-div" />
                       <button onClick={() => { signOut(); setAcctOpen(false); }} className="cat-item" style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--muted)' }}>Sign out</button>
                     </div>
@@ -392,6 +395,10 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
                 >{o.label}</span>
               ))}
             </div>
+
+            <Link to="/help" onClick={() => setMenuOpen(false)}
+              style={{ display: 'block', marginTop: 10, padding: '11px 12px', fontSize: 14, borderRadius: 10, textDecoration: 'none', border: '1px solid var(--border)', color: 'var(--text)', background: 'white' }}
+            >❓ Help &amp; FAQ</Link>
 
             <div style={{ marginTop: 10 }}>
               {user

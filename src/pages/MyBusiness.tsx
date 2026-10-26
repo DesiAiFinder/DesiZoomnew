@@ -243,7 +243,12 @@ export default function MyBusiness() {
 
         {/* Bank connect */}
         <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 14, padding: 18 }}>
-          <div style={{ fontWeight: 700, fontSize: 14.5, marginBottom: 10 }}>🏦 Payouts</div>
+          {/* Help link right here: "where is my money" is asked from this
+              panel, not from the footer. */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+            <div style={{ fontWeight: 700, fontSize: 14.5 }}>🏦 Payouts</div>
+            <Link to="/help#business" style={{ fontSize: 12.5, fontWeight: 600 }}>When do I get paid?</Link>
+          </div>
           <SellerOnboard />
         </div>
       </div>

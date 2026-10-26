@@ -17,7 +17,9 @@
  */
 
 const SITE = 'https://www.desizoom.com';
-const FALLBACK_IMAGE = `${SITE}/icons/icon-512.png`;
+// Matches index.html — a listing with no photo still gets the branded card,
+// not a tiny square app icon.
+const FALLBACK_IMAGE = `${SITE}/og-cover.png`;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const TYPE_LABEL = {

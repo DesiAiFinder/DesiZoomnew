@@ -28,6 +28,7 @@ import About from './pages/About';
 import MerchantTerms from './pages/MerchantTerms';
 import NotFound from './pages/NotFound';
 import ResetPassword from './pages/ResetPassword';
+import Help from './pages/Help';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="refunds" element={<Legal />} />
             <Route path="merchant-terms" element={<MerchantTerms />} />
             <Route path="reset-password" element={<ResetPassword />} />
+            <Route path="help" element={<Help />} />
             <Route
               path="admin"
               element={
