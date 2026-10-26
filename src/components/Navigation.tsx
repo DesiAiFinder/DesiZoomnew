@@ -322,7 +322,22 @@ export default function Navigation({ onAuthOpen, onSearch }: Props) {
                 )}
               </div>
             ) : (
-              <button className="btn-ghost hidden-mobile" onClick={onAuthOpen} style={{ border: '1px solid var(--border)', fontSize: 12 }}>Sign in</button>
+              /* Visible on mobile too. It was `hidden-mobile`, which left a
+                 first-time visitor on a phone — exactly who a QR code or a
+                 flyer sends — with no Sign in anywhere except the bottom of
+                 the hamburger menu. Solid accent fill rather than ghost: for
+                 a signed-out visitor this is the most important control in
+                 the header. */
+              <button
+                onClick={onAuthOpen}
+                style={{
+                  background: 'var(--accent)', color: '#412402', border: 'none',
+                  fontSize: 12.5, fontWeight: 700, padding: '0 14px', height: 32,
+                  borderRadius: 8, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                }}
+              >
+                Sign in
+              </button>
             )}
 
             {/* Hamburger */}
