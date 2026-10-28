@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useOutletContext } from 'react-router-dom';
 import { useLocation } from '../contexts/LocationContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -138,19 +139,34 @@ export default function Events() {
   );
 }
 
-/** One event. Extracted so the near-you list and each city group share it. */
+/**
+ * One event. Shared by the near-you list and each city group.
+ *
+ * Shows the flyer when there is one. Organisers upload a flyer because the
+ * flyer IS the information — times, address, who's performing — and the first
+ * version of this page silently dropped it, so an uploaded image appeared
+ * nowhere. The whole row links to the listing, where the full-size flyer is.
+ */
 function EventRow({ e }: { e: Post }) {
   const d = e.event_date ? new Date(e.event_date) : null;
+  const flyer = e.image_urls?.[0];
   return (
-    <div
+    <Link
+      to={`/listing/${e.id}`}
       style={{
-        display: 'flex', gap: 16, padding: 16,
+        display: 'flex', gap: 16, padding: 16, textDecoration: 'none', color: 'inherit',
         border: '1px solid var(--border)', borderRadius: 12,
         background: 'white', marginBottom: 12, transition: 'box-shadow 0.2s',
       }}
       onMouseEnter={(el) => (el.currentTarget.style.boxShadow = '0 4px 20px rgba(28,35,64,0.1)')}
       onMouseLeave={(el) => (el.currentTarget.style.boxShadow = 'none')}
     >
+      {flyer && (
+        <img
+          src={flyer} alt=""
+          style={{ width: 86, height: 108, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }}
+        />
+      )}
       {d ? (
         <div style={{
           width: 60, height: 60, borderRadius: 10,
@@ -179,8 +195,11 @@ function EventRow({ e }: { e: Post }) {
           <span>📍 {e.venue || e.city}</span>
           {d && <span>🕐 {formatDate(e.event_date!)} at {formatTime(e.event_date!)}</span>}
         </div>
-        <BuyTicketButton event={e} />
+        {/* Stop the row's link hijacking the buy click. */}
+        <span onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); }}>
+          <BuyTicketButton event={e} />
+        </span>
       </div>
-    </div>
+    </Link>
   );
 }
