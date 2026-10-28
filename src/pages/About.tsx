@@ -84,7 +84,7 @@ export default function About() {
             <div style={{ fontSize: 13.5, lineHeight: 1.65, color: 'rgba(255,255,255,0.78)', marginTop: 5 }}>
               Shreyan is a high school senior who thought it was strange that finding a caterer, a priest
               or a good biryani still meant asking around. He sketched out DesiZoom in his notebook.
-              He and his dad have been building it ever since.
+              He's been building it ever since.
             </div>
           </div>
         </div>

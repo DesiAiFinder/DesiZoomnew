@@ -65,7 +65,7 @@ export default function Footer() {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
           <div>
             <span style={{ fontSize: 12, display: 'block' }}>
-              © {new Date().getFullYear()} DesiZoom. Built in Little Elm, Texas by a father and son.
+              © {new Date().getFullYear()} DesiZoom. Built in Little Elm, Texas.
             </span>
             {/* Stripe looks for these during account activation, and a stated
                 refund policy is what makes a chargeback defensible. */}
