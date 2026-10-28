@@ -119,7 +119,12 @@ export default function PostModal({ onClose, defaultType = 'deal', prefill }: Pr
         price_cents: priceCents,
         discount: looksLikeDiscount ? price : null,
         category: type === 'marketplace' ? category : type === 'roommate' ? accomType : type === 'question' ? topic : null,
-        event_date: type === 'event' && eventDate ? eventDate : null,
+        // A datetime-local input yields "2026-11-07T16:00" with no timezone.
+        // Sent raw into a timestamptz column, Postgres reads it as UTC, so an
+        // event at 4pm Central was stored as 16:00Z and shown back as 10:00 AM.
+        // new Date() parses it in the poster's own timezone; toISOString()
+        // then carries the correct instant.
+        event_date: type === 'event' && eventDate ? new Date(eventDate).toISOString() : null,
         venue: type === 'event' && venue.trim() ? venue.trim() : null,
         ticket_price_cents: type === 'event' && parseFloat(ticketPrice) > 0 ? Math.round(parseFloat(ticketPrice) * 100) : null,
         tickets_total: type === 'event' && parseInt(ticketsTotal) > 0 ? parseInt(ticketsTotal) : null,
