@@ -143,7 +143,7 @@ export default function MyRestaurant() {
       <div className="page-hero" style={{ background: 'linear-gradient(120deg,#2a1500,#1a0d00)' }}>
         <div className="eyebrow">🍛 My Restaurant</div>
         <h1>{restaurant ? restaurant.name : 'List Your Restaurant'}</h1>
-        <p>Take pickup orders commission-light: just 6% per order vs ~30% on delivery apps. Keep your customers.</p>
+        <p>Take pickup orders at 6% per order, card fees included. Your prices, your customers.</p>
       </div>
 
       <div style={{ padding: '24px 32px 48px' }}>

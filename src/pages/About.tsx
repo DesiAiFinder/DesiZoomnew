@@ -63,7 +63,7 @@ export default function About() {
             <Point t="Promote what's new" d="Post deals, photos, services and events to people already looking." />
             <Point
               t={<>Restaurant pickup at <span style={{ color: 'var(--accent-text)' }}>6%</span></>}
-              d="Not the 15–30% delivery apps take. No monthly fee, no tablet, no contract."
+              d="Card fees included. 8% on service bookings, 5% on event tickets. No monthly fee, no tablet, no contract."
               last
             />
           </div>

@@ -356,7 +356,7 @@ export default function AddBusiness() {
             <h2 style={{ fontSize: 20, marginBottom: 4 }}>Get paid</h2>
             <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 16px' }}>
               Connect your bank once and payouts arrive automatically.
-              {engine === 'food' ? ' Just 6% per order (vs ~30% on delivery apps).' : ' Just 8% per booking. No monthly fees.'}
+              {engine === 'food' ? ' 6% per order, card fees included.' : ' 8% per booking, card fees included. No monthly fees.'}
             </p>
             <SellerOnboard />
             <div style={{ marginTop: 18, padding: '14px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12 }}>

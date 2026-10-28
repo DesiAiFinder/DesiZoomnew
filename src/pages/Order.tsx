@@ -210,7 +210,7 @@ export default function Order() {
               ? <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--muted)' }}>
                   <div style={{ fontSize: 44, marginBottom: 10 }}>🍛</div>
                   <p>No restaurants taking orders in {city} yet.</p>
-                  <p style={{ fontSize: 13 }}>Own a restaurant? List your menu from your profile. Just 6% per order (vs 30% on delivery apps).</p>
+                  <p style={{ fontSize: 13 }}>Own a restaurant? List your menu from your profile. 6% per order, card fees included.</p>
                 </div>
               : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 14 }}>
                   {restaurants.map((r) => (

@@ -50,10 +50,15 @@ const BIZ: QA[] = [
 
   { q: 'What does DesiZoom cost?',
     a: <>Listing is free. There's no monthly fee, no tablet, no contract and no minimum.
-       We take <b>6% of the item total on food orders</b> — pickup or your own delivery — and
-       <b> 5% on event tickets</b>. Card processing is included in that; you are not charged a separate
-       processing fee. If you charge a delivery fee, you keep all of it. Posting deals and events is free;
-       there's an optional $2.99 boost if you want a deal pinned to the top for a week.</> },
+       We take a commission only when you actually get paid:
+       <ul style={{ margin: '10px 0', paddingLeft: 22 }}>
+         <li><b>6%</b> on food orders, on the item total</li>
+         <li><b>8%</b> on service bookings (catering, priests, photography and the rest)</li>
+         <li><b>5%</b> on event tickets</li>
+       </ul>
+       Card processing is included in all of those; you are not charged a separate processing fee.
+       If you charge a delivery fee, you keep all of it. Posting deals and events is free, as often
+       as you like; there's an optional $2.99 boost if you want a deal pinned to the top for a week.</> },
 
   { q: 'How do I add menu items? Can I upload a photo of my menu?',
     a: <>My Business → Menu & Orders. Add items by hand, or upload a photo or PDF of your printed menu and
@@ -102,7 +107,7 @@ const ALL: QA[] = [
 
   { q: 'What is the service fee?',
     a: <>A small fee on food orders — 2% plus 69¢, never more than $1.99 — shown separately before you pay.
-       It's what keeps DesiZoom running without charging restaurants the 15–30% the delivery apps do.
+       It's what keeps DesiZoom running while charging restaurants a low commission, so their prices stay the same as in store.
        Sales tax is added where it applies.</> },
 
   { q: 'How do refunds work?',

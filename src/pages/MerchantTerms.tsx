@@ -43,11 +43,12 @@ const BLOCKS: Block[] = [
   `We charge commission only when you actually get paid through the platform:`,
   { list: [
     `Food pickup and delivery orders — 6% of the item subtotal.`,
-    `Service bookings and event tickets — the rate shown to you when you enable that feature.`,
+    `Service bookings — 8% of the booking price.`,
+    `Event tickets — 5% of the ticket price.`,
   ]},
   `Commission is calculated on your items only. If you charge a delivery or shipping fee, you keep 100% of it — that is your work, not ours.`,
   `Customers pay a separate small service fee to DesiZoom, shown to them at checkout. It is ours, it does not come out of your money, and it does not change what you receive.`,
-  `Card processing costs are paid by DesiZoom out of our commission. You are not charged a separate processing fee, and the 6% is not reduced by one.`,
+  `Card processing costs are paid by DesiZoom out of our commission. You are not charged a separate processing fee on top of the rates above.`,
 
   { h: '4. How you get paid' },
   `Payments go through Stripe. You connect your own Stripe account; your bank details are yours and we never see them.`,
