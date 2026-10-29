@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 import qrcode, os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-W, H = 1080, 1700
+W, H = 1080, 1750
 CREAM=(251,246,236); NAVY=(61,21,9); ACCENT=(239,159,39); GOLD=(250,199,117)
 TEXT=(44,26,16); MUTED=(138,117,99); BROWN=(133,79,11); SOFT=(250,238,218)
 FD="/usr/share/fonts/truetype/dejavu"
@@ -21,7 +21,7 @@ d.rectangle([0,0,W,250], fill=NAVY)
 d.text((68,52),"Desi",font=f(62,True),fill=(255,255,255))
 d.text((68+d.textlength("Desi",font=f(62,True)),52),"Zoom",font=f(62,True),fill=ACCENT)
 d.text((68,136),"Everything desi in your city.",font=f(31),fill=GOLD)
-d.text((68,180),"Events · Rooms · Services · Deals · Food",font=f(26),fill=(201,182,166))
+d.text((68,180),"Events, rooms, services, deals and food.",font=f(26),fill=(201,182,166))
 
 def sect(label, lines, y0, size=28, gap=45):
     d.text((68,y0),label,font=f(24,True),fill=BROWN); y=y0+40
@@ -66,7 +66,7 @@ d.text((tx,by+152),"Free. Nothing to install.",font=f(24),fill=MUTED)
 d.text((tx,by+184),"Add it to your home screen.",font=f(24),fill=MUTED)
 
 fy = by + 300
-d.rounded_rectangle([68,fy,W-68,fy+252], radius=22, fill=NAVY)
+d.rounded_rectangle([68,fy,W-68,fy+290], radius=22, fill=NAVY)
 try:
     ph = Image.open(os.path.join(ROOT,"public","shreyan.jpg")).convert("RGB")
     ph = ImageOps.fit(ph,(126,158),Image.LANCZOS,centering=(0.5,0.22))
@@ -75,17 +75,20 @@ try:
 except Exception as e:
     print("photo:",e)
 tx2 = 252
+# Short, because the WhatsApp message above this image already tells the
+# "four different apps" story. See the note in make_posters.py.
 for i,ln in enumerate([
-    '"The same questions come up repeatedly in our',
-    "community. Who's a good caterer, is anyone renting",
-    'a room, what time does garba start. Every time the',
-    'answer was somewhere else: Instagram, Google,',
-    'Facebook, four WhatsApp chats. So I built one place."']):
+ '"The same questions come up repeatedly in our',
+ "community. Where's a good desi deal, who's a good",
+ 'caterer, is anyone renting a room, what time does',
+ 'garba start. Every time the answer was somewhere',
+ 'else: Instagram, Google, Facebook, four WhatsApp',
+ 'chats. So I built one place."']):
     d.text((tx2,fy+34+i*34),ln,font=f(23,it=True),fill=(222,206,192))
-d.text((tx2,fy+206),"Shreyan Jamalpur · high school senior · Little Elm",font=f(22,True),fill=ACCENT)
+d.text((tx2,fy+244),"Shreyan Jamalpur, high school senior, Little Elm",font=f(22,True),fill=ACCENT)
 
 # Contact
-cy = fy + 252 + 36
+cy = fy + 290 + 36
 d.text((68,cy),"Questions, or want to be listed?",font=f(25),fill=MUTED)
 cf = f(25,True)
 for row,(local,) in enumerate([("Info",),("Shreyan",)]):
