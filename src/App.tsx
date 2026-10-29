@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from './contexts/AuthContext';
 import { LocationProvider } from './contexts/LocationContext';
 import Layout from './components/Layout';
@@ -35,9 +36,10 @@ import Register from './pages/Register';
 
 export default function App() {
   return (
-    <AuthProvider>
-      <LocationProvider>
-        <Routes>
+    <>
+      <AuthProvider>
+        <LocationProvider>
+          <Routes>
           {/* Standalone auth pages */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -86,5 +88,7 @@ export default function App() {
         </Routes>
       </LocationProvider>
     </AuthProvider>
+    <Analytics />
+    </>
   );
 }
