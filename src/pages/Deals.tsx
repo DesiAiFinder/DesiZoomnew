@@ -8,6 +8,7 @@ import { geocodeCity } from '../services/geo';
 import DealCard from '../components/DealCard';
 import PlaceCard from '../components/PlaceCard';
 import PostModal from '../components/PostModal';
+import NotifyMe from '../components/NotifyMe';
 import type { Post, Business, Location } from '../types';
 import { CITIES, CITY_COORDS, env } from '../config/env';
 
@@ -248,12 +249,28 @@ export default function Deals() {
                 ))
               : filtered.length === 0
                 ? (
-                  <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted)', border: '1px dashed var(--border)', borderRadius: 12 }}>
+                  <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--muted)', border: '1px dashed var(--border)', borderRadius: 12 }}>
+                    {/* Posting is the one thing here that works with zero
+                        merchants signed up, so it leads. "Be the first to
+                        post" framed it as a chore nobody else wanted; a
+                        question people can actually answer does better. */}
                     <div style={{ fontSize: 36, marginBottom: 8 }}>🏷️</div>
-                    <p style={{ margin: '0 0 12px' }}>No community deals in {city} yet.</p>
+                    <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', margin: '0 0 4px' }}>
+                      Seen a good deal this week?
+                    </p>
+                    <p style={{ fontSize: 13.5, margin: '0 0 14px', lineHeight: 1.6 }}>
+                      Grocery, jewellery, a restaurant special. Takes a minute, and everyone
+                      near {city} sees it. You don't need a business.
+                    </p>
                     <button className="btn-primary" onClick={() => user ? setPostOpen(true) : onAuthOpen()}>
-                      + Be the first to post a deal
+                      Post a deal
                     </button>
+                    <div style={{ borderTop: '1px solid var(--border)', margin: '20px auto 0', paddingTop: 16, maxWidth: 360 }}>
+                      <NotifyMe
+                        topic="deals" city={city}
+                        label={`Rather just watch? We'll email you when deals are posted near ${city}.`}
+                      />
+                    </div>
                   </div>
                 )
                 : filtered.map((p) => (

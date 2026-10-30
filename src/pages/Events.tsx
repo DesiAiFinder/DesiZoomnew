@@ -7,6 +7,7 @@ import { fetchEventsByState } from '../services/supabase';
 import PostModal from '../components/PostModal';
 import AutoEvents from '../components/AutoEvents';
 import BuyTicketButton from '../components/BuyTicketButton';
+import NotifyMe from '../components/NotifyMe';
 import type { Post } from '../types';
 
 interface OutletCtx { onAuthOpen: () => void; }
@@ -98,10 +99,21 @@ export default function Events() {
               </div>
             ))
           : events.length === 0
-            ? <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
+            ? <div style={{ textAlign: 'center', padding: '50px 16px', color: 'var(--muted)' }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
-                <p>No desi events posted yet in {state || 'your state'}.</p>
-                <button className="btn-primary" onClick={() => user ? setPostOpen(true) : onAuthOpen()}>+ Add an Event</button>
+                <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', margin: '0 0 4px' }}>
+                  Know about an event coming up?
+                </p>
+                <p style={{ fontSize: 13.5, margin: '0 0 14px' }}>
+                  A mela, a garba night, a temple program. Anyone can post one — you don't need a business.
+                </p>
+                <button className="btn-primary" onClick={() => user ? setPostOpen(true) : onAuthOpen()}>+ Add an event</button>
+                <div style={{ borderTop: '1px solid var(--border)', margin: '20px auto 0', paddingTop: 16, maxWidth: 360 }}>
+                  <NotifyMe
+                    topic="events" city={city}
+                    label={`Or we'll email you when a desi event is posted near ${city}.`}
+                  />
+                </div>
               </div>
             : (
               <>
@@ -129,6 +141,19 @@ export default function Events() {
                     ))}
                   </div>
                 )}
+
+                {/* Under a populated list, not instead of one. Someone who
+                    scrolled the whole thing is the best candidate to want
+                    telling about the next one. */}
+                <div style={{
+                  marginTop: 32, padding: '16px 18px', borderRadius: 12,
+                  background: 'var(--accent-soft)', border: '1px solid var(--border)',
+                }}>
+                  <NotifyMe
+                    topic="events" city={city} compact
+                    label={`Tell me when a desi event is posted near ${city} — melas, garba nights, temple programs.`}
+                  />
+                </div>
               </>
             )
         }

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext, useSearchParams } from 'react-router-dom';
+import { useOutletContext, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import { supabase } from '../services/supabase';
 import { geocodeCity, milesBetween } from '../services/geo';
 import { embedAvailable, startCheckout } from '../services/stripeEmbed';
 import OrderStatusCard from '../components/OrderStatusCard';
+import NotifyMe from '../components/NotifyMe';
 
 const WARN_MILES = 10; // pickup distance beyond which we flag "are you sure?"
 
@@ -207,10 +208,27 @@ export default function Order() {
                 {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton" style={{ height: 120, borderRadius: 14 }} />)}
               </div>
             : restaurants.length === 0
-              ? <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--muted)' }}>
+              ? <div style={{ textAlign: 'center', padding: '44px 16px', color: 'var(--muted)' }}>
+                  {/* An empty page that only states a fact ends the visit. On
+                      launch day seven people reached this screen and left with
+                      no way for us to reach them when it stops being empty. */}
                   <div style={{ fontSize: 44, marginBottom: 10 }}>🍛</div>
-                  <p>No restaurants taking orders in {city} yet.</p>
-                  <p style={{ fontSize: 13 }}>Own a restaurant? List your menu from your profile. 6% per order, card fees included.</p>
+                  <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', margin: '0 0 4px' }}>
+                    We're signing up restaurants now
+                  </p>
+                  <p style={{ fontSize: 13.5, margin: '0 0 18px' }}>
+                    None in {city} are taking orders through DesiZoom just yet.
+                  </p>
+                  <NotifyMe
+                    topic="restaurants" city={city}
+                    label={`Get an email the day the first restaurant near ${city} opens for orders.`}
+                  />
+                  <p style={{ fontSize: 12.5, marginTop: 18 }}>
+                    Know a place that should be here?{' '}
+                    <a href="mailto:info@desizoom.com?subject=A restaurant you should add" style={{ fontWeight: 600 }}>Tell us</a>
+                    {' · '}
+                    Own a restaurant? <Link to="/add-business" style={{ fontWeight: 600 }}>List it free</Link> — 6% per order, card fees included.
+                  </p>
                 </div>
               : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 14 }}>
                   {restaurants.map((r) => (
