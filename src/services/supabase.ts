@@ -151,9 +151,12 @@ export async function fetchCityToday(city: string | string[]) {
       .in('city', cities).eq('type', 'event').eq('is_active', true)
       .gte('event_date', new Date().toISOString())
       .order('event_date', { ascending: true }).limit(5),
+    // Within the radius, like the deals and events beside it. This was a
+    // state-wide ilike, so "open now near you" on the home page could offer
+    // a restaurant hundreds of miles away.
     supabase.from('restaurants').select('id,name,is_open')
       .eq('is_active', true).eq('is_open', true)
-      .ilike('city', state ? `%, ${state}` : cities[0]).limit(10),
+      .in('city', cities).limit(10),
     supabase.from('posts').select('id,title')
       .in('city', cities).eq('type', 'deal').eq('is_active', true)
       .order('created_at', { ascending: false }).limit(5),

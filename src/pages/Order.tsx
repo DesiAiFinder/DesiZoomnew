@@ -35,7 +35,7 @@ interface CartLine { id: string; name: string; price_cents: number; quantity: nu
 export default function Order() {
   const { onAuthOpen } = useOutletContext<OutletCtx>();
   const { user } = useAuth();
-  const { city, geoLocation, usingGps } = useLocation();
+  const { city, geoLocation, usingGps, nearbyCities, radius } = useLocation();
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [active, setActive] = useState<Restaurant | null>(null);
@@ -56,20 +56,35 @@ export default function Order() {
   const [cAddress, setCAddress] = useState('');
   const [params] = useSearchParams();
 
+  // Restaurants within the chosen radius — NOT the whole state.
+  //
+  // This used to be `.ilike('city', '%, ${state}')`, which returned every
+  // active restaurant in Texas. Someone in Houston with the radius set to
+  // 25 miles was shown a caterer in Little Elm, 251 miles away, with a
+  // cheerful "pickup only" note. The distance was being computed, but only
+  // to render a warning — never to decide what to show.
+  //
+  // nearbyCities is the selected city plus every city with listings inside
+  // the radius, so this is the same net Deals and Search already use.
+  const cityKey = nearbyCities.join('|');
   useEffect(() => {
     setLoading(true);
-    const state = city.split(',')[1]?.trim();
     supabase
       .from('restaurants')
       .select('*')
       .eq('is_active', true)
-      .ilike('city', state ? `%, ${state}` : city)
+      .in('city', nearbyCities)
       .order('is_open', { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        // Don't discard this. A swallowed PostgREST error here looks exactly
+        // like "no restaurants nearby", and we would show the waitlist box to
+        // someone whose query simply failed.
+        if (error) console.error('[order] restaurants', error);
         setRestaurants((data as Restaurant[]) ?? []);
         setLoading(false);
       });
-  }, [city]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cityKey]);
 
   // Deep link: /order?business=<businesses.id> opens that restaurant's menu
   // directly, so a deal's "Order now" lands on the right place instead of the
@@ -217,7 +232,7 @@ export default function Order() {
                     We're signing up restaurants now
                   </p>
                   <p style={{ fontSize: 13.5, margin: '0 0 18px' }}>
-                    None in {city} are taking orders through DesiZoom just yet.
+                    None within {radius} miles of {city} are taking orders through DesiZoom just yet.
                   </p>
                   <NotifyMe
                     topic="restaurants" city={city}
