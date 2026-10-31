@@ -388,7 +388,16 @@ export default function Home() {
                     </div>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700 }}>{e.title}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{e.description}</div>
+                      {/* Two lines, no more. Seeded listings carry the
+                          organiser credit, a source URL and a claim notice
+                          in the description — all of it useful on the
+                          listing page, all of it noise in a 250px card,
+                          where a raw https:// link wraps over four lines. */}
+                      <div style={{
+                        fontSize: 11.5, color: 'var(--muted)',
+                        display: '-webkit-box', WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                      }}>{e.description}</div>
                     </div>
                   </div>
                 );
