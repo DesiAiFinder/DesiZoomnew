@@ -39,8 +39,19 @@ if errorlevel 1 (
   exit /b 1
 )
 
-for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set dt=%%I
-set STAMP=%dt:~0,4%-%dt:~4,2%-%dt:~6,2%_%dt:~8,2%%dt:~10,2%
+REM Timestamp via PowerShell, not wmic.
+REM
+REM wmic was removed in recent Windows 11 builds, so the old line produced
+REM no value at all and the filename came out as literal "~0,4dt:~4,2..."
+REM text, which pg_dump could not create. PowerShell's Get-Date is present
+REM on every supported Windows and is not locale-dependent the way
+REM %DATE% is.
+for /f %%I in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HHmm"') do set STAMP=%%I
+
+if "%STAMP%"=="" (
+  echo Could not build a timestamp. Aborting rather than overwriting a file.
+  exit /b 1
+)
 
 if not exist backups mkdir backups
 
@@ -49,8 +60,18 @@ pg_dump --clean --if-exists --quote-all-identifiers --schema=public ^
   --no-owner --no-privileges -f "backups\desizoom-%STAMP%.sql"
 if errorlevel 1 goto :failed
 
+REM pg_dump can exit 0 having written almost nothing. Check the size, because
+REM "BACKUP COMPLETE" over an empty file is worse than a visible failure.
+for %%F in ("backups\desizoom-%STAMP%.sql") do set SIZE=%%~zF
+if %SIZE% LSS 10000 (
+  echo.
+  echo WARNING: the dump is only %SIZE% bytes. That is too small to be a real
+  echo backup of this database. Open it and check before trusting it.
+  exit /b 1
+)
+
 echo.
-echo Done: backups\desizoom-%STAMP%.sql
+echo Done: backups\desizoom-%STAMP%.sql  (%SIZE% bytes)
 echo Copy it somewhere off this machine - a backup on the same disk is not a backup.
 goto :eof
 
