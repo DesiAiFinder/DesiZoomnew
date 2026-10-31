@@ -29,7 +29,7 @@ seed(title, description, city, venue, event_date, ticket_price_cents) as (
     'Frisco Diwali Mela 2026 — Festival of Lights',
     'Free Diwali mela with Raam Leela, a live concert, a drone and laser show, a Diwali bazaar and food stalls. Runs 3:30 PM to 10 PM. Entry and parking are free.' || chr(10) || chr(10) ||
     'Organised by DFW Gujarati Samaj. Details and updates: https://friscodiwali.org/' || chr(10) ||
-    'Community listing — not posted by the organiser. Is this your event? Email info@desizoom.com to claim or correct it.',
+    'Community listing · info@desizoom.com to claim or correct.',
     'Frisco, TX',
     'Kaleidoscope Park, 6635 Warren Pkwy, Frisco, TX 75034',
     timestamptz '2026-11-01 15:30:00 America/Chicago',
@@ -42,7 +42,7 @@ seed(title, description, city, venue, event_date, ticket_price_cents) as (
     'Diwali Mahotsav — Govatsa Dwadashi',
     'Day one of a six-day Diwali Mahotsav. Govatsa Dwadashi pooja at 6 PM, kids'' sparklers, and fireworks over the temple at 8 PM. Free and open to all.' || chr(10) || chr(10) ||
     'Organised by Radha Krishna Temple of Dallas. Full schedule: https://www.radhakrishnatemple.net/diwali-mela-dallas' || chr(10) ||
-    'Community listing — not posted by the organiser. Is this your event? Email info@desizoom.com to claim or correct it.',
+    'Community listing · info@desizoom.com to claim or correct.',
     'Allen, TX',
     'Radha Krishna Temple of Dallas, 1450 N Watters Rd, Allen, TX 75013',
     timestamptz '2026-11-05 18:00:00 America/Chicago',
@@ -52,7 +52,7 @@ seed(title, description, city, venue, event_date, ticket_price_cents) as (
     'Diwali Mela and Dhanteras Pooja',
     'Day two. Diwali Mela from 6 PM with food and vendor stalls, Dhanteras and Shri Yantra pooja at 6 PM, and fireworks at 8 PM. Free and open to all.' || chr(10) || chr(10) ||
     'Organised by Radha Krishna Temple of Dallas. Full schedule: https://www.radhakrishnatemple.net/diwali-mela-dallas' || chr(10) ||
-    'Community listing — not posted by the organiser. Is this your event? Email info@desizoom.com to claim or correct it.',
+    'Community listing · info@desizoom.com to claim or correct.',
     'Allen, TX',
     'Radha Krishna Temple of Dallas, 1450 N Watters Rd, Allen, TX 75013',
     timestamptz '2026-11-06 18:00:00 America/Chicago',
@@ -62,7 +62,7 @@ seed(title, description, city, venue, event_date, ticket_price_cents) as (
     'Diwali Bhajan Clubbing Concert',
     'An evening of bhajans and kirtan, singing together. Tickets are $5, up to ten per order, sold by the temple.' || chr(10) || chr(10) ||
     'Organised by Radha Krishna Temple of Dallas. Tickets: https://www.radhakrishnatemple.net/tickets?event=bhajan-clubbing' || chr(10) ||
-    'Community listing — not posted by the organiser. Tickets are sold on the temple''s own site, not through DesiZoom. Is this your event? Email info@desizoom.com to claim or correct it.',
+    'Community listing · tickets are sold by the temple, not through DesiZoom · info@desizoom.com to claim or correct.',
     'Allen, TX',
     'Radha Krishna Temple of Dallas, 1450 N Watters Rd, Allen, TX 75013',
     timestamptz '2026-11-06 18:30:00 America/Chicago',
@@ -74,7 +74,7 @@ seed(title, description, city, venue, event_date, ticket_price_cents) as (
     '11,111 Diya Lighting and Diwali Leela',
     'Choti Diwali. The Diwali Leela on stage at 5 PM, the lighting of 11,111 diyas in the courtyard from 6 PM, and the Grand Fireworks Show. Free and open to all.' || chr(10) || chr(10) ||
     'Organised by Radha Krishna Temple of Dallas. Full schedule: https://www.radhakrishnatemple.net/diwali-mela-dallas' || chr(10) ||
-    'Community listing — not posted by the organiser. Is this your event? Email info@desizoom.com to claim or correct it.',
+    'Community listing · info@desizoom.com to claim or correct.',
     'Allen, TX',
     'Radha Krishna Temple of Dallas, 1450 N Watters Rd, Allen, TX 75013',
     timestamptz '2026-11-07 17:00:00 America/Chicago',
@@ -84,7 +84,7 @@ seed(title, description, city, venue, event_date, ticket_price_cents) as (
     'Diwali Day — Lakshmi Pooja and Grand Fireworks',
     'Diwali itself. Special satsang with Swami Mukundananda at 10:30 AM, Dhanalakshmi and Mahalakshmi pooja at 5 PM, diya lighting at 7:30 PM, and the Grand Fireworks Show. Free and open to all.' || chr(10) || chr(10) ||
     'Organised by Radha Krishna Temple of Dallas. Full schedule: https://www.radhakrishnatemple.net/diwali-mela-dallas' || chr(10) ||
-    'Community listing — not posted by the organiser. Is this your event? Email info@desizoom.com to claim or correct it.',
+    'Community listing · info@desizoom.com to claim or correct.',
     'Allen, TX',
     'Radha Krishna Temple of Dallas, 1450 N Watters Rd, Allen, TX 75013',
     timestamptz '2026-11-08 17:00:00 America/Chicago',
@@ -94,7 +94,7 @@ seed(title, description, city, venue, event_date, ticket_price_cents) as (
     'Govardhan Pooja and Annakoot',
     'Govardhan Pooja and Annakoot at 6 PM, a mountain of food offered and then shared as mahaprasad. Gujarati New Year archana at 11 AM the same day. Free and open to all.' || chr(10) || chr(10) ||
     'Organised by Radha Krishna Temple of Dallas. Full schedule: https://www.radhakrishnatemple.net/diwali-mela-dallas' || chr(10) ||
-    'Community listing — not posted by the organiser. Is this your event? Email info@desizoom.com to claim or correct it.',
+    'Community listing · info@desizoom.com to claim or correct.',
     'Allen, TX',
     'Radha Krishna Temple of Dallas, 1450 N Watters Rd, Allen, TX 75013',
     timestamptz '2026-11-09 18:00:00 America/Chicago',

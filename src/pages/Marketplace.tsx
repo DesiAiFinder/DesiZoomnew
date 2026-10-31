@@ -146,7 +146,7 @@ export default function Marketplace() {
                             background: '#e07820', color: 'white',
                             fontSize: 10, fontWeight: 800, padding: '2px 7px',
                             borderRadius: 20, letterSpacing: '0.05em'
-                          }}>{m.is_sponsored ? 'SPONSORED' : '🚀 BOOSTED'}</span>
+                          }}>{m.is_sponsored ? 'FEATURED' : '🚀 BOOSTED'}</span>
                         )}
                         {m.is_sold && (
                           <span style={{

@@ -121,8 +121,18 @@ export default function DealCard({ post, voted, onVoteToggle, onAuthNeeded }: Pr
               onClick={(e) => e.stopPropagation()}
               style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)', textDecoration: 'none' }}
             >{post.title}</Link>
+            {/* FEATURED, not SPONSORED.
+                is_sponsored is an admin pin — we use it to push the big
+                community events to the top. Nobody pays for it. Labelling a
+                temple's or an association's event "SPONSORED" tells readers
+                the organiser bought placement, which is untrue and is
+                exactly the wrong impression to give the organisations we
+                want to recruit. The paid product is the boost below, which
+                has its own badge.
+                If real paid placement is ever sold, give it a separate flag
+                rather than changing this word back. */}
             {post.is_sponsored && (
-              <span style={{ fontSize: 10, fontWeight: 800, background: '#fdf0e0', color: '#b84d00', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.04em' }}>SPONSORED</span>
+              <span style={{ fontSize: 10, fontWeight: 800, background: '#fdf0e0', color: '#b84d00', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.04em' }}>FEATURED</span>
             )}
             {post.boosted_until && new Date(post.boosted_until) > new Date() && (
               <span style={{ fontSize: 12 }} title="Boosted listing">🚀</span>

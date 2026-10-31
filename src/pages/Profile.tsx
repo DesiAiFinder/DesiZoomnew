@@ -51,6 +51,15 @@ export default function Profile() {
   const [eTitle, setETitle] = useState('');
   const [eDesc, setEDesc] = useState('');
   const [ePrice, setEPrice] = useState('');
+  // Events: organisers could not fix their own date, time or venue, and
+  // nobody could add a photo after posting. Both matter — a flyer IS the
+  // information for most community events, and a wrong start time is the
+  // fastest way to lose someone's trust.
+  const [eVenue, setEVenue] = useState('');
+  const [eWhen, setEWhen] = useState('');      // datetime-local value
+  const [eImages, setEImages] = useState<string[]>([]);
+  const [eUploading, setEUploading] = useState(false);
+  const [eErr, setEErr] = useState('');
 
   // Reviews
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
@@ -168,21 +177,73 @@ export default function Profile() {
   const completedSales = sales.filter((s) => s.status === 'completed');
   const earned = completedSales.reduce((s, x) => s + (x.amount_cents - x.commission_cents), 0);
 
+  /** A timestamptz to the 'YYYY-MM-DDTHH:mm' a datetime-local input wants, in local time. */
+  const toLocalInput = (iso?: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   const openEdit = (p: Post) => {
     setEditing(p); setETitle(p.title); setEDesc(p.description || '');
     setEPrice(p.price_cents ? (p.price_cents / 100).toFixed(2) : (p.price || ''));
+    setEVenue(p.venue || '');
+    setEWhen(toLocalInput(p.event_date));
+    setEImages(p.image_urls ?? []);
+    setEErr('');
+  };
+
+  const addEditPhotos = async (files: FileList | null) => {
+    if (!files?.length || !user) return;
+    setEUploading(true); setEErr('');
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        const ext = file.name.split('.').pop() || 'jpg';
+        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error } = await supabase.storage.from('post-images').upload(path, file, {
+          cacheControl: '31536000', contentType: file.type,
+        });
+        if (error) throw new Error(error.message);
+        urls.push(supabase.storage.from('post-images').getPublicUrl(path).data.publicUrl);
+      }
+      setEImages((prev) => [...prev, ...urls]);
+    } catch (e) {
+      setEErr(e instanceof Error ? `Upload failed: ${e.message}` : 'Upload failed.');
+    }
+    setEUploading(false);
   };
 
   const saveEdit = async () => {
     if (!editing) return;
-    const patch: Record<string, unknown> = { title: eTitle.trim(), description: eDesc.trim() || null };
+    setEErr('');
+    const patch: Record<string, unknown> = {
+      title: eTitle.trim(),
+      description: eDesc.trim() || null,
+      image_urls: eImages.length ? eImages : null,
+    };
     if (editing.type === 'marketplace') {
       const n = parseFloat(ePrice.replace(/[^0-9.]/g, ''));
       if (!isNaN(n) && n > 0) patch.price_cents = Math.round(n * 100);
     } else {
       patch.price = ePrice || null;
     }
-    await updateMyPost(editing.id, patch).catch(() => {});
+    if (editing.type === 'event') {
+      patch.venue = eVenue.trim() || null;
+      // new Date() reads the input in the poster's own timezone; toISOString
+      // carries the right instant. Writing the raw 'YYYY-MM-DDTHH:mm' string
+      // makes Postgres read it as UTC and the event shows six hours early.
+      patch.event_date = eWhen ? new Date(eWhen).toISOString() : null;
+    }
+    try {
+      // Was `.catch(() => {})`: a failed save closed the modal and looked
+      // exactly like a successful one, silently discarding the edit.
+      await updateMyPost(editing.id, patch);
+    } catch (e) {
+      setEErr(e instanceof Error ? e.message : "Couldn't save those changes.");
+      return;
+    }
     setEditing(null);
     load();
   };
@@ -501,7 +562,48 @@ export default function Profile() {
             <div className="field"><label>Title</label><input value={eTitle} onChange={(e) => setETitle(e.target.value)} /></div>
             <div className="field"><label>Description</label><textarea value={eDesc} onChange={(e) => setEDesc(e.target.value)} /></div>
             <div className="field"><label>{editing.type === 'marketplace' ? 'Price ($)' : 'Price / discount'}</label><input value={ePrice} onChange={(e) => setEPrice(e.target.value)} /></div>
-            <button className="btn-primary" onClick={saveEdit}>Save changes</button>
+
+            {editing.type === 'event' && (
+              <>
+                <div className="field">
+                  <label>Date &amp; time</label>
+                  <input type="datetime-local" value={eWhen} onChange={(e) => setEWhen(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Venue</label>
+                  <input value={eVenue} onChange={(e) => setEVenue(e.target.value)} placeholder="Hall name, street, city" />
+                </div>
+              </>
+            )}
+
+            <div className="field">
+              <label>Photos {eImages.length > 0 && <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({eImages.length})</span>}</label>
+              {eImages.length > 0 && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                  {eImages.map((url, i) => (
+                    <div key={url} style={{ position: 'relative' }}>
+                      <img src={url} alt="" style={{ width: 72, height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
+                      <button
+                        onClick={() => setEImages((p) => p.filter((_, j) => j !== i))}
+                        aria-label="Remove photo"
+                        style={{
+                          position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%',
+                          border: 'none', background: '#b91c1c', color: 'white', fontSize: 12, cursor: 'pointer', lineHeight: 1,
+                        }}
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <input type="file" accept="image/*" multiple disabled={eUploading}
+                onChange={(e) => { addEditPhotos(e.target.files); e.target.value = ''; }} />
+              {eUploading && <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 6 }}>Uploading…</div>}
+            </div>
+
+            {eErr && (
+              <div style={{ fontSize: 13, color: '#b91c1c', marginBottom: 10 }}>{eErr}</div>
+            )}
+            <button className="btn-primary" onClick={saveEdit} disabled={eUploading}>Save changes</button>
           </div>
         </div>
       )}
